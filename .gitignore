@@ -1,0 +1,12 @@
+db
+
+dist
+/node_modules
+
+prisma/migrations
+
+migration_lock.toml
+
+test.ts
+
+.env

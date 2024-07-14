@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Epoch {
+  epoch            Int      @id
+  processed        Boolean // Whether the attestations for this epoch have been processed
+  missedValidators String[]
+}
+
+model Slot {
+  slot                Int         @id
+  attestationsFetched Boolean // Whether the attestations for this slot have been fetched
+  commitee            Committee[]
+}
+
+model Committee {
+  slot         Int
+  index        Int
+  validators   String[]
+  attestations Attestations[]
+
+  slot_relation Slot @relation(fields: [slot], references: [slot], onDelete: Cascade)
+
+  @@id([slot, index])
+}
+
+model Attestations {
+  id              BigInt    @id @default(autoincrement())
+  slot            Int
+  index           Int
+  aggregationBits String
+  commitee        Committee @relation(fields: [slot, index], references: [slot, index], onDelete: Cascade)
+}
+
+model HourlyValidatorStats {
+  validatorIndex   Int      @id
+  executionRewards BigInt
+  beaconRewards    BigInt
+  performance      Float
+  timestamp        DateTime
+}
+
+model DailyValidatorStats {
+  validatorIndex   Int      @id
+  executionRewards BigInt
+  beaconRewards    BigInt
+  performance      Float
+  timestamp        DateTime
+}
+
+model WeeklyValidatorStats {
+  validatorIndex   Int      @id
+  executionRewards BigInt
+  beaconRewards    BigInt
+  performance      Float
+  timestamp        DateTime
+}
+
+model MonthlyValidatorStats {
+  validatorIndex   Int      @id
+  executionRewards BigInt
+  beaconRewards    BigInt
+  performance      Float
+  timestamp        DateTime
+}
+
+model YearlyValidatorStats {
+  validatorIndex   String @id
+  executionRewards BigInt
+  beaconRewards    BigInt
+  performance      Float
+  year             Int
+}

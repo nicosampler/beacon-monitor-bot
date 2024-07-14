@@ -1,0 +1,16 @@
+{
+  "name": "telegram-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot to monitor beacon chain validators.",
+  "main": "src/bot.js",
+  "scripts": {
+    "start": "node src/bot.js",
+    "start:dev": "nodemon src/bot.js"
+  },
+  "dependencies": {
+    "pg": "^8.5.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  }
+}

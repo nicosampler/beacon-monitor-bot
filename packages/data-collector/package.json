@@ -1,0 +1,39 @@
+{
+  "name": "data-collector",
+  "version": "1.0.0",
+  "description": "Collect validators information from different sources, process and save it to the db.",
+  "type": "module",
+  "scripts": {
+    "compile": "tsc",
+    "createMigration": "prisma migrate dev --schema ../prisma/schema.prisma --skip-generate --name",
+    "pullDB": "prisma db pull --schema ../prisma/schema.prisma",
+    "dev": "dotenv -e ../../.env npx tsx src/index.ts",
+    "test": "dotenv -e ../../.env npx tsx src/test.ts"
+  },
+  "dependencies": {
+    "@t3-oss/env-core": "^0.10.1",
+    "axios": "^1.7.2",
+    "axios-logger": "^2.8.1",
+    "bitlist": "^1.0.0",
+    "bitset": "^5.1.1",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "lodash": "^4.17.21",
+    "pg": "^8.5.1",
+    "pino": "^9.3.1",
+    "pino-pretty": "^11.2.1",
+    "rate-limiter-flexible": "^5.0.3",
+    "toad-scheduler": "^3.0.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@tsconfig/node20": "^20.1.4",
+    "@types/lodash": "^4.14.200",
+    "@types/node": "^20.14.2",
+    "dotenv-cli": "^7.4.2",
+    "nodemon": "^2.0.7",
+    "prisma": "^5.15.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "project-root",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "pnpm -r run start"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.15.0"
+  },
+  "devDependencies": {
+    "pnpm": "^9.2.0",
+    "prisma": "^5.15.0"
+  }
+}

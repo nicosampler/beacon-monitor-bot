@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.node20.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["*"]
+    }
+  },
+  "include": ["./src/**/*"]
+}
