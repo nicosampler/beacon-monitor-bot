@@ -1,6 +1,5 @@
 import { logger } from "@/src/lib/pino.js";
 import { AxiosResponse, InternalAxiosRequestConfig } from "axios";
-import { error } from "console";
 
 export function logRequest(
   request: InternalAxiosRequestConfig

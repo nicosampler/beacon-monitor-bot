@@ -1,4 +1,5 @@
 import createDBMissingSlots from "@/src/db/slots.js";
+import { logger } from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { scheduleTasks } from "@/src/scheduler/index.js";
 
@@ -15,7 +16,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error(e);
+    logger.error(e);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

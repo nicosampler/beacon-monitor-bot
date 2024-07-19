@@ -10,6 +10,7 @@
     "@prisma/client": "^5.15.0"
   },
   "devDependencies": {
+    "eslint": "^9.7.0",
     "pnpm": "^9.2.0",
     "prisma": "^5.15.0"
   }

@@ -15,19 +15,6 @@ instance.interceptors.request.use(
 );
 instance.interceptors.response.use(logResponse);
 
-// log response
-// instance.interceptors.response.use(async (response) => {
-//   debugger;
-//   // write down your response intercept.
-//   console.log(new Date().toISOString());
-//   if (response.status == 404) {
-//     console.log("404 error");
-//   } else {
-//     AxiosLogger.responseLogger(response as any);
-//   }
-//   return response;
-// });
-
 AxiosLogger.setGlobalConfig({
   data: false,
 });

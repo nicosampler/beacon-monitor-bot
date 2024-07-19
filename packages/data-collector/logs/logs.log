@@ -1,0 +1,1203 @@
+{"level":30,"time":1721425331644,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721425332578,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Found 43 missing slots."}
+{"level":30,"time":1721425332600,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721425332601,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486396"}
+{"level":30,"time":1721425332601,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486396"}
+{"level":30,"time":1721425332601,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486396 - committee waiting"}
+{"level":30,"time":1721425332602,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721425332602,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721425332680,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 16486396"}
+{"level":30,"time":1721425332681,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/16486396/committees"}
+{"level":30,"time":1721425333502,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721425333534,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721425333541,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15967998,15967999,15968000,15968001"}
+{"level":30,"time":1721425333541,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15967998"}
+{"level":30,"time":1721425333541,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15967998 - committee waiting"}
+{"level":30,"time":1721425333541,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15967999"}
+{"level":30,"time":1721425333542,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15967999 - committee waiting"}
+{"level":30,"time":1721425333542,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968000"}
+{"level":30,"time":1721425333542,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968000 - committee waiting"}
+{"level":30,"time":1721425333542,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968001"}
+{"level":30,"time":1721425333542,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968001 - committee waiting"}
+{"level":30,"time":1721425333548,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15967998"}
+{"level":30,"time":1721425333550,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15967998/committees"}
+{"level":30,"time":1721425333577,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15967999"}
+{"level":30,"time":1721425333577,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15967999/committees"}
+{"level":30,"time":1721425333578,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968001"}
+{"level":30,"time":1721425333578,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968001/committees"}
+{"level":30,"time":1721425333580,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968000"}
+{"level":30,"time":1721425333580,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968000/committees"}
+{"level":30,"time":1721425335071,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/16486396/committees"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486396 - newSlots: 16486395, 16486396, 16486397, 16486398, 16486399"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486396 - newCommittees:"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486384, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486385, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486386, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486387, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486388, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486389, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486390, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486391, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486392, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486393, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486394, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486395, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486396, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486397, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486398, committes: 64"}
+{"level":30,"time":1721425335221,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:16486399, committes: 64"}
+{"level":30,"time":1721425336267,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486396 - saved."}
+{"level":30,"time":1721425336267,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486396 - committee ready"}
+{"level":30,"time":1721425336277,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486397/attestations"}
+{"level":30,"time":1721425336437,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486397/attestations"}
+{"level":30,"time":1721425336509,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486396 saved."}
+{"level":30,"time":1721425336654,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968000/committees"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968000 - newSlots: "}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968000 - newCommittees:"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968000, committes: 64"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968001, committes: 64"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968002, committes: 64"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968003, committes: 64"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968004, committes: 64"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968005, committes: 64"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968006, committes: 64"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968007, committes: 64"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968008, committes: 64"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968009, committes: 64"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968010, committes: 64"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968011, committes: 64"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968012, committes: 64"}
+{"level":30,"time":1721425336766,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968013, committes: 64"}
+{"level":30,"time":1721425336767,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968014, committes: 64"}
+{"level":30,"time":1721425336767,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"slot:15968015, committes: 64"}
+{"level":30,"time":1721425337603,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486397"}
+{"level":30,"time":1721425337603,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486397"}
+{"level":30,"time":1721425337603,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486397 - committee waiting"}
+{"level":30,"time":1721425337609,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486397 already fetched."}
+{"level":30,"time":1721425337609,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486397 - committee ready"}
+{"level":30,"time":1721425337625,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486398/attestations"}
+{"level":30,"time":1721425337788,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486398/attestations"}
+{"level":30,"time":1721425337930,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968000 - saved."}
+{"level":30,"time":1721425337930,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968000 - committee ready"}
+{"level":30,"time":1721425337939,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968001/attestations"}
+{"level":30,"time":1721425337952,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486397 saved."}
+{"level":30,"time":1721425338099,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968001/attestations"}
+{"level":50,"time":1721425338109,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Missing committees when querying attestations for slot 15968000:[9-56] "}
+{"level":50,"time":1721425338109,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Missing committees when querying attestations for slot 15968000:[9-56] "}
+{"level":50,"time":1721425338109,"pid":33814,"hostname":"MacBook-Pro-7.local","msg":"Missing committees when querying attestations for slot 15968000:[9-56] "}
+{"level":30,"time":1721425670246,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721425671232,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"Found 63 missing slots."}
+{"level":30,"time":1721425671242,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721425671242,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486464"}
+{"level":30,"time":1721425671243,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486464"}
+{"level":30,"time":1721425671243,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486464 - committee waiting"}
+{"level":30,"time":1721425671243,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721425671243,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721425671308,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 16486464"}
+{"level":30,"time":1721425671309,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/16486464/committees"}
+{"level":30,"time":1721425672138,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721425672168,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721425672175,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968066,15968067,15968068,15968069"}
+{"level":30,"time":1721425672176,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968066"}
+{"level":30,"time":1721425672176,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968066 - committee waiting"}
+{"level":30,"time":1721425672176,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968067"}
+{"level":30,"time":1721425672177,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968067 - committee waiting"}
+{"level":30,"time":1721425672177,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968068"}
+{"level":30,"time":1721425672177,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968068 - committee waiting"}
+{"level":30,"time":1721425672177,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968069"}
+{"level":30,"time":1721425672177,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968069 - committee waiting"}
+{"level":30,"time":1721425672186,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968066"}
+{"level":30,"time":1721425672186,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968066/committees"}
+{"level":30,"time":1721425672211,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968068"}
+{"level":30,"time":1721425672212,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968068/committees"}
+{"level":30,"time":1721425672217,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968069"}
+{"level":30,"time":1721425672218,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968069/committees"}
+{"level":30,"time":1721425672219,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968067"}
+{"level":30,"time":1721425672219,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968067/committees"}
+{"level":30,"time":1721425673359,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/16486464/committees"}
+{"level":30,"time":1721425673516,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486464 - newSlots: 16486464, 16486465, 16486466, 16486467, 16486468, 16486469, 16486470, 16486471, 16486472, 16486473, 16486474, 16486475, 16486476, 16486477, 16486478, 16486479"}
+{"level":30,"time":1721425673516,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486464 - newCommittees:"}
+{"level":30,"time":1721425673516,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486464, committes: 64"}
+{"level":30,"time":1721425673516,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486465, committes: 64"}
+{"level":30,"time":1721425673516,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486466, committes: 64"}
+{"level":30,"time":1721425673516,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486467, committes: 64"}
+{"level":30,"time":1721425673516,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486468, committes: 64"}
+{"level":30,"time":1721425673516,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486469, committes: 64"}
+{"level":30,"time":1721425673516,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486470, committes: 64"}
+{"level":30,"time":1721425673516,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486471, committes: 64"}
+{"level":30,"time":1721425673516,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486472, committes: 64"}
+{"level":30,"time":1721425673517,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486473, committes: 64"}
+{"level":30,"time":1721425673517,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486474, committes: 64"}
+{"level":30,"time":1721425673517,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486475, committes: 64"}
+{"level":30,"time":1721425673517,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486476, committes: 64"}
+{"level":30,"time":1721425673517,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486477, committes: 64"}
+{"level":30,"time":1721425673517,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486478, committes: 64"}
+{"level":30,"time":1721425673517,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"slot:16486479, committes: 64"}
+{"level":30,"time":1721425674581,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486464 - saved."}
+{"level":30,"time":1721425674581,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486464 - committee ready"}
+{"level":30,"time":1721425674585,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"&&&&&&&&&&&&&&&&&&&&&&"}
+{"level":30,"time":1721425674585,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"[\n  {\n    \"slot\": 15968000,\n    \"index\": 0\n  },\n  {\n    \"slot\": 15968000,\n    \"index\": 1\n  },\n  {\n    \"slot\": 15968001,\n    \"index\": 0\n  },\n  {\n    \"slot\": 15968001,\n    \"index\": 1\n  },\n  {\n    \"slot\": 15968002,\n    \"index\": 0\n  },\n  {\n    \"slot\": 15968002,\n    \"index\": 1\n  }\n]"}
+{"level":30,"time":1721425674585,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"&&&&&&&&&&&&&&&&&&&&&&"}
+{"level":30,"time":1721425674593,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486465/attestations"}
+{"level":30,"time":1721425674757,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486465/attestations"}
+{"level":50,"time":1721425674765,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"Missing committees when querying attestations for slot 16486464:[47-44] "}
+{"level":50,"time":1721425674765,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"Missing committees when querying attestations for slot 16486464:[47-44] "}
+{"level":50,"time":1721425674765,"pid":34988,"hostname":"MacBook-Pro-7.local","msg":"Missing committees when querying attestations for slot 16486464:[47-44] "}
+{"level":30,"time":1721426105869,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426106787,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Found 71 missing slots."}
+{"level":30,"time":1721426106822,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426106822,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486551"}
+{"level":30,"time":1721426106823,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486551"}
+{"level":30,"time":1721426106823,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486551 - committee waiting"}
+{"level":30,"time":1721426106823,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426106824,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426106867,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 16486551"}
+{"level":30,"time":1721426106868,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/16486551/committees"}
+{"level":30,"time":1721426107725,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426107759,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426107765,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968153,15968154,15968155,15968156"}
+{"level":30,"time":1721426107766,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968153"}
+{"level":30,"time":1721426107766,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968153 - committee waiting"}
+{"level":30,"time":1721426107766,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968154"}
+{"level":30,"time":1721426107766,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968154 - committee waiting"}
+{"level":30,"time":1721426107766,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968155"}
+{"level":30,"time":1721426107766,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968155 - committee waiting"}
+{"level":30,"time":1721426107767,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968156"}
+{"level":30,"time":1721426107767,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968156 - committee waiting"}
+{"level":30,"time":1721426107775,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968153"}
+{"level":30,"time":1721426107775,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968153/committees"}
+{"level":30,"time":1721426107803,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968155"}
+{"level":30,"time":1721426107804,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968155/committees"}
+{"level":30,"time":1721426107805,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968156"}
+{"level":30,"time":1721426107806,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968156/committees"}
+{"level":30,"time":1721426107807,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968154"}
+{"level":30,"time":1721426107807,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968154/committees"}
+{"level":30,"time":1721426108898,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/16486551/committees"}
+{"level":30,"time":1721426108999,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486551 - newSlots: 16486550, 16486551, 16486552, 16486553, 16486554, 16486555, 16486556, 16486557, 16486558, 16486559"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486551 - newCommittees:"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486544, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486545, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486546, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486547, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486548, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486549, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486550, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486551, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486552, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486553, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486554, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486555, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486556, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486557, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486558, committes: 64"}
+{"level":30,"time":1721426109000,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:16486559, committes: 64"}
+{"level":30,"time":1721426110056,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486551 - saved."}
+{"level":30,"time":1721426110056,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486551 - committee ready"}
+{"level":30,"time":1721426110067,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486552/attestations"}
+{"level":30,"time":1721426110237,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486552/attestations"}
+{"level":30,"time":1721426110352,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486551 saved."}
+{"level":30,"time":1721426110671,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968153/committees"}
+{"level":30,"time":1721426110738,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968153 - newSlots: "}
+{"level":30,"time":1721426110738,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968153 - newCommittees:"}
+{"level":30,"time":1721426110738,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968144, committes: 64"}
+{"level":30,"time":1721426110738,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968145, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968146, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968147, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968148, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968149, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968150, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968151, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968152, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968153, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968154, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968155, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968156, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968157, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968158, committes: 64"}
+{"level":30,"time":1721426110739,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968159, committes: 64"}
+{"level":30,"time":1721426111824,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486552"}
+{"level":30,"time":1721426111824,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486552"}
+{"level":30,"time":1721426111824,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486552 - committee waiting"}
+{"level":30,"time":1721426111830,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486552 already fetched."}
+{"level":30,"time":1721426111830,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486552 - committee ready"}
+{"level":30,"time":1721426111849,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486553/attestations"}
+{"level":30,"time":1721426111921,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968155/committees"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968155 - newSlots: "}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968155 - newCommittees:"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968144, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968145, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968146, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968147, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968148, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968149, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968150, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968151, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968152, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968153, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968154, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968155, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968156, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968157, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968158, committes: 64"}
+{"level":30,"time":1721426111979,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"slot:15968159, committes: 64"}
+{"level":30,"time":1721426112113,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968153 - saved."}
+{"level":30,"time":1721426112113,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968153 - committee ready"}
+{"level":30,"time":1721426112114,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486553/attestations"}
+{"level":30,"time":1721426112129,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968154/attestations"}
+{"level":30,"time":1721426112165,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486552 saved."}
+{"level":30,"time":1721426112293,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968154/attestations"}
+{"level":30,"time":1721426112381,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968153 saved."}
+{"level":50,"time":1721426112480,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968155"}
+{"level":50,"time":1721426112480,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968155"}
+{"level":50,"time":1721426112480,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968155"}
+{"level":50,"time":1721426112481,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968155"}
+{"level":50,"time":1721426112481,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968155"}
+{"level":50,"time":1721426112481,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968155"}
+{"level":30,"time":1721426114326,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486552"}
+{"level":30,"time":1721426114327,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486552"}
+{"level":30,"time":1721426114327,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486552 - committee waiting"}
+{"level":30,"time":1721426114336,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486552 already fetched."}
+{"level":30,"time":1721426114336,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486552 - committee ready"}
+{"level":30,"time":1721426114345,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486552 already fetched."}
+{"level":30,"time":1721426116827,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486553"}
+{"level":30,"time":1721426116828,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486553"}
+{"level":30,"time":1721426116828,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486553 - committee waiting"}
+{"level":30,"time":1721426116832,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486553 already fetched."}
+{"level":30,"time":1721426116832,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486553 - committee ready"}
+{"level":30,"time":1721426116852,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486554/attestations"}
+{"level":30,"time":1721426117013,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486554/attestations"}
+{"level":30,"time":1721426117122,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486553 saved."}
+{"level":30,"time":1721426119327,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486553"}
+{"level":30,"time":1721426119328,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486553"}
+{"level":30,"time":1721426119328,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486553 - committee waiting"}
+{"level":30,"time":1721426119333,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486553 already fetched."}
+{"level":30,"time":1721426119333,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486553 - committee ready"}
+{"level":30,"time":1721426119350,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486553 already fetched."}
+{"level":30,"time":1721426121829,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486554"}
+{"level":30,"time":1721426121830,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486554"}
+{"level":30,"time":1721426121830,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486554 - committee waiting"}
+{"level":30,"time":1721426121835,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486554 already fetched."}
+{"level":30,"time":1721426121835,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486554 - committee ready"}
+{"level":30,"time":1721426121856,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486555/attestations"}
+{"level":30,"time":1721426122025,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486555/attestations"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Missing committees when querying attestations for slot 16486554"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Missing committees when querying attestations for slot 16486554"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Missing committees when querying attestations for slot 16486554"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122042,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122043,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486541"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486539"}
+{"level":50,"time":1721426122044,"pid":36254,"hostname":"MacBook-Pro-7.local","msg":"Slot: 16486540"}
+{"level":30,"time":1721426185866,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426186824,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Found 6 missing slots."}
+{"level":30,"time":1721426186845,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426186846,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486567"}
+{"level":30,"time":1721426186846,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486567"}
+{"level":30,"time":1721426186846,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486567 - committee waiting"}
+{"level":30,"time":1721426186847,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426186847,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426186922,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 16486567"}
+{"level":30,"time":1721426186923,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/16486567/committees"}
+{"level":30,"time":1721426187759,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426187800,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426187806,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968169,15968170,15968171,15968172"}
+{"level":30,"time":1721426187806,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968169"}
+{"level":30,"time":1721426187807,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968169 - committee waiting"}
+{"level":30,"time":1721426187807,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968170"}
+{"level":30,"time":1721426187807,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968170 - committee waiting"}
+{"level":30,"time":1721426187807,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968171"}
+{"level":30,"time":1721426187807,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968171 - committee waiting"}
+{"level":30,"time":1721426187807,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968172"}
+{"level":30,"time":1721426187807,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968172 - committee waiting"}
+{"level":30,"time":1721426187816,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968169"}
+{"level":30,"time":1721426187816,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968169/committees"}
+{"level":30,"time":1721426187846,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968170"}
+{"level":30,"time":1721426187846,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968170/committees"}
+{"level":30,"time":1721426187849,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968172"}
+{"level":30,"time":1721426187849,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968172/committees"}
+{"level":30,"time":1721426187853,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968171"}
+{"level":30,"time":1721426187853,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968171/committees"}
+{"level":30,"time":1721426188826,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/16486567/committees"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486567 - newSlots: 16486566, 16486567, 16486568, 16486569, 16486570, 16486571, 16486572, 16486573, 16486574, 16486575"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486567 - newCommittees:"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486560, committes: 64"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486561, committes: 64"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486562, committes: 64"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486563, committes: 64"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486564, committes: 64"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486565, committes: 64"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486566, committes: 64"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486567, committes: 64"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486568, committes: 64"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486569, committes: 64"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486570, committes: 64"}
+{"level":30,"time":1721426188913,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486571, committes: 64"}
+{"level":30,"time":1721426188914,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486572, committes: 64"}
+{"level":30,"time":1721426188914,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486573, committes: 64"}
+{"level":30,"time":1721426188914,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486574, committes: 64"}
+{"level":30,"time":1721426188914,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:16486575, committes: 64"}
+{"level":30,"time":1721426189798,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968170/committees"}
+{"level":30,"time":1721426189861,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968172/committees"}
+{"level":30,"time":1721426189905,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968171/committees"}
+{"level":30,"time":1721426189908,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968170 - newSlots: "}
+{"level":30,"time":1721426189909,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968170 - newCommittees:"}
+{"level":30,"time":1721426189909,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968160, committes: 64"}
+{"level":30,"time":1721426189909,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968161, committes: 64"}
+{"level":30,"time":1721426189909,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968162, committes: 64"}
+{"level":30,"time":1721426189909,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968163, committes: 64"}
+{"level":30,"time":1721426189909,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968164, committes: 64"}
+{"level":30,"time":1721426189909,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968165, committes: 64"}
+{"level":30,"time":1721426189909,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968166, committes: 64"}
+{"level":30,"time":1721426189909,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968167, committes: 64"}
+{"level":30,"time":1721426189909,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968168, committes: 64"}
+{"level":30,"time":1721426189909,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968169, committes: 64"}
+{"level":30,"time":1721426189909,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968170, committes: 64"}
+{"level":30,"time":1721426189910,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968171, committes: 64"}
+{"level":30,"time":1721426189910,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968172, committes: 64"}
+{"level":30,"time":1721426189910,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968173, committes: 64"}
+{"level":30,"time":1721426189910,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968174, committes: 64"}
+{"level":30,"time":1721426189910,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968175, committes: 64"}
+{"level":30,"time":1721426190047,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486567 - saved."}
+{"level":30,"time":1721426190047,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486567 - committee ready"}
+{"level":30,"time":1721426190050,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968172 - newSlots: "}
+{"level":30,"time":1721426190050,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968172 - newCommittees:"}
+{"level":30,"time":1721426190050,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968160, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968161, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968162, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968163, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968164, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968165, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968166, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968167, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968168, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968169, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968170, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968171, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968172, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968173, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968174, committes: 64"}
+{"level":30,"time":1721426190051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968175, committes: 64"}
+{"level":30,"time":1721426190187,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486568/attestations"}
+{"level":30,"time":1721426190193,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968171 - newSlots: "}
+{"level":30,"time":1721426190193,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968171 - newCommittees:"}
+{"level":30,"time":1721426190193,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968160, committes: 64"}
+{"level":30,"time":1721426190193,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968161, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968162, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968163, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968164, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968165, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968166, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968167, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968168, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968169, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968170, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968171, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968172, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968173, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968174, committes: 64"}
+{"level":30,"time":1721426190194,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968175, committes: 64"}
+{"level":30,"time":1721426190356,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486568/attestations"}
+{"level":30,"time":1721426190671,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486567 saved."}
+{"level":30,"time":1721426190971,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968169/committees"}
+{"level":30,"time":1721426191102,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968169 - newSlots: "}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968169 - newCommittees:"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968160, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968161, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968162, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968163, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968164, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968165, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968166, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968167, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968168, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968169, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968170, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968171, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968172, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968173, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968174, committes: 64"}
+{"level":30,"time":1721426191103,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968175, committes: 64"}
+{"level":50,"time":1721426191245,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968171"}
+{"level":50,"time":1721426191245,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968171"}
+{"level":50,"time":1721426191245,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968171"}
+{"level":50,"time":1721426191245,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968171"}
+{"level":50,"time":1721426191245,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968171"}
+{"level":50,"time":1721426191245,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968171"}
+{"level":50,"time":1721426191246,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968172"}
+{"level":50,"time":1721426191246,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968172"}
+{"level":50,"time":1721426191246,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968172"}
+{"level":50,"time":1721426191246,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968172"}
+{"level":50,"time":1721426191246,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968172"}
+{"level":30,"time":1721426191246,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968170 - saved."}
+{"level":30,"time":1721426191246,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968170 - committee ready"}
+{"level":50,"time":1721426191246,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968172"}
+{"level":30,"time":1721426191263,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968171/attestations"}
+{"level":30,"time":1721426191429,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968171/attestations"}
+{"level":30,"time":1721426191492,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968170 saved."}
+{"level":50,"time":1721426191602,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968169"}
+{"level":50,"time":1721426191602,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968169"}
+{"level":50,"time":1721426191602,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968169"}
+{"level":50,"time":1721426191602,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968169"}
+{"level":50,"time":1721426191602,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968169"}
+{"level":50,"time":1721426191602,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968169"}
+{"level":30,"time":1721426191848,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486568"}
+{"level":30,"time":1721426191848,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486568"}
+{"level":30,"time":1721426191848,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486568 - committee waiting"}
+{"level":30,"time":1721426191855,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486568 already fetched."}
+{"level":30,"time":1721426191855,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486568 - committee ready"}
+{"level":30,"time":1721426191867,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486569/attestations"}
+{"level":30,"time":1721426192031,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486569/attestations"}
+{"level":30,"time":1721426192052,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426192052,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426193015,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426193016,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486568 saved."}
+{"level":30,"time":1721426193018,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426193019,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968171,15968172,15968173,15968174"}
+{"level":30,"time":1721426193019,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968171"}
+{"level":30,"time":1721426193019,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968171 - committee waiting"}
+{"level":30,"time":1721426193019,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968172"}
+{"level":30,"time":1721426193019,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968172 - committee waiting"}
+{"level":30,"time":1721426193019,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968173"}
+{"level":30,"time":1721426193019,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968173 - committee waiting"}
+{"level":30,"time":1721426193019,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968174"}
+{"level":30,"time":1721426193019,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968174 - committee waiting"}
+{"level":30,"time":1721426193022,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968171 already fetched."}
+{"level":30,"time":1721426193022,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968171 - committee ready"}
+{"level":30,"time":1721426193028,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968174 already fetched."}
+{"level":30,"time":1721426193028,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968174 - committee ready"}
+{"level":30,"time":1721426193029,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968172 already fetched."}
+{"level":30,"time":1721426193029,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968172 - committee ready"}
+{"level":30,"time":1721426193029,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968173 already fetched."}
+{"level":30,"time":1721426193029,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968173 - committee ready"}
+{"level":30,"time":1721426193037,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968172/attestations"}
+{"level":30,"time":1721426193042,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968174/attestations"}
+{"level":30,"time":1721426193047,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968173/attestations"}
+{"level":30,"time":1721426193051,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968175/attestations"}
+{"level":30,"time":1721426193203,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968174/attestations"}
+{"level":30,"time":1721426193206,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968172/attestations"}
+{"level":30,"time":1721426193224,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968173/attestations"}
+{"level":30,"time":1721426193226,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968175/attestations"}
+{"level":30,"time":1721426193312,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968172 saved."}
+{"level":30,"time":1721426193316,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968173 saved."}
+{"level":30,"time":1721426193356,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968171 saved."}
+{"level":30,"time":1721426193366,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968174 saved."}
+{"level":30,"time":1721426194053,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426194053,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426194349,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486568"}
+{"level":30,"time":1721426194349,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486568"}
+{"level":30,"time":1721426194349,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486568 - committee waiting"}
+{"level":30,"time":1721426194350,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486568 already fetched."}
+{"level":30,"time":1721426194350,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486568 - committee ready"}
+{"level":30,"time":1721426194360,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486568 already fetched."}
+{"level":30,"time":1721426195018,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426195020,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426195024,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968175,15968176,15968177,15968178"}
+{"level":30,"time":1721426195025,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968175"}
+{"level":30,"time":1721426195025,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968175 - committee waiting"}
+{"level":30,"time":1721426195025,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968176"}
+{"level":30,"time":1721426195025,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968176 - committee waiting"}
+{"level":30,"time":1721426195025,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968177"}
+{"level":30,"time":1721426195025,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968177 - committee waiting"}
+{"level":30,"time":1721426195025,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968178"}
+{"level":30,"time":1721426195025,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968178 - committee waiting"}
+{"level":30,"time":1721426195033,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968176"}
+{"level":30,"time":1721426195033,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968176/committees"}
+{"level":30,"time":1721426195034,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968177"}
+{"level":30,"time":1721426195034,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968177/committees"}
+{"level":30,"time":1721426195034,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968178"}
+{"level":30,"time":1721426195035,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968178/committees"}
+{"level":30,"time":1721426195035,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968175 already fetched."}
+{"level":30,"time":1721426195035,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968175 - committee ready"}
+{"level":30,"time":1721426195043,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968176/attestations"}
+{"level":30,"time":1721426195203,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968176/attestations"}
+{"level":30,"time":1721426195283,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968175 saved."}
+{"level":30,"time":1721426195779,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968177/committees"}
+{"level":30,"time":1721426195903,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968177 - newSlots: "}
+{"level":30,"time":1721426195903,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968177 - newCommittees:"}
+{"level":30,"time":1721426195903,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968176, committes: 64"}
+{"level":30,"time":1721426195903,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968177, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968178, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968179, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968180, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968181, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968182, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968183, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968184, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968185, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968186, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968187, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968188, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968189, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968190, committes: 64"}
+{"level":30,"time":1721426195904,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"slot:15968191, committes: 64"}
+{"level":30,"time":1721426196850,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486569"}
+{"level":30,"time":1721426196850,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486569"}
+{"level":30,"time":1721426196850,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486569 - committee waiting"}
+{"level":30,"time":1721426196886,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486569 already fetched."}
+{"level":30,"time":1721426196886,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486569 - committee ready"}
+{"level":30,"time":1721426196895,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486570/attestations"}
+{"level":30,"time":1721426196898,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968177 - saved."}
+{"level":30,"time":1721426196898,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968177 - committee ready"}
+{"level":30,"time":1721426196903,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968178/attestations"}
+{"level":30,"time":1721426197060,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486570/attestations"}
+{"level":30,"time":1721426197068,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968178/attestations"}
+{"level":30,"time":1721426197155,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968177 saved."}
+{"level":30,"time":1721426197173,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486569 saved."}
+{"level":30,"time":1721426199351,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486569"}
+{"level":30,"time":1721426199352,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486569"}
+{"level":30,"time":1721426199352,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486569 - committee waiting"}
+{"level":30,"time":1721426199359,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486569 already fetched."}
+{"level":30,"time":1721426199359,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486569 - committee ready"}
+{"level":30,"time":1721426199380,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486569 already fetched."}
+{"level":30,"time":1721426201852,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486570"}
+{"level":30,"time":1721426201853,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486570"}
+{"level":30,"time":1721426201853,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486570 - committee waiting"}
+{"level":30,"time":1721426201858,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486570 already fetched."}
+{"level":30,"time":1721426201858,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486570 - committee ready"}
+{"level":30,"time":1721426201879,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486571/attestations"}
+{"level":30,"time":1721426202041,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486571/attestations"}
+{"level":30,"time":1721426202164,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486570 saved."}
+{"level":30,"time":1721426204353,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486570"}
+{"level":30,"time":1721426204354,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486570"}
+{"level":30,"time":1721426204355,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486570 - committee waiting"}
+{"level":30,"time":1721426204364,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486570 already fetched."}
+{"level":30,"time":1721426204365,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486570 - committee ready"}
+{"level":30,"time":1721426204381,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486570 already fetched."}
+{"level":30,"time":1721426206854,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486571"}
+{"level":30,"time":1721426206855,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486571"}
+{"level":30,"time":1721426206855,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486571 - committee waiting"}
+{"level":30,"time":1721426206860,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486571 already fetched."}
+{"level":30,"time":1721426206861,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486571 - committee ready"}
+{"level":30,"time":1721426206883,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486572/attestations"}
+{"level":30,"time":1721426207078,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486572/attestations"}
+{"level":30,"time":1721426207196,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486571 saved."}
+{"level":30,"time":1721426209356,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486571"}
+{"level":30,"time":1721426209356,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486571"}
+{"level":30,"time":1721426209357,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486571 - committee waiting"}
+{"level":30,"time":1721426209361,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486571 already fetched."}
+{"level":30,"time":1721426209361,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486571 - committee ready"}
+{"level":30,"time":1721426209376,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486571 already fetched."}
+{"level":30,"time":1721426211858,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486572"}
+{"level":30,"time":1721426211861,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486572"}
+{"level":30,"time":1721426211861,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486572 - committee waiting"}
+{"level":30,"time":1721426211871,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486572 already fetched."}
+{"level":30,"time":1721426211872,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486572 - committee ready"}
+{"level":30,"time":1721426211896,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486573/attestations"}
+{"level":30,"time":1721426212059,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486573/attestations"}
+{"level":30,"time":1721426212200,"pid":36436,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486572 saved."}
+{"level":30,"time":1721426223512,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426224445,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426224448,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426224448,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486574"}
+{"level":30,"time":1721426224448,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486574"}
+{"level":30,"time":1721426224449,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486574 - committee waiting"}
+{"level":30,"time":1721426224449,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426224449,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426224562,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486574 already fetched."}
+{"level":30,"time":1721426224563,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486574 - committee ready"}
+{"level":30,"time":1721426225430,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426225469,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426225495,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968178,15968179,15968180,15968181"}
+{"level":30,"time":1721426225495,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968178"}
+{"level":30,"time":1721426225496,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968178 - committee waiting"}
+{"level":30,"time":1721426225496,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968179"}
+{"level":30,"time":1721426225496,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968179 - committee waiting"}
+{"level":30,"time":1721426225496,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180"}
+{"level":30,"time":1721426225496,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180 - committee waiting"}
+{"level":30,"time":1721426225496,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968181"}
+{"level":30,"time":1721426225496,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968181 - committee waiting"}
+{"level":30,"time":1721426225504,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968178 already fetched."}
+{"level":30,"time":1721426225505,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968178 - committee ready"}
+{"level":30,"time":1721426225526,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968179/attestations"}
+{"level":30,"time":1721426225563,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968179 already fetched."}
+{"level":30,"time":1721426225563,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968179 - committee ready"}
+{"level":30,"time":1721426225563,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968180 already fetched."}
+{"level":30,"time":1721426225563,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180 - committee ready"}
+{"level":30,"time":1721426225564,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968181 already fetched."}
+{"level":30,"time":1721426225564,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968181 - committee ready"}
+{"level":30,"time":1721426225567,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486575/attestations"}
+{"level":30,"time":1721426225576,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968182/attestations"}
+{"level":30,"time":1721426225579,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968180/attestations"}
+{"level":30,"time":1721426225586,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968181/attestations"}
+{"level":30,"time":1721426226396,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"No attestations found for slot 15968180."}
+{"level":30,"time":1721426226490,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968180/attestations"}
+{"level":30,"time":1721426226598,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968179/attestations"}
+{"level":30,"time":1721426226679,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486575/attestations"}
+{"level":30,"time":1721426226681,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968182/attestations"}
+{"level":30,"time":1721426226766,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968179 saved."}
+{"level":30,"time":1721426226872,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968181 saved."}
+{"level":30,"time":1721426226875,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968178 saved."}
+{"level":30,"time":1721426226875,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486574 saved."}
+{"level":30,"time":1721426226950,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486575"}
+{"level":30,"time":1721426226950,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486575"}
+{"level":30,"time":1721426226950,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486575 - committee waiting"}
+{"level":30,"time":1721426226951,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486575 already fetched."}
+{"level":30,"time":1721426226951,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486575 - committee ready"}
+{"level":30,"time":1721426226959,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486576/attestations"}
+{"level":30,"time":1721426227221,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486576/attestations"}
+{"level":30,"time":1721426227296,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486575 saved."}
+{"level":30,"time":1721426227478,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426227478,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426228386,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426228388,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426228391,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968180,15968182,15968183,15968184"}
+{"level":30,"time":1721426228391,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180"}
+{"level":30,"time":1721426228391,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180 - committee waiting"}
+{"level":30,"time":1721426228391,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968182"}
+{"level":30,"time":1721426228391,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968182 - committee waiting"}
+{"level":30,"time":1721426228391,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968183"}
+{"level":30,"time":1721426228391,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968183 - committee waiting"}
+{"level":30,"time":1721426228391,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968184"}
+{"level":30,"time":1721426228391,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968184 - committee waiting"}
+{"level":30,"time":1721426228392,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968180 already fetched."}
+{"level":30,"time":1721426228393,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180 - committee ready"}
+{"level":30,"time":1721426228393,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968184 already fetched."}
+{"level":30,"time":1721426228393,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968184 - committee ready"}
+{"level":30,"time":1721426228393,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968183 already fetched."}
+{"level":30,"time":1721426228393,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968183 - committee ready"}
+{"level":30,"time":1721426228404,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968185/attestations"}
+{"level":30,"time":1721426228406,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968181/attestations"}
+{"level":30,"time":1721426228406,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968182 already fetched."}
+{"level":30,"time":1721426228406,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968182 - committee ready"}
+{"level":30,"time":1721426228409,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968184/attestations"}
+{"level":30,"time":1721426228424,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968183/attestations"}
+{"level":30,"time":1721426228606,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"No attestations found for slot 15968180."}
+{"level":30,"time":1721426228618,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968185/attestations"}
+{"level":30,"time":1721426228658,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968184/attestations"}
+{"level":30,"time":1721426228675,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968183/attestations"}
+{"level":30,"time":1721426228738,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968184 saved."}
+{"level":30,"time":1721426228775,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968182 saved."}
+{"level":30,"time":1721426228777,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968183 saved."}
+{"level":30,"time":1721426229451,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486575"}
+{"level":30,"time":1721426229451,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486575"}
+{"level":30,"time":1721426229451,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486575 - committee waiting"}
+{"level":30,"time":1721426229454,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486575 already fetched."}
+{"level":30,"time":1721426229454,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486575 - committee ready"}
+{"level":30,"time":1721426229487,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486575 already fetched."}
+{"level":30,"time":1721426229487,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426229487,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426230526,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426230528,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426230531,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968180,15968185,15968186,15968187"}
+{"level":30,"time":1721426230531,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180"}
+{"level":30,"time":1721426230531,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180 - committee waiting"}
+{"level":30,"time":1721426230531,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968185"}
+{"level":30,"time":1721426230531,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968185 - committee waiting"}
+{"level":30,"time":1721426230531,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968186"}
+{"level":30,"time":1721426230531,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968186 - committee waiting"}
+{"level":30,"time":1721426230532,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968187"}
+{"level":30,"time":1721426230532,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968187 - committee waiting"}
+{"level":30,"time":1721426230533,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968180 already fetched."}
+{"level":30,"time":1721426230533,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180 - committee ready"}
+{"level":30,"time":1721426230534,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968185 already fetched."}
+{"level":30,"time":1721426230534,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968185 - committee ready"}
+{"level":30,"time":1721426230534,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968186 already fetched."}
+{"level":30,"time":1721426230534,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968186 - committee ready"}
+{"level":30,"time":1721426230534,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968187 already fetched."}
+{"level":30,"time":1721426230534,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968187 - committee ready"}
+{"level":30,"time":1721426230550,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968188/attestations"}
+{"level":30,"time":1721426230551,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968181/attestations"}
+{"level":30,"time":1721426230555,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968186/attestations"}
+{"level":30,"time":1721426230562,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968187/attestations"}
+{"level":30,"time":1721426230710,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"No attestations found for slot 15968180."}
+{"level":30,"time":1721426230752,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968188/attestations"}
+{"level":30,"time":1721426230787,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968187/attestations"}
+{"level":30,"time":1721426230788,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968186/attestations"}
+{"level":30,"time":1721426230810,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968187 saved."}
+{"level":30,"time":1721426230875,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968185 saved."}
+{"level":30,"time":1721426230877,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968186 saved."}
+{"level":30,"time":1721426231528,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426231528,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426231952,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486576"}
+{"level":30,"time":1721426231952,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486576"}
+{"level":30,"time":1721426231952,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486576 - committee waiting"}
+{"level":30,"time":1721426231954,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 16486576"}
+{"level":30,"time":1721426231954,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/16486576/committees"}
+{"level":30,"time":1721426232445,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426232449,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426232450,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968180,15968188,15968189,15968190"}
+{"level":30,"time":1721426232450,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180"}
+{"level":30,"time":1721426232450,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180 - committee waiting"}
+{"level":30,"time":1721426232450,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968188"}
+{"level":30,"time":1721426232450,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968188 - committee waiting"}
+{"level":30,"time":1721426232450,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968189"}
+{"level":30,"time":1721426232450,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968189 - committee waiting"}
+{"level":30,"time":1721426232450,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968190"}
+{"level":30,"time":1721426232450,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968190 - committee waiting"}
+{"level":30,"time":1721426232452,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968188 already fetched."}
+{"level":30,"time":1721426232452,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968188 - committee ready"}
+{"level":30,"time":1721426232452,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968189 already fetched."}
+{"level":30,"time":1721426232452,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968189 - committee ready"}
+{"level":30,"time":1721426232452,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968190 already fetched."}
+{"level":30,"time":1721426232452,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968190 - committee ready"}
+{"level":30,"time":1721426232452,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968180 already fetched."}
+{"level":30,"time":1721426232452,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180 - committee ready"}
+{"level":30,"time":1721426232464,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968191/attestations"}
+{"level":30,"time":1721426232468,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968181/attestations"}
+{"level":30,"time":1721426232469,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968189/attestations"}
+{"level":30,"time":1721426232471,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968190/attestations"}
+{"level":30,"time":1721426232622,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"No attestations found for slot 15968180."}
+{"level":30,"time":1721426232661,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968191/attestations"}
+{"level":30,"time":1721426232691,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968189/attestations"}
+{"level":30,"time":1721426232737,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968190 saved."}
+{"level":30,"time":1721426232796,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968188 saved."}
+{"level":30,"time":1721426233102,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968190/attestations"}
+{"level":30,"time":1721426233216,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/16486576/committees"}
+{"level":30,"time":1721426233216,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968189 saved."}
+{"level":30,"time":1721426233314,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486576 - newSlots: 16486576, 16486577, 16486578, 16486579, 16486580, 16486581, 16486582, 16486583, 16486584, 16486585, 16486586, 16486587, 16486588, 16486589, 16486590, 16486591"}
+{"level":30,"time":1721426233314,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486576 - newCommittees:"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486576, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486577, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486578, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486579, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486580, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486581, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486582, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486583, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486584, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486585, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486586, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486587, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486588, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486589, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486590, committes: 64"}
+{"level":30,"time":1721426233315,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:16486591, committes: 64"}
+{"level":30,"time":1721426233530,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426233530,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426234590,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426234590,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486576 - saved."}
+{"level":30,"time":1721426234590,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486576 - committee ready"}
+{"level":30,"time":1721426234592,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426234592,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968180,15968191,15968192,15968193"}
+{"level":30,"time":1721426234592,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180"}
+{"level":30,"time":1721426234593,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180 - committee waiting"}
+{"level":30,"time":1721426234593,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968191"}
+{"level":30,"time":1721426234593,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968191 - committee waiting"}
+{"level":30,"time":1721426234593,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968192"}
+{"level":30,"time":1721426234593,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968192 - committee waiting"}
+{"level":30,"time":1721426234593,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968193"}
+{"level":30,"time":1721426234593,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968193 - committee waiting"}
+{"level":30,"time":1721426234599,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968191 already fetched."}
+{"level":30,"time":1721426234599,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968191 - committee ready"}
+{"level":30,"time":1721426234600,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968193"}
+{"level":30,"time":1721426234600,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968193/committees"}
+{"level":30,"time":1721426234601,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968180 already fetched."}
+{"level":30,"time":1721426234602,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180 - committee ready"}
+{"level":30,"time":1721426234602,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968192"}
+{"level":30,"time":1721426234602,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968192/committees"}
+{"level":30,"time":1721426234615,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486577/attestations"}
+{"level":30,"time":1721426234618,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968181/attestations"}
+{"level":30,"time":1721426234622,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968192/attestations"}
+{"level":30,"time":1721426234771,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"No attestations found for slot 15968180."}
+{"level":30,"time":1721426234834,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486577/attestations"}
+{"level":30,"time":1721426234836,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968192/attestations"}
+{"level":30,"time":1721426234937,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486576 saved."}
+{"level":30,"time":1721426234941,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968191 saved."}
+{"level":30,"time":1721426235391,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968193/committees"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968193 - newSlots: "}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968193 - newCommittees:"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968192, committes: 64"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968193, committes: 64"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968194, committes: 64"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968195, committes: 64"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968196, committes: 64"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968197, committes: 64"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968198, committes: 64"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968199, committes: 64"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968200, committes: 64"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968201, committes: 64"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968202, committes: 64"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968203, committes: 64"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968204, committes: 64"}
+{"level":30,"time":1721426235522,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968205, committes: 64"}
+{"level":30,"time":1721426235523,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968206, committes: 64"}
+{"level":30,"time":1721426235523,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968207, committes: 64"}
+{"level":30,"time":1721426236232,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968192/committees"}
+{"level":30,"time":1721426236340,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968192 - newSlots: "}
+{"level":30,"time":1721426236340,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968192 - newCommittees:"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968192, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968193, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968194, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968195, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968196, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968197, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968198, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968199, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968200, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968201, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968202, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968203, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968204, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968205, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968206, committes: 64"}
+{"level":30,"time":1721426236341,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"slot:15968207, committes: 64"}
+{"level":30,"time":1721426236613,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968193 - saved."}
+{"level":30,"time":1721426236613,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968193 - committee ready"}
+{"level":30,"time":1721426236627,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968194/attestations"}
+{"level":30,"time":1721426236791,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968194/attestations"}
+{"level":30,"time":1721426236877,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968193 saved."}
+{"level":50,"time":1721426236890,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968192"}
+{"level":50,"time":1721426236890,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968192"}
+{"level":50,"time":1721426236890,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968192"}
+{"level":50,"time":1721426236890,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968192"}
+{"level":50,"time":1721426236890,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968192"}
+{"level":50,"time":1721426236890,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Error pulling attestations for slot: 15968192"}
+{"level":30,"time":1721426237091,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486577"}
+{"level":30,"time":1721426237091,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486577"}
+{"level":30,"time":1721426237091,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486577 - committee waiting"}
+{"level":30,"time":1721426237094,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486577 already fetched."}
+{"level":30,"time":1721426237095,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486577 - committee ready"}
+{"level":30,"time":1721426237107,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486578/attestations"}
+{"level":30,"time":1721426237273,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486578/attestations"}
+{"level":30,"time":1721426237401,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486577 saved."}
+{"level":30,"time":1721426237652,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426237653,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426238559,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426238561,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426238563,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968180,15968192,15968194,15968195"}
+{"level":30,"time":1721426238563,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180"}
+{"level":30,"time":1721426238563,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968180 - committee waiting"}
+{"level":30,"time":1721426238563,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968192"}
+{"level":30,"time":1721426238563,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968192 - committee waiting"}
+{"level":30,"time":1721426238564,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968194"}
+{"level":30,"time":1721426238564,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968194 - committee waiting"}
+{"level":30,"time":1721426238564,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968195"}
+{"level":30,"time":1721426238564,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968195 - committee waiting"}
+{"level":30,"time":1721426238573,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968192 already fetched."}
+{"level":30,"time":1721426238573,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968192 - committee ready"}
+{"level":30,"time":1721426238573,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968194 already fetched."}
+{"level":30,"time":1721426238573,"pid":36824,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968194 - committee ready"}
+{"level":30,"time":1721426280700,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426281898,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426281901,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426281902,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486586"}
+{"level":30,"time":1721426281902,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486586"}
+{"level":30,"time":1721426281902,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486586 - committee waiting"}
+{"level":30,"time":1721426281903,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426281903,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426281996,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486586 already fetched."}
+{"level":30,"time":1721426281996,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486586 - committee ready"}
+{"level":30,"time":1721426282963,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426282999,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426283013,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968217,15968218,15968219,15968220"}
+{"level":30,"time":1721426283013,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968217"}
+{"level":30,"time":1721426283013,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968217 - committee waiting"}
+{"level":30,"time":1721426283014,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968218"}
+{"level":30,"time":1721426283014,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968218 - committee waiting"}
+{"level":30,"time":1721426283014,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968219"}
+{"level":30,"time":1721426283014,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968219 - committee waiting"}
+{"level":30,"time":1721426283014,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968220"}
+{"level":30,"time":1721426283014,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968220 - committee waiting"}
+{"level":30,"time":1721426283036,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968218 already fetched."}
+{"level":30,"time":1721426283036,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968218 - committee ready"}
+{"level":30,"time":1721426283052,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968219/attestations"}
+{"level":30,"time":1721426283089,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968219 already fetched."}
+{"level":30,"time":1721426283089,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968219 - committee ready"}
+{"level":30,"time":1721426283090,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968220 already fetched."}
+{"level":30,"time":1721426283090,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968220 - committee ready"}
+{"level":30,"time":1721426283092,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486587/attestations"}
+{"level":30,"time":1721426283094,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968217 already fetched."}
+{"level":30,"time":1721426283094,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968217 - committee ready"}
+{"level":30,"time":1721426283103,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968221/attestations"}
+{"level":30,"time":1721426283105,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968220/attestations"}
+{"level":30,"time":1721426283109,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968218/attestations"}
+{"level":30,"time":1721426283656,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968219/attestations"}
+{"level":30,"time":1721426283657,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968220/attestations"}
+{"level":30,"time":1721426283744,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968218 saved."}
+{"level":30,"time":1721426283746,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968219 saved."}
+{"level":30,"time":1721426283792,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968221/attestations"}
+{"level":30,"time":1721426283797,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486587/attestations"}
+{"level":30,"time":1721426283799,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968218/attestations"}
+{"level":30,"time":1721426283888,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486586 saved."}
+{"level":30,"time":1721426283890,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968217 saved."}
+{"level":30,"time":1721426283892,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968220 saved."}
+{"level":30,"time":1721426283964,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426283964,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426284404,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486586"}
+{"level":30,"time":1721426284404,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486586"}
+{"level":30,"time":1721426284404,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486586 - committee waiting"}
+{"level":30,"time":1721426284405,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486586 already fetched."}
+{"level":30,"time":1721426284405,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486586 - committee ready"}
+{"level":30,"time":1721426284418,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486586 already fetched."}
+{"level":30,"time":1721426284893,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426284895,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426284897,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968221,15968222,15968223,15968224"}
+{"level":30,"time":1721426284897,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968221"}
+{"level":30,"time":1721426284897,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968221 - committee waiting"}
+{"level":30,"time":1721426284897,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968222"}
+{"level":30,"time":1721426284897,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968222 - committee waiting"}
+{"level":30,"time":1721426284897,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968223"}
+{"level":30,"time":1721426284897,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968223 - committee waiting"}
+{"level":30,"time":1721426284897,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968224"}
+{"level":30,"time":1721426284897,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968224 - committee waiting"}
+{"level":30,"time":1721426284899,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968223 already fetched."}
+{"level":30,"time":1721426284899,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968223 - committee ready"}
+{"level":30,"time":1721426284900,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968221 already fetched."}
+{"level":30,"time":1721426284900,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968221 - committee ready"}
+{"level":30,"time":1721426284900,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968222 already fetched."}
+{"level":30,"time":1721426284900,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968222 - committee ready"}
+{"level":30,"time":1721426284900,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 15968224"}
+{"level":30,"time":1721426284901,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968224/committees"}
+{"level":30,"time":1721426284911,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968224/attestations"}
+{"level":30,"time":1721426284914,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968222/attestations"}
+{"level":30,"time":1721426284919,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968223/attestations"}
+{"level":30,"time":1721426285130,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968224/attestations"}
+{"level":30,"time":1721426285133,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968222/attestations"}
+{"level":30,"time":1721426285150,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968223/attestations"}
+{"level":30,"time":1721426285243,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968221 saved."}
+{"level":30,"time":1721426285255,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968222 saved."}
+{"level":30,"time":1721426285259,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968223 saved."}
+{"level":30,"time":1721426286904,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486587"}
+{"level":30,"time":1721426286905,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486587"}
+{"level":30,"time":1721426286905,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486587 - committee waiting"}
+{"level":30,"time":1721426286913,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486587 already fetched."}
+{"level":30,"time":1721426286913,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486587 - committee ready"}
+{"level":30,"time":1721426286947,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486588/attestations"}
+{"level":30,"time":1721426287167,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486588/attestations"}
+{"level":30,"time":1721426287270,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486587 saved."}
+{"level":30,"time":1721426289406,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486587"}
+{"level":30,"time":1721426289406,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486587"}
+{"level":30,"time":1721426289406,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486587 - committee waiting"}
+{"level":30,"time":1721426289411,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486587 already fetched."}
+{"level":30,"time":1721426289411,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486587 - committee ready"}
+{"level":30,"time":1721426289432,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486587 already fetched."}
+{"level":30,"time":1721426291906,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486588"}
+{"level":30,"time":1721426291907,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486588"}
+{"level":30,"time":1721426291907,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486588 - committee waiting"}
+{"level":30,"time":1721426291911,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486588 already fetched."}
+{"level":30,"time":1721426291912,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486588 - committee ready"}
+{"level":30,"time":1721426291928,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486589/attestations"}
+{"level":30,"time":1721426292137,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486589/attestations"}
+{"level":30,"time":1721426292240,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486588 saved."}
+{"level":30,"time":1721426294407,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486588"}
+{"level":30,"time":1721426294408,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486588"}
+{"level":30,"time":1721426294408,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486588 - committee waiting"}
+{"level":30,"time":1721426294415,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486588 already fetched."}
+{"level":30,"time":1721426294415,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486588 - committee ready"}
+{"level":30,"time":1721426294431,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486588 already fetched."}
+{"level":30,"time":1721426296908,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486589"}
+{"level":30,"time":1721426296909,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486589"}
+{"level":30,"time":1721426296909,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486589 - committee waiting"}
+{"level":30,"time":1721426296912,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486589 already fetched."}
+{"level":30,"time":1721426296912,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486589 - committee ready"}
+{"level":30,"time":1721426296929,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486590/attestations"}
+{"level":30,"time":1721426297146,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486590/attestations"}
+{"level":30,"time":1721426297323,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486589 saved."}
+{"level":30,"time":1721426299409,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486589"}
+{"level":30,"time":1721426299410,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486589"}
+{"level":30,"time":1721426299410,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486589 - committee waiting"}
+{"level":30,"time":1721426299419,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486589 already fetched."}
+{"level":30,"time":1721426299419,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486589 - committee ready"}
+{"level":30,"time":1721426299434,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486589 already fetched."}
+{"level":30,"time":1721426301910,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486590"}
+{"level":30,"time":1721426301911,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486590"}
+{"level":30,"time":1721426301911,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486590 - committee waiting"}
+{"level":30,"time":1721426301914,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486590 already fetched."}
+{"level":30,"time":1721426301915,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486590 - committee ready"}
+{"level":30,"time":1721426301931,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486591/attestations"}
+{"level":30,"time":1721426302129,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486591/attestations"}
+{"level":30,"time":1721426302225,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486590 saved."}
+{"level":30,"time":1721426304411,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486590"}
+{"level":30,"time":1721426304412,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486590"}
+{"level":30,"time":1721426304412,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486590 - committee waiting"}
+{"level":30,"time":1721426304414,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486590 already fetched."}
+{"level":30,"time":1721426304415,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486590 - committee ready"}
+{"level":30,"time":1721426304432,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486590 already fetched."}
+{"level":30,"time":1721426306911,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486591"}
+{"level":30,"time":1721426306912,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486591"}
+{"level":30,"time":1721426306912,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486591 - committee waiting"}
+{"level":30,"time":1721426306916,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486591 already fetched."}
+{"level":30,"time":1721426306916,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486591 - committee ready"}
+{"level":30,"time":1721426306933,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486592/attestations"}
+{"level":30,"time":1721426307155,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486592/attestations"}
+{"level":30,"time":1721426307273,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486591 saved."}
+{"level":30,"time":1721426309413,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486591"}
+{"level":30,"time":1721426309414,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486591"}
+{"level":30,"time":1721426309414,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486591 - committee waiting"}
+{"level":30,"time":1721426309419,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486591 already fetched."}
+{"level":30,"time":1721426309420,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486591 - committee ready"}
+{"level":30,"time":1721426309439,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486591 already fetched."}
+{"level":30,"time":1721426311912,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486592"}
+{"level":30,"time":1721426311913,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486592"}
+{"level":30,"time":1721426311913,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486592 - committee waiting"}
+{"level":30,"time":1721426311917,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: slot 16486592"}
+{"level":30,"time":1721426311918,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/16486592/committees"}
+{"level":30,"time":1721426312456,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/15968224/committees"}
+{"level":30,"time":1721426312580,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968224 - newSlots: "}
+{"level":30,"time":1721426312580,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968224 - newCommittees:"}
+{"level":30,"time":1721426312580,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968224, committes: 64"}
+{"level":30,"time":1721426312580,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968225, committes: 64"}
+{"level":30,"time":1721426312580,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968226, committes: 64"}
+{"level":30,"time":1721426312580,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968227, committes: 64"}
+{"level":30,"time":1721426312580,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968228, committes: 64"}
+{"level":30,"time":1721426312580,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968229, committes: 64"}
+{"level":30,"time":1721426312580,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968230, committes: 64"}
+{"level":30,"time":1721426312581,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968231, committes: 64"}
+{"level":30,"time":1721426312581,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968232, committes: 64"}
+{"level":30,"time":1721426312581,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968233, committes: 64"}
+{"level":30,"time":1721426312581,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968234, committes: 64"}
+{"level":30,"time":1721426312581,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968235, committes: 64"}
+{"level":30,"time":1721426312581,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968236, committes: 64"}
+{"level":30,"time":1721426312581,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968237, committes: 64"}
+{"level":30,"time":1721426312581,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968238, committes: 64"}
+{"level":30,"time":1721426312581,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:15968239, committes: 64"}
+{"level":30,"time":1721426313114,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/states/16486592/committees"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486592 - newSlots: 16486592, 16486593, 16486594, 16486595, 16486596, 16486597, 16486598, 16486599, 16486600, 16486601, 16486602, 16486603, 16486604, 16486605, 16486606, 16486607"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486592 - newCommittees:"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486592, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486593, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486594, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486595, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486596, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486597, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486598, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486599, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486600, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486601, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486602, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486603, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486604, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486605, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486606, committes: 64"}
+{"level":30,"time":1721426313252,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"slot:16486607, committes: 64"}
+{"level":30,"time":1721426313697,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968224 - saved."}
+{"level":30,"time":1721426313697,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968224 - committee ready"}
+{"level":30,"time":1721426313705,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968225/attestations"}
+{"level":30,"time":1721426313878,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968225/attestations"}
+{"level":30,"time":1721426313980,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968224 saved."}
+{"level":30,"time":1721426313993,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426313993,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426315145,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426315145,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486592 - saved."}
+{"level":30,"time":1721426315145,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486592 - committee ready"}
+{"level":30,"time":1721426315146,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426315151,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968225,15968226,15968227,15968228"}
+{"level":30,"time":1721426315152,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968225"}
+{"level":30,"time":1721426315152,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968225 - committee waiting"}
+{"level":30,"time":1721426315152,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968226"}
+{"level":30,"time":1721426315152,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968226 - committee waiting"}
+{"level":30,"time":1721426315152,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968227"}
+{"level":30,"time":1721426315152,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968227 - committee waiting"}
+{"level":30,"time":1721426315152,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968228"}
+{"level":30,"time":1721426315152,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968228 - committee waiting"}
+{"level":30,"time":1721426315177,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486593/attestations"}
+{"level":30,"time":1721426315182,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968225 already fetched."}
+{"level":30,"time":1721426315183,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968225 - committee ready"}
+{"level":30,"time":1721426315183,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968226 already fetched."}
+{"level":30,"time":1721426315184,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968226 - committee ready"}
+{"level":30,"time":1721426315185,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968228 already fetched."}
+{"level":30,"time":1721426315185,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968228 - committee ready"}
+{"level":30,"time":1721426315185,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968227 already fetched."}
+{"level":30,"time":1721426315186,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968227 - committee ready"}
+{"level":30,"time":1721426315194,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968226/attestations"}
+{"level":30,"time":1721426315195,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968227/attestations"}
+{"level":30,"time":1721426315200,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968228/attestations"}
+{"level":30,"time":1721426315203,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968229/attestations"}
+{"level":30,"time":1721426315349,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486593/attestations"}
+{"level":30,"time":1721426315441,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486592 saved."}
+{"level":30,"time":1721426315556,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968226/attestations"}
+{"level":30,"time":1721426315630,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968225 saved."}
+{"level":30,"time":1721426315675,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"No attestations found for slot 15968226."}
+{"level":30,"time":1721426315845,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968229/attestations"}
+{"level":30,"time":1721426315940,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968228 saved."}
+{"level":30,"time":1721426316914,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486593"}
+{"level":30,"time":1721426316915,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486593"}
+{"level":30,"time":1721426316915,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486593 - committee waiting"}
+{"level":30,"time":1721426316923,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486593 already fetched."}
+{"level":30,"time":1721426316923,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486593 - committee ready"}
+{"level":30,"time":1721426316947,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486594/attestations"}
+{"level":30,"time":1721426317167,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486594/attestations"}
+{"level":30,"time":1721426317266,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486593 saved."}
+{"level":30,"time":1721426319415,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486593"}
+{"level":30,"time":1721426319415,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486593"}
+{"level":30,"time":1721426319415,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486593 - committee waiting"}
+{"level":30,"time":1721426319425,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486593 already fetched."}
+{"level":30,"time":1721426319425,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486593 - committee ready"}
+{"level":30,"time":1721426319449,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486593 already fetched."}
+{"level":30,"time":1721426321916,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling head attestations for slot: 16486594"}
+{"level":30,"time":1721426321917,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486594"}
+{"level":30,"time":1721426321917,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486594 - committee waiting"}
+{"level":30,"time":1721426321927,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 16486594 already fetched."}
+{"level":30,"time":1721426321928,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 16486594 - committee ready"}
+{"level":30,"time":1721426321946,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486595/attestations"}
+{"level":30,"time":1721426321997,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/15968228/attestations"}
+{"level":30,"time":1721426322100,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 15968227 saved."}
+{"level":30,"time":1721426322150,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations"}
+{"level":30,"time":1721426322150,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Creating missing slots in the database."}
+{"level":30,"time":1721426322180,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"<<  200 GET https://nameless-proportionate-diamond.xdai.quiknode.pro/296941f2db079f2a48a5805cb38f3c4df08f07da/eth/v1/beacon/blocks/16486595/attestations"}
+{"level":30,"time":1721426322299,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Attestations for slot 16486594 saved."}
+{"level":30,"time":1721426323097,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Found 0 missing slots."}
+{"level":30,"time":1721426323100,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Missing slots created in the database."}
+{"level":30,"time":1721426323103,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"Pulling missing attestations for slots: 15968226,15968229,15968230,15968231"}
+{"level":30,"time":1721426323103,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968226"}
+{"level":30,"time":1721426323103,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968226 - committee waiting"}
+{"level":30,"time":1721426323103,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968229"}
+{"level":30,"time":1721426323104,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968229 - committee waiting"}
+{"level":30,"time":1721426323104,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968230"}
+{"level":30,"time":1721426323104,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968230 - committee waiting"}
+{"level":30,"time":1721426323104,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968231"}
+{"level":30,"time":1721426323104,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968231 - committee waiting"}
+{"level":30,"time":1721426323106,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968229 already fetched."}
+{"level":30,"time":1721426323106,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968229 - committee ready"}
+{"level":30,"time":1721426323111,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968226 already fetched."}
+{"level":30,"time":1721426323111,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968226 - committee ready"}
+{"level":30,"time":1721426323112,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullCommittee: for slot 15968230 already fetched."}
+{"level":30,"time":1721426323112,"pid":37002,"hostname":"MacBook-Pro-7.local","msg":"pullAttestations: for slot 15968230 - committee ready"}
