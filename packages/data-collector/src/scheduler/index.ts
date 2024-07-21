@@ -7,7 +7,7 @@ import {
 } from "@/src/scheduler/tasks/attestations.js";
 
 const getAttestationsHeadJob = new SimpleIntervalJob(
-  { seconds: env.BEACON_SLOT_DURATION / 2, runImmediately: true },
+  { seconds: env.BEACON_SLOT_DURATION, runImmediately: true },
   getAttestationsHeadTask,
   {
     id: "getAttestationsHead",
@@ -30,7 +30,7 @@ export function scheduleTasks() {
 
   // If for some reason the attestations for a past slot were not fetched, this task will fetch them.
   // Fetch the attestations for the missing slots and store them in the Attestations table.
-  scheduler.addSimpleIntervalJob(missingAttestationsJob);
+  // scheduler.addSimpleIntervalJob(missingAttestationsJob);
 
   // TODO: clear slot information older than BEACON_LOOKBACK_DAYS
 }

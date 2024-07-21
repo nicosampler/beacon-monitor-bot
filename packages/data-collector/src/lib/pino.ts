@@ -1,7 +1,7 @@
 import pinoms from "pino-multi-stream";
 import childProcess from "child_process";
 import stream from "stream";
-import { dirname, resolve } from "path";
+import { dirname } from "path";
 import { fileURLToPath } from "url";
 
 // Convert the URL of the current module to a file path.
@@ -43,20 +43,19 @@ const logger = pinoms({ streams });
 export const createLogger = (context: string) => {
   return {
     info: (message: string, ...args: any[]) => {
-      logger.info(`${context} - ${message}`, ...args);
+      logger.info({ context, ...args }, message);
     },
     warn: (message: string, ...args: any[]) => {
-      logger.warn(`${context} - ${message}`, ...args);
+      logger.warn({ context, ...args }, message);
     },
     error: (message: string, ...args: any[]) => {
-      logger.error(`${context} - ${message}`, ...args);
+      logger.error({ context, ...args }, message);
     },
     debug: (message: string, ...args: any[]) => {
-      logger.debug(`${context} - ${message}`, ...args);
+      logger.debug({ context, ...args }, message);
     },
   };
 };
 
 export default createLogger;
-
-export { logger };
+export { logger }; // TODO: delete this export
