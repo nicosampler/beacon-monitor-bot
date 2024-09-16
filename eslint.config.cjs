@@ -1,75 +1,74 @@
 module.exports = {
-  env: {
-    node: true,
-    es2020: true,
-  },
-  parser: "@typescript-eslint/parser",
-  parserOptions: {
+  languageOptions: {
     ecmaVersion: 2020,
     sourceType: "module",
-    ecmaFeatures: {
-      jsx: true,
+    parserOptions: {
+      ecmaFeatures: {
+        jsx: true
+      }
     },
+    globals: {
+      React: "writable"
+    }
   },
-  plugins: ["@typescript-eslint", "sort-destructure-keys", "prettier"],
+  plugins: {
+    "@typescript-eslint": require("@typescript-eslint/eslint-plugin"),
+    "sort-destructure-keys": require("eslint-plugin-sort-destructure-keys"),
+    "prettier": require("eslint-plugin-prettier")
+  },
   extends: [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:import/typescript",
     "prettier",
-    "plugin:prettier/recommended",
+    "plugin:prettier/recommended"
   ],
   rules: {
     "import/extensions": "off",
-    "import/extensions": 0,
-    "import/no-cycle": [0, { ignoreExternal: true }],
-    "import/no-unresolved": 0,
+    "import/no-cycle": ["off", { ignoreExternal: true }],
+    "import/no-unresolved": "off",
     "import/order": [
       "error",
       {
         alphabetize: { order: "asc" },
         groups: [
           ["builtin", "external"],
-          ["internal", "parent", "sibling", "index"],
+          ["internal", "parent", "sibling", "index"]
         ],
         "newlines-between": "always",
         pathGroups: [
           { group: "builtin", pattern: "react", position: "before" },
           {
             group: "external",
-            pattern:
-              "{styled-components,polished,next,next/*,react-dom,sanitize.css}",
-            position: "before",
-          },
+            pattern: "{styled-components,polished,next,next/*,react-dom,sanitize.css}",
+            position: "before"
+          }
         ],
-        pathGroupsExcludedImportTypes: ["builtin"],
-      },
+        pathGroupsExcludedImportTypes: ["builtin"]
+      }
     ],
     "no-use-before-define": "off",
     "prettier/prettier": "error",
     "react/jsx-filename-extension": [
       1,
       {
-        extensions: [".js", ".jsx", ".ts", ".tsx"],
-      },
+        extensions: [".js", ".jsx", ".ts", ".tsx"]
+      }
     ],
-    "sort-destructure-keys/sort-destructure-keys": 2,
+    "sort-destructure-keys/sort-destructure-keys": "error",
     "sort-imports": [
       "error",
       {
-        ignoreDeclarationSort: true,
-      },
+        ignoreDeclarationSort: true
+      }
     ],
     "@typescript-eslint/no-unused-vars": "warn",
     "@typescript-eslint/no-use-before-define": [
       "error",
-      { functions: false, classes: false, variables: true },
+      { functions: false, classes: false, variables: true }
     ],
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/explicit-module-boundary-types": "off",
-    "no-constant-binary-expression": "error",
-  },
-  globals: {
-    React: "writable",
-  },
+    "no-constant-binary-expression": "error"
+  }
 };

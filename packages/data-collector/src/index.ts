@@ -1,4 +1,4 @@
-import createDBMissingSlots from "@/src/db/slots.js";
+import createMissingSlots from "@/src/feed/createMissingSlots.js";
 import createLogger from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { scheduleTasks } from "@/src/scheduler/index.js";
@@ -10,7 +10,7 @@ async function main() {
   await prisma.$connect();
 
   // pull missing slots
-  await createDBMissingSlots();
+  await createMissingSlots();
 
   scheduleTasks();
 }

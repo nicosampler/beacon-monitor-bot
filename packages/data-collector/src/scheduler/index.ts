@@ -2,21 +2,21 @@ import { env } from "@/src/env.js";
 import { SimpleIntervalJob } from "toad-scheduler";
 import { scheduler } from "@/src/lib/scheduler.js";
 import {
-  getAttestationsHeadTask,
+  getHeadAttestationsTask,
   getMissingAttestationsTask,
 } from "@/src/scheduler/tasks/attestations.js";
 
-const getAttestationsHeadJob = new SimpleIntervalJob(
+const getHeadAttestationsJob = new SimpleIntervalJob(
   { seconds: env.BEACON_SLOT_DURATION, runImmediately: true },
-  getAttestationsHeadTask,
+  getHeadAttestationsTask,
   {
-    id: "getAttestationsHead",
+    id: "getHeadAttestations",
     preventOverrun: true,
   }
 );
 
-const missingAttestationsJob = new SimpleIntervalJob(
-  { seconds: 1, runImmediately: true },
+const getMissingAttestationsJob = new SimpleIntervalJob(
+  { seconds: 0.5, runImmediately: true },
   getMissingAttestationsTask,
   {
     id: "getMissingAttestations",
@@ -26,11 +26,11 @@ const missingAttestationsJob = new SimpleIntervalJob(
 
 export function scheduleTasks() {
   // Fetch the attestations for the current slot and store them in the Attestations table.
-  scheduler.addSimpleIntervalJob(getAttestationsHeadJob);
+  scheduler.addSimpleIntervalJob(getHeadAttestationsJob);
 
   // If for some reason the attestations for a past slot were not fetched, this task will fetch them.
   // Fetch the attestations for the missing slots and store them in the Attestations table.
   // scheduler.addSimpleIntervalJob(missingAttestationsJob);
 
-  // TODO: clear slot information older than BEACON_LOOKBACK_DAYS
+  // TODO: clear slot information older than BEACON_LOOK_BACK_DAYS
 }

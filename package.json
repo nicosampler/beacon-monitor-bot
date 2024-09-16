@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "pnpm -r run start"
+    "start": "pnpm -r run start",
+    "dev:data-collector": "pnpm --filter data-collector run dev"
   },
   "dependencies": {
     "@prisma/client": "^5.15.0"

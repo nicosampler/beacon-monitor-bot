@@ -1,61 +1,110 @@
-import pinoms from "pino-multi-stream";
-import childProcess from "child_process";
-import stream from "stream";
-import { dirname } from "path";
+import Pino, { DestinationStream } from "pino";
+import fs from "fs";
+import path from "path";
 import { fileURLToPath } from "url";
 
-// Convert the URL of the current module to a file path.
 const __filename = fileURLToPath(import.meta.url);
-// Get the directory name of the current module to ensure file paths are correct.
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
 
-// Paths where logs should be saved.
-const logPath = `${__dirname}/../../logs/logs.log`;
+// Log configuration
+const LOG_OUTPUT = process.env.LOG_OUTPUT || "console";
+const logsDir = path.join(__dirname, "../../logs");
 
-// Display the full paths where log files are generated.
-console.log(`Logs will be saved to: ${logPath}`);
+// Function to get the current day's log file name
+const getCurrentLogFileName = () => {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const year = now.getFullYear();
+  return `${day}-${month}-${year}.log`;
+};
 
-// Resolve the path to the pino-tee script, ensuring it's correctly located.
-const pinoTeePath = `${__dirname}/../../node_modules/pino-tee/tee.js`;
-console.log(`Using pino-tee at: ${pinoTeePath}`);
+// Function to create a logger with optional context
+const createLogger = (context: string | null) => {
+  const logWithContext = (
+    level: "info" | "warn" | "error" | "debug",
+    message: string,
+    ...args: any[]
+  ) => {
+    const logObject = context ? { context, ...args } : args;
+    logger[level](logObject, message);
+  };
 
-// Spawn a child process to handle logs with pino-tee for filtering and saving to files.
-const child = childProcess.spawn(
-  process.execPath,
-  [pinoTeePath, "warn", logPath, "info", logPath, "error", logPath],
-  { cwd: __dirname, env: process.env } // Set the working directory and environment for the child process.
-);
-
-// Create a pass-through stream to pipe logs to the child process.
-const logThrough = new stream.PassThrough();
-// Create a pretty printing stream for console output.
-const prettyStream = pinoms.prettyStream();
-
-// Setup multiple streams for logging: one for the pass-through and one for pretty printing.
-const streams = [{ stream: logThrough }, { stream: prettyStream }];
-
-// Pipe the logThrough stream to the stdin of the child process handling pino-tee.
-logThrough.pipe(child.stdin);
-
-// Initialize the pino logger with multiple streams configuration.
-const logger = pinoms({ streams });
-
-export const createLogger = (context: string) => {
   return {
-    info: (message: string, ...args: any[]) => {
-      logger.info({ context, ...args }, message);
-    },
-    warn: (message: string, ...args: any[]) => {
-      logger.warn({ context, ...args }, message);
-    },
-    error: (message: string, ...args: any[]) => {
-      logger.error({ context, ...args }, message);
-    },
-    debug: (message: string, ...args: any[]) => {
-      logger.debug({ context, ...args }, message);
-    },
+    info: (message: string, ...args: any[]) =>
+      logWithContext("info", message, ...args),
+    warn: (message: string, ...args: any[]) =>
+      logWithContext("warn", message, ...args),
+    error: (message: string, ...args: any[]) =>
+      logWithContext("error", message, ...args),
+    debug: (message: string, ...args: any[]) =>
+      logWithContext("debug", message, ...args),
   };
 };
 
+// Configure log destination and prettifier
+let logDestination: DestinationStream | undefined;
+let transport;
+if (LOG_OUTPUT === "file") {
+  const logPath = path.join(logsDir, getCurrentLogFileName());
+  logDestination = Pino.destination({ dest: logPath, sync: false });
+  transport = {
+    target: "pino-pretty",
+    options: {
+      destination: logPath,
+      colorize: false, // Disable colors for file output
+    },
+  };
+} else {
+  transport = {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+    },
+  };
+}
+
+// Create the logger
+const logger = Pino.pino(
+  {
+    level: process.env.LOG_LEVEL || "info",
+    timestamp: () => `,"time":"${new Date().toISOString()}"`,
+    base: null, // This removes pid and hostname
+    transport, // Use the transport configuration here
+  },
+  LOG_OUTPUT === "file" ? logDestination : undefined
+);
+
+// Ensure the logs directory exists if file output is used
+if (LOG_OUTPUT === "file") {
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+  }
+}
+
+// Function to rotate logs daily
+const rotateLogsDaily = () => {
+  if (LOG_OUTPUT === "file" && logDestination) {
+    const newLogPath = path.join(logsDir, getCurrentLogFileName());
+    (logDestination as any).reopen(newLogPath);
+  }
+};
+
+// Calculate milliseconds until midnight
+const msUntilMidnight = () => {
+  const now = new Date();
+  const midnight = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1
+  );
+  return midnight.getTime() - now.getTime();
+};
+
+// Set up daily log rotation at midnight
+setTimeout(() => {
+  rotateLogsDaily();
+  setInterval(rotateLogsDaily, 24 * 60 * 60 * 1000);
+}, msUntilMidnight());
+
 export default createLogger;
-export { logger }; // TODO: delete this export
