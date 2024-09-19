@@ -67,35 +67,42 @@ export const db_getExistingCommittees = async (
 ) =>
   prisma.committee.findMany({
     where: {
-      OR: slotIndex,
+      AND: slotIndex,
     },
     select: {
       slot: true,
       index: true,
     },
   });
-export const db_getOldestUnprocessedSlot = async ({
-  minSlot,
-  maxSlot,
-  first,
-}: {
-  minSlot: number;
-  maxSlot: number;
-  first?: number;
-}) => {
-  const res = await prisma.slot.findMany({
-    select: { slot: true },
-    where: { attestationsFetched: false, slot: { gte: minSlot, lte: maxSlot } },
-    orderBy: { slot: "asc" },
-    take: first,
-  });
-
-  return res.map((r) => r.slot);
-};
 
 export const db_getLastUnprocessedEpoch = async () => {
   return prisma.epoch.findFirst({
     where: { processed: false },
     orderBy: { epoch: "asc" },
   });
+};
+
+export const db_getUnprocessedSlots = async ({
+  minSlot,
+  maxSlot,
+  orderConfig,
+}: {
+  minSlot: number;
+  maxSlot: number;
+  orderConfig: {
+    direction: "first" | "last";
+    limit: number;
+  };
+}) => {
+  const isLast = orderConfig.direction === "last";
+
+  const res = await prisma.slot.findMany({
+    select: { slot: true },
+    where: { attestationsFetched: false, slot: { gte: minSlot, lte: maxSlot } },
+    orderBy: { slot: isLast ? "desc" : "asc" },
+    take: orderConfig.limit,
+  });
+
+  // If 'last' was specified, reverse the array to maintain ascending order
+  return isLast ? res.reverse().map((r) => r.slot) : res.map((r) => r.slot);
 };

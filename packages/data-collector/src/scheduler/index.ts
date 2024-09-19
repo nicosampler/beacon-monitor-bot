@@ -30,7 +30,7 @@ export function scheduleTasks() {
 
   // If for some reason the attestations for a past slot were not fetched, this task will fetch them.
   // Fetch the attestations for the missing slots and store them in the Attestations table.
-  // scheduler.addSimpleIntervalJob(missingAttestationsJob);
+  scheduler.addSimpleIntervalJob(getMissingAttestationsJob);
 
   // TODO: clear slot information older than BEACON_LOOK_BACK_DAYS
 }

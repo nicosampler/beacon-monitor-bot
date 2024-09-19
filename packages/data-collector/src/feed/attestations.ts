@@ -55,19 +55,19 @@ export const pullAttestations = async (slotNumber: number) => {
 
       // Upsert the attestations
       ...fetchedAttestations.map((attestation) =>
-        prisma.attestations.upsert({
-          where: {
-            slot_index: {
-              slot: +attestation.data.slot,
-              index: +attestation.data.index,
-            },
-          },
-          update: {
-            aggregationBits: convertBitsToString(
-              convertHexStringToByteArray(attestation.aggregation_bits)
-            ),
-          },
-          create: {
+        prisma.attestations.create({
+          // where: {
+          //   slot_index: {
+          //     slot: +attestation.data.slot,
+          //     index: +attestation.data.index,
+          //   },
+          // },
+          // update: {
+          //   aggregationBits: convertBitsToString(
+          //     convertHexStringToByteArray(attestation.aggregation_bits)
+          //   ),
+          // },
+          data: {
             slot: +attestation.data.slot,
             index: +attestation.data.index,
             aggregationBits: convertBitsToString(

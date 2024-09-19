@@ -37,7 +37,7 @@ model Attestations {
   aggregationBits String
   commitee        Committee @relation(fields: [slot, index], references: [slot, index], onDelete: Cascade)
 
-  @@unique([slot, index], name: "slot_index")
+  @@index([slot, index])
 }
 
 model HourlyValidatorStats {
