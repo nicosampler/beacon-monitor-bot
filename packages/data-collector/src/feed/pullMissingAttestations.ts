@@ -4,43 +4,41 @@ import { env } from "@/src/env.js";
 // import createMissingSlots from "@/src/feed/createMissingSlots.js";
 import { subDays } from "date-fns/subDays";
 import { getPrisma } from "@/src/lib/prisma.js";
-import { pullAttestations } from "@/src/feed/attestations.js";
+import { pullAttestations } from "@/src/feed/pullAttestations.js";
 import createLogger from "@/src/lib/pino.js";
 import { db_getUnprocessedSlots } from "@/src/feed/utils.js";
 
-const prisma = getPrisma();
-
 export const pullMissingAttestations = async () => {
-  const logger = createLogger("pullMissingAttestations");
-  logger.info(`Pulling MISSING attestations`);
+  const logger = createLogger(null);
 
-  // pull missing slots
-  //await createMissingSlots();
-
-  // get oldest unprocessed slots
   const now = new Date();
+
   const currentSlot =
     getSlotNumberFromTimestamp(now.getTime()) -
     SLOT_DELAY_TO_FETCH -
     env.BEACON_SLOTS_PER_EPOCH;
+
   const oldestLookbackSlot = getSlotNumberFromTimestamp(
     subDays(now, env.BEACON_LOOKBACK_DAYS).getTime()
   );
+
   const slots = await db_getUnprocessedSlots({
     minSlot: oldestLookbackSlot,
     maxSlot: currentSlot,
-    orderConfig: {
-      direction: "last",
-      limit: 1,
-    },
+    orderBy: { slot: "asc" },
+    take: 1,
   });
 
   if (!slots.length) {
-    logger.info(`No missing slots`);
+    logger.info(`No missing slots. Current head: ${currentSlot}`);
     return;
   }
 
-  logger.info(`Fetching slot ${slots[0]}`);
+  const slotToFetch = slots[0].slot;
 
-  pullAttestations(slots[0]).catch();
+  logger.info(
+    `Pulling MISSING attestations for slot ${slotToFetch}. SlotHead: ${currentSlot} - MissingSlotsAttestations: [${oldestLookbackSlot} - ${currentSlot}]`
+  );
+
+  return pullAttestations(slotToFetch);
 };

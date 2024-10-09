@@ -1,4 +1,5 @@
 import { getPrisma } from "@/src/lib/prisma.js";
+import { Prisma } from "@prisma/client";
 
 const prisma = getPrisma();
 
@@ -16,24 +17,13 @@ export const db_getSlotsByRange = async (start: number, end: number) => {
 export const db_getSlotByNumber = async (slot: number) =>
   prisma.slot.findFirst({
     where: { slot },
-    select: { slot: true, attestationsFetched: true, commitee: true },
+    select: { slot: true, attestationsFetched: true, committee: true },
   });
 
 export const db_existCommitteeForSlot = async (slot: number) => {
   const res = await prisma.committee.count({ where: { slot } });
   return res > 0;
 };
-
-export const db_AttestationsBySlots = async (slots: number[]) =>
-  prisma.attestations.findMany({
-    where: { slot: { in: slots } },
-  });
-
-export const db_getAttestationsBySlots = async (slots: number[]) =>
-  prisma.attestations.findMany({
-    where: { slot: { in: slots } },
-    distinct: ["slot"],
-  });
 
 export const db_getSlotByNumbers = async (slots: number[]) => {
   const res = await prisma.slot.findMany({
@@ -64,45 +54,30 @@ export const db_getLastUnfetchedSlot = async () => {
 
 export const db_getExistingCommittees = async (
   slotIndex: { slot: number; index: number }[]
-) =>
-  prisma.committee.findMany({
-    where: {
-      AND: slotIndex,
-    },
-    select: {
-      slot: true,
-      index: true,
-    },
-  });
-
-export const db_getLastUnprocessedEpoch = async () => {
-  return prisma.epoch.findFirst({
-    where: { processed: false },
-    orderBy: { epoch: "asc" },
-  });
+) => {
+  return prisma.committee
+    .count({
+      where: {
+        AND: slotIndex,
+      },
+    })
+    .then((d) => d > 0);
 };
 
 export const db_getUnprocessedSlots = async ({
   minSlot,
   maxSlot,
-  orderConfig,
+  orderBy,
+  take,
 }: {
   minSlot: number;
   maxSlot: number;
-  orderConfig: {
-    direction: "first" | "last";
-    limit: number;
-  };
-}) => {
-  const isLast = orderConfig.direction === "last";
-
-  const res = await prisma.slot.findMany({
+  orderBy: Prisma.SlotOrderByWithRelationInput;
+  take: number;
+}) =>
+  prisma.slot.findMany({
     select: { slot: true },
     where: { attestationsFetched: false, slot: { gte: minSlot, lte: maxSlot } },
-    orderBy: { slot: isLast ? "desc" : "asc" },
-    take: orderConfig.limit,
+    orderBy,
+    take,
   });
-
-  // If 'last' was specified, reverse the array to maintain ascending order
-  return isLast ? res.reverse().map((r) => r.slot) : res.map((r) => r.slot);
-};

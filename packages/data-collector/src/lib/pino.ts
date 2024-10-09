@@ -41,6 +41,10 @@ const createLogger = (context: string | null) => {
       logWithContext("debug", message, ...args),
   };
 };
+// Define the Logger type using ReturnType based on the createLogger function
+export type CustomLogger = ReturnType<typeof createLogger>;
+
+
 
 // Configure log destination and prettifier
 let logDestination: DestinationStream | undefined;

@@ -8,74 +8,83 @@ datasource db {
 }
 
 model Epoch {
-  epoch            Int      @id
-  processed        Boolean // Whether the attestations for this epoch have been processed
-  missedValidators String[]
+  epoch     Int     @id
+  processed Boolean // TODO: add description
 }
 
 model Slot {
   slot                Int         @id
   attestationsFetched Boolean // Whether the attestations for this slot have been fetched
-  commitee            Committee[]
+  committee           Committee[]
 }
 
 model Committee {
-  slot         Int
-  index        Int
-  validators   String[]
-  attestations Attestations[]
+  slot                 Int
+  index                Int // indicates what position in the epoch this slot is in
+  aggregationBitsIndex Int // indicates what position in the aggregation bits this validator was assigned to
+  validatorIndex       Int
+  attestationDelay     Int?
 
   slot_relation Slot @relation(fields: [slot], references: [slot], onDelete: Cascade)
 
-  @@id([slot, index])
-}
-
-model Attestations {
-  id              BigInt    @id @default(autoincrement())
-  slot            Int
-  index           Int
-  aggregationBits String
-  commitee        Committee @relation(fields: [slot, index], references: [slot, index], onDelete: Cascade)
-
+  @@id([slot, index, validatorIndex])
   @@index([slot, index])
 }
 
 model HourlyValidatorStats {
-  validatorIndex   Int      @id
+  validatorIndex   Int
+  hour             Int // 0-23
+  date             DateTime @db.Date
   executionRewards BigInt
   beaconRewards    BigInt
-  performance      Float
-  timestamp        DateTime
+  attestations     Int
+
+  @@id([validatorIndex, hour, date])
+  @@index([date, hour])
 }
 
 model DailyValidatorStats {
-  validatorIndex   Int      @id
+  validatorIndex   Int
+  date             DateTime @db.Date
   executionRewards BigInt
   beaconRewards    BigInt
-  performance      Float
-  timestamp        DateTime
+  attestations     Int
+
+  @@id([validatorIndex, date])
+  @@index([date])
 }
 
 model WeeklyValidatorStats {
-  validatorIndex   Int      @id
+  validatorIndex   Int
+  week             Int // 1-53
+  year             Int
   executionRewards BigInt
   beaconRewards    BigInt
-  performance      Float
-  timestamp        DateTime
+  attestations     Int
+
+  @@id([validatorIndex, week, year])
+  @@index([year, week])
 }
 
 model MonthlyValidatorStats {
-  validatorIndex   Int      @id
+  validatorIndex   Int
+  month            Int // 1-12
+  year             Int
   executionRewards BigInt
   beaconRewards    BigInt
-  performance      Float
-  timestamp        DateTime
+  attestations     Int
+
+  @@id([validatorIndex, month, year])
+  @@index([year, month])
 }
 
 model YearlyValidatorStats {
-  validatorIndex   String @id
+  validatorIndex   Int
+  year             Int
   executionRewards BigInt
   beaconRewards    BigInt
-  performance      Float
-  year             Int
+  attestations     Int
+
+  @@id([validatorIndex, year])
+  @@index([year])
 }

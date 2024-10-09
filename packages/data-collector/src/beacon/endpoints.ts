@@ -9,6 +9,8 @@ export async function getCommittees(
   const results = await instance.get<GetCommittees>(
     `${env.BEACON_API_URL}/eth/v1/beacon/states/${status}/committees`
   );
+
+  
   return results.data.data;
 }
 

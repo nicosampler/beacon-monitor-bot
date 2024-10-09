@@ -1,3 +1,4 @@
+import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
 import { SLOT_DELAY_TO_FETCH } from "@/src/constants/index.js";
 import { env } from "@/src/env.js";
@@ -18,13 +19,9 @@ export default async function createMissingSlots() {
 
   try {
     const now = new Date();
-    const subDaysDate = subDays(now, env.BEACON_LOOKBACK_DAYS);
-    // subtract 1 because the last slot is being processed in another task
     const currentSlot =
-      getSlotNumberFromTimestamp(now.getTime()) - SLOT_DELAY_TO_FETCH - 1;
-    const oldestLookbackSlot = getSlotNumberFromTimestamp(
-      subDaysDate.getTime()
-    );
+      getSlotNumberFromTimestamp(now.getTime()) - SLOT_DELAY_TO_FETCH;
+    const oldestLookbackSlot = getOldestLookbackSlot();
 
     // get all the slots between the oldestLookbackSlot and the currentSlot
     const allSlotsInRange = Array.from(
@@ -39,28 +36,28 @@ export default async function createMissingSlots() {
     let totalInserted = 0;
 
     await prisma.$transaction(async (tx) => {
-      // First, get all existing slots in the range
-      const existingSlots = await tx.slot.findMany({
-        where: {
-          slot: {
-            gte: oldestLookbackSlot,
-            lte: currentSlot,
-          },
-        },
-        select: { slot: true },
-      });
+      // // First, get all existing slots in the range
+      // const existingSlots = await tx.slot.findMany({
+      //   where: {
+      //     slot: {
+      //       gte: oldestLookbackSlot,
+      //       lte: currentSlot,
+      //     },
+      //   },
+      //   select: { slot: true },
+      // });
 
-      const existingSlotSet = new Set(existingSlots.map((s) => s.slot));
+      // const existingSlotSet = new Set(existingSlots.map((s) => s.slot));
 
-      // Filter out existing slots
-      const slotsToInsert = allSlotsInRange.filter(
-        (slot) => !existingSlotSet.has(slot)
-      );
+      // // Filter out existing slots
+      // const slotsToInsert = allSlotsInRange.filter(
+      //   (slot) => !existingSlotSet.has(slot)
+      // );
 
-      logger.info(`Found ${slotsToInsert.length} slots to insert.`);
+      // logger.info(`Found ${slotsToInsert.length} slots to insert.`);
 
       // Insert missing slots in batches
-      for (const batch of _.chunk(slotsToInsert, batchSize)) {
+      for (const batch of _.chunk(allSlotsInRange, batchSize)) {
         await tx.slot.createMany({
           data: batch.map((slot) => ({ slot, attestationsFetched: false })),
           skipDuplicates: true,
