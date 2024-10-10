@@ -14,6 +14,7 @@ export const env = createEnv({
     BEACON_SLOT_DURATION: z.number().int().positive(),
     BEACON_SLOTS_PER_EPOCH: z.number().int().positive(),
     BEACON_LOOKBACK_DAYS: z.number().int().min(0),
+    BEACON_MAX_ATTESTATION_DELAY: z.number().int().min(2),
 
     // Beacon-node API TODO: RENAME to BEACON_RPC
     BEACON_API_URL: z.string().url(),
@@ -29,6 +30,7 @@ export const env = createEnv({
     BEACON_SLOT_DURATION: Number(_env.BEACON_SLOT_DURATION),
     BEACON_SLOTS_PER_EPOCH: Number(_env.BEACON_SLOTS_PER_EPOCH),
     BEACON_LOOKBACK_DAYS: Number(_env.BEACON_LOOKBACK_DAYS),
+    BEACON_MAX_ATTESTATION_DELAY: Number(_env.BEACON_MAX_ATTESTATION_DELAY),
 
     // Beacon-node API
     BEACON_API_REQUEST_PER_SECOND: Number(_env.BEACON_API_REQUEST_PER_SECOND),

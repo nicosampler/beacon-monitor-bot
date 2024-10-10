@@ -1,14 +1,11 @@
 {
-  "name": "data-collector",
+  "name": "beacon-fetch",
   "version": "1.0.0",
-  "description": "Collect validators information from different sources, process and save it to the db.",
+  "description": "Collect validators information from a beacon node, process and save it to the db.",
   "type": "module",
   "scripts": {
-    "compile": "tsc",
-    "createMigration": "prisma migrate dev --schema ../prisma/schema.prisma --skip-generate --name",
-    "pullDB": "prisma db pull --schema ../prisma/schema.prisma",
-    "dev": "dotenv -e ../../.env npx tsx src/index.ts",
-    "test": "dotenv -e ../../.env npx tsx src/test.ts"
+    "dev": "dotenv -e ../../.env.local npx tsx src/index.ts",
+    "start": "tsc --noEmit && npx tsx src/index.ts"
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.10.1",

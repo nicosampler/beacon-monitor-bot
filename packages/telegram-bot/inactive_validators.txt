@@ -1,0 +1,31 @@
+async function getValidatorsWithDelayedAttestations(slots: number[]): Promise<number[]> {
+  // Ensure we have exactly 5 slots
+  if (slots.length !== 5) {
+    throw new Error("Exactly 5 slots must be provided");
+  }
+
+  const result = await prisma.committee.groupBy({
+    by: ['validatorIndex'],
+    where: {
+      slot: { in: slots },
+      OR: [
+        { attestationDelay: { gt: 5 } },
+        { attestationDelay: null }
+      ]
+    },
+    having: {
+      slot: {
+        _count: {
+          equals: 5
+        }
+      }
+    }
+  });
+
+  return result.map(r => r.validatorIndex);
+}
+
+// Usage example
+const slotsToCheck = [100, 101, 102, 103, 104];
+const validatorsWithDelays = await getValidatorsWithDelayedAttestations(slotsToCheck);
+console.log(validatorsWithDelays);

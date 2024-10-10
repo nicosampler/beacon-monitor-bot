@@ -22,7 +22,7 @@ importers:
         specifier: ^5.15.0
         version: 5.17.0
 
-  packages/data-collector:
+  packages/beacon-fetch:
     dependencies:
       '@t3-oss/env-core':
         specifier: ^0.10.1

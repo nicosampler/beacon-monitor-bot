@@ -8,7 +8,7 @@ import {
 } from "@/src/scheduler/tasks/attestations.js";
 
 const getOldestAttestationsJob = new SimpleIntervalJob(
-  { seconds: 10, runImmediately: true },
+  { seconds: 1, runImmediately: true },
   getOldestAttestationsTask,
   {
     id: "getOldestAttestation",

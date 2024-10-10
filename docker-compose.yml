@@ -1,13 +1,60 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:latest
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+  postgres:
+    image: postgres:17
+    container_name: beacon-monitor-postgres
+    env_file:
+      - .env
     ports:
       - "5432:5432"
     volumes:
-      - ./db:/var/lib/postgresql/data
+      - beacon_postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  # migrate:
+  #   image: node:18-alpine
+  #   working_dir: /app
+  #   volumes:
+  #     - ./beacon-fetch:/app  # O el directorio donde tienes Prisma configurado
+  #   environment:
+  #     DATABASE_URL: ${DATABASE_URL}
+  #   depends_on:
+  #     - postgres
+  #   command: >
+  #     sh -c "
+  #     npx prisma db push"
+  #   networks:
+  #     - app-network
+
+  beacon-fetch:
+    container_name: beacon-monitor-fetch
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: packages/beacon-fetch/Dockerfile
+    # depends_on:
+    #   - migrate
+    networks:
+      - app-network
+
+  # bot:
+  #   container_name: beacon-monitor-bot
+  #   build: ./packages/telegram-bot
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     DATABASE_URL: ${DATABASE_URL}
+  #   depends_on:
+  #     - beacon-fetch
+  #   networks:
+  #     - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  beacon_postgres_data:
