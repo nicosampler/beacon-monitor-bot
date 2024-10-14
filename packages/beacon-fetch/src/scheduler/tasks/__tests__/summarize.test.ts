@@ -1,4 +1,6 @@
 import { jest, describe, it, expect } from "@jest/globals";
+import { LastSummaryUpdate } from "@prisma/client";
+import { addHours, addSeconds } from "date-fns";
 
 // Mock del módulo de entorno
 const mockEnv = {
@@ -6,7 +8,7 @@ const mockEnv = {
   BEACON_GENESIS_TIMESTAMP: 1606824023,
   BEACON_SLOT_DURATION: 5,
   BEACON_SLOTS_PER_EPOCH: 16,
-  BEACON_LOOKBACK_SLOT: 0,
+  BEACON_LOOKBACK_SLOT: 1000,
   BEACON_MAX_ATTESTATION_DELAY: 5,
   BEACON_API_URL: "https://test-beacon-api.com",
   BEACON_API_REQUEST_PER_SECOND: 10,
@@ -17,101 +19,91 @@ jest.unstable_mockModule("@/src/env.js", () => ({
   env: mockEnv,
 }));
 
-jest.unstable_mockModule("@/src/feed/summarizeAttestationsHourly.js", () => ({
-  summarizeAttestationsHourly: jest.fn<() => Promise<void>>(),
+const mockPrisma = {
+  lastSummaryUpdate: {
+    findFirst: jest.fn<() => Promise<LastSummaryUpdate | null>>(),
+  },
+  $transaction: jest.fn(),
+};
+jest.unstable_mockModule("@/src/lib/prisma.js", () => ({
+  getPrisma: () => mockPrisma,
 }));
 
-const { env } = await import("@/src/env.js");
-// const { summarizeAttestationsHourly } = await import(
-//   "@/src/feed/summarizeAttestationsHourly.js"
-// );
+// Mock summarizeAttestationsHourly
+const mockSummarizeAttestationsHourly = jest.fn<() => Promise<void>>();
+jest.unstable_mockModule("@/src/feed/summarizeAttestationsHourly.js", () => ({
+  summarizeAttestationsHourly: mockSummarizeAttestationsHourly,
+}));
+
+const { summarizeAttestationsHourlyTask } = await import("../summarize.js");
+const { getTimestampFromSlotNumber } = await import(
+  "@/src/beacon/utils/time.js"
+);
 
 describe("summarizeAttestationsHourlyTask", () => {
-  it("should call summarizeAttestationsHourly with correct parameters when summarization is due", async () => {
-    console.log("env: ", env);
-    expect(env).toBe(mockEnv);
-    // const expectedNextSummaryStart = new Date("2023-01-01T00:00:00Z");
-    // const expectedNextSummaryEnd = new Date("2023-01-01T01:00:00Z");
-
-    // console.log(summarizeAttestationsHourly);
-
-    // await summarizeAttestationsHourly(
-    //   expectedNextSummaryStart,
-    //   expectedNextSummaryEnd
-    // );
-
-    // expect(summarizeAttestationsHourly).toHaveBeenCalledWith(
-    //   expectedNextSummaryStart,
-    //   expectedNextSummaryEnd
-    // );
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    mockSummarizeAttestationsHourly.mockResolvedValue(undefined);
   });
 
-  // it("should skip summarization if the next summary end is in the future", async () => {
-  //   const mockPrisma = {
-  //     lastSummaryUpdate: {
-  //       findFirst: jest
-  //         .fn<() => Promise<LastSummaryUpdate>>()
-  //         .mockResolvedValue({
-  //           hourlyValidatorStats: subHours(new Date(), 0.5), // 30 minutes ago
-  //         } as LastSummaryUpdate),
-  //     },
-  //   };
-  //   mockGetPrisma.mockReturnValue(mockPrisma);
+  afterEach(() => {
+    jest.useRealTimers();
+  });
 
-  //   await summarizeAttestationsHourlyTask();
+  it("should call summarizeAttestationsHourly with correct dates when lastSummaryUpdate exists", async () => {
+    const lastUpdate = new Date("2023-01-01T00:00:00Z");
+    mockPrisma.lastSummaryUpdate.findFirst.mockResolvedValue({
+      hourlyValidatorStats: lastUpdate,
+    } as LastSummaryUpdate);
 
-  //   expect(mockSummarizeAttestationsHourly).not.toHaveBeenCalled();
-  // });
+    const expectedStart = new Date("2023-01-01T00:00:00Z");
+    const expectedEnd = new Date("2023-01-01T01:00:00Z");
 
-  // it("should use BEACON_LOOKBACK_SLOT if no previous summary exists", async () => {
-  //   const mockPrisma = {
-  //     lastSummaryUpdate: {
-  //       findFirst: jest
-  //         .fn<() => Promise<LastSummaryUpdate | null>>()
-  //         .mockResolvedValue(null),
-  //     },
-  //   };
-  //   mockGetPrisma.mockReturnValue(mockPrisma);
-  //   mockSummarizeAttestationsHourly.mockResolvedValue(undefined);
-  //   mockGetTimestampFromSlotNumber.mockReturnValue(1609459200000); // 2021-01-01T00:00:00Z
+    jest.setSystemTime(new Date("2023-01-01T02:00:00Z"));
 
-  //   const now = new Date("2021-01-01T02:00:00Z");
-  //   jest.spyOn(global, "Date").mockImplementation(() => now);
+    await summarizeAttestationsHourlyTask();
 
-  //   await summarizeAttestationsHourlyTask();
+    expect(mockSummarizeAttestationsHourly).toHaveBeenCalledWith(
+      expectedStart,
+      expectedEnd
+    );
+  });
 
-  //   expect(mockGetTimestampFromSlotNumber).toHaveBeenCalledWith(
-  //     env.BEACON_LOOKBACK_SLOT
-  //   );
-  //   expect(mockSummarizeAttestationsHourly).toHaveBeenCalledWith(
-  //     new Date("2021-01-01T00:00:00Z"),
-  //     new Date("2021-01-01T01:00:00Z")
-  //   );
-  // });
+  it("should use BEACON_LOOKBACK_SLOT when lastSummaryUpdate doesn't exist", async () => {
+    mockPrisma.lastSummaryUpdate.findFirst.mockResolvedValue(null);
 
-  // it("should handle errors and log them", async () => {
-  //   const mockPrisma = {
-  //     lastSummaryUpdate: {
-  //       findFirst: jest
-  //         .fn<() => Promise<LastSummaryUpdate>>()
-  //         .mockRejectedValue(new Error("Database error")),
-  //     },
-  //   };
-  //   mockGetPrisma.mockReturnValue(mockPrisma);
+    const expectedStart = new Date(
+      getTimestampFromSlotNumber(mockEnv.BEACON_LOOKBACK_SLOT)
+    );
+    const expectedEnd = addHours(expectedStart, 1);
 
-  //   const mockLogger = {
-  //     error: jest.fn(),
-  //   };
-  //   jest.unstable_mockModule("@/src/lib/pino.js", () => ({
-  //     default: () => mockLogger,
-  //   }));
+    jest.setSystemTime(
+      addSeconds(
+        expectedEnd,
+        mockEnv.BEACON_API_REQUEST_PER_SECOND * mockEnv.BEACON_SLOTS_PER_EPOCH +
+          1
+      )
+    );
 
-  //   await summarizeAttestationsHourlyTask();
+    await summarizeAttestationsHourlyTask();
 
-  //   expect(mockSummarizeAttestationsHourly).not.toHaveBeenCalled();
-  //   expect(mockLogger.error).toHaveBeenCalledWith(
-  //     "Error in summarizeAttestationsHourly task",
-  //     expect.objectContaining({ error: expect.any(Error) })
-  //   );
-  // });
+    expect(mockSummarizeAttestationsHourly).toHaveBeenCalledWith(
+      expectedStart,
+      expectedEnd
+    );
+  });
+
+  it("should skip if the end time is in the future", async () => {
+    const lastUpdate = new Date();
+    mockPrisma.lastSummaryUpdate.findFirst.mockResolvedValue({
+      hourlyValidatorStats: lastUpdate,
+    } as LastSummaryUpdate);
+
+    jest.setSystemTime(new Date(lastUpdate.getTime() + 1800000)); // 30 minutes after lastUpdate
+
+    await summarizeAttestationsHourlyTask();
+
+    expect(mockSummarizeAttestationsHourly).not.toHaveBeenCalled();
+  });
 });

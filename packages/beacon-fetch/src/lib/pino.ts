@@ -1,4 +1,4 @@
-import Pino, { DestinationStream } from "pino";
+import Pino, { DestinationStream, pino } from "pino";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -44,8 +44,6 @@ const createLogger = (context: string | null) => {
 // Define the Logger type using ReturnType based on the createLogger function
 export type CustomLogger = ReturnType<typeof createLogger>;
 
-
-
 // Configure log destination and prettifier
 let logDestination: DestinationStream | undefined;
 let transport;
@@ -69,7 +67,7 @@ if (LOG_OUTPUT === "file") {
 }
 
 // Create the logger
-const logger = Pino.pino(
+const logger = pino(
   {
     level: process.env.LOG_LEVEL || "info",
     timestamp: () => `,"time":"${new Date().toISOString()}"`,
