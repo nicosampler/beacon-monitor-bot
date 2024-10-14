@@ -4,7 +4,9 @@
   "description": "Collect validators information from a beacon node, process and save it to the db.",
   "type": "module",
   "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "dev": "dotenv -e ../../.env.local npx tsx src/index.ts",
+    "dev:test": "dotenv -e ../../.env.local npx tsx src/test.ts",
     "start": "tsc --noEmit && npx tsx src/index.ts"
   },
   "dependencies": {
@@ -14,7 +16,7 @@
     "bitlist": "^1.0.0",
     "bitset": "^5.1.1",
     "date-fns": "^3.6.0",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.0.3",
     "lodash": "^4.17.21",
     "pg": "^8.5.1",
     "pino": "^9.3.1",
@@ -26,17 +28,26 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "@swc/jest": "^0.2.36",
     "@tsconfig/node20": "^20.1.4",
+    "@types/chai": "^5.0.0",
+    "@types/jest": "^29.5.13",
     "@types/lodash": "^4.14.200",
+    "@types/mocha": "^10.0.9",
     "@types/node": "^20.14.2",
     "@types/pino-multi-stream": "^5.1.6",
     "@typescript-eslint/eslint-plugin": "^8.5.0",
+    "chai": "^5.1.1",
     "dotenv-cli": "^7.4.2",
     "eslint": "^9.7.0",
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-sort-destructure-keys": "^2.0.0",
+    "jest": "^29.7.0",
+    "mocha": "^10.7.3",
     "nodemon": "^2.0.7",
     "prisma": "^5.15.0",
+    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }

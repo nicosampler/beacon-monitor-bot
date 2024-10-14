@@ -1,12 +1,11 @@
 import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
 import { SLOT_DELAY_TO_FETCH } from "@/src/constants/index.js";
 import { env } from "@/src/env.js";
-// import createMissingSlots from "@/src/feed/createMissingSlots.js";
-import { subDays } from "date-fns/subDays";
-import { getPrisma } from "@/src/lib/prisma.js";
+// import createMissingSlots from "@/src/feed/createMissingSlots.j
 import { pullAttestations } from "@/src/feed/pullAttestations.js";
 import createLogger from "@/src/lib/pino.js";
 import { db_getUnprocessedSlots } from "@/src/feed/utils.js";
+import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 
 export const pullMissingAttestations = async () => {
   const logger = createLogger(null);
@@ -18,9 +17,7 @@ export const pullMissingAttestations = async () => {
     SLOT_DELAY_TO_FETCH -
     env.BEACON_SLOTS_PER_EPOCH;
 
-  const oldestLookbackSlot = getSlotNumberFromTimestamp(
-    subDays(now, env.BEACON_LOOKBACK_DAYS).getTime()
-  );
+  const oldestLookbackSlot = getOldestLookbackSlot();
 
   const slots = await db_getUnprocessedSlots({
     minSlot: oldestLookbackSlot,

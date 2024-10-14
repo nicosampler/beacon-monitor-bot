@@ -1,17 +1,14 @@
-import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
 import { env } from "@/src/env.js";
-import { subDays, subSeconds } from "date-fns";
-
-const initiatedAt = new Date();
 
 export function getOldestLookbackSlot() {
-  const timestamp =
-    env.BEACON_LOOKBACK_DAYS == 0
-      ? subSeconds(
-          initiatedAt,
-          env.BEACON_SLOT_DURATION * env.BEACON_SLOTS_PER_EPOCH * 2
-        ).getTime()
-      : subDays(initiatedAt, env.BEACON_LOOKBACK_DAYS).getTime();
+  // If BEACON_LOOKBACK_SLOT is 0, we'll use a default of 2 epochs ago
+  return env.BEACON_LOOKBACK_SLOT === 0
+    ? Math.max(0, getCurrentSlot() - env.BEACON_SLOTS_PER_EPOCH * 2)
+    : env.BEACON_LOOKBACK_SLOT;
+}
 
-  return getSlotNumberFromTimestamp(timestamp);
+// Add this new function to get the current slot
+function getCurrentSlot() {
+  const currentTimestamp = Date.now();
+  return Math.floor((currentTimestamp - env.BEACON_GENESIS_TIMESTAMP) / (env.BEACON_SLOT_DURATION * 1000));
 }

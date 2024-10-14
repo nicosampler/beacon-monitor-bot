@@ -174,10 +174,10 @@ async function updateValidatorsAttestations(
       if (allProcessedAttestations.length > 0) {
         const batchSize = 4000;
         const validatorsToDelete = allProcessedAttestations.filter(
-          (a) => a.attestationDelay <= 5
+          (a) => a.attestationDelay <= env.BEACON_MAX_ATTESTATION_DELAY
         );
         const validatorsToUpdate = allProcessedAttestations.filter(
-          (a) => a.attestationDelay > 5
+          (a) => a.attestationDelay > env.BEACON_MAX_ATTESTATION_DELAY
         );
 
         // Delete attestations with delay <= 5

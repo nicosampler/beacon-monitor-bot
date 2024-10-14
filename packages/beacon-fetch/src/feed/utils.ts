@@ -1,5 +1,5 @@
 import { getPrisma } from "@/src/lib/prisma.js";
-import { Prisma } from "@prisma/client";
+import { Prisma, LastSummaryUpdate, PrismaClient } from "@prisma/client";
 
 const prisma = getPrisma();
 
@@ -81,3 +81,24 @@ export const db_getUnprocessedSlots = async ({
     orderBy,
     take,
   });
+
+export async function updateLastSummaryUpdate<K extends keyof LastSummaryUpdate>(
+  key: K,
+  value: LastSummaryUpdate[K],
+  tx?: Prisma.TransactionClient
+) {
+  const client = tx || prisma;
+  
+  await client.lastSummaryUpdate.upsert({
+    where: { id: 1 },
+    update: { [key]: value },
+    create: {
+      id: 1,
+      hourlyValidatorStats: key === 'hourlyValidatorStats' ? value as Date : new Date(0),
+      dailyValidatorStats: key === 'dailyValidatorStats' ? value as Date : new Date(0),
+      weeklyValidatorStats: key === 'weeklyValidatorStats' ? value as Date : new Date(0),
+      monthlyValidatorStats: key === 'monthlyValidatorStats' ? value as Date : new Date(0),
+      yearlyValidatorStats: key === 'yearlyValidatorStats' ? value as Date : new Date(0),
+    },
+  });
+}

@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// --------------
+// Beacon
+// --------------
+
 model Epoch {
   epoch     Int     @id
   processed Boolean // TODO: add description
@@ -16,6 +20,8 @@ model Slot {
   slot                Int         @id
   attestationsFetched Boolean // Whether the attestations for this slot have been fetched
   committee           Committee[]
+
+  @@index([attestationsFetched, slot])
 }
 
 model Committee {
@@ -28,63 +34,119 @@ model Committee {
   slot_relation Slot @relation(fields: [slot], references: [slot], onDelete: Cascade)
 
   @@id([slot, index, validatorIndex])
+  @@index([slot, validatorIndex])
   @@index([slot, index])
+  @@index([validatorIndex])
+  @@index([slot, attestationDelay])
 }
 
 model HourlyValidatorStats {
-  validatorIndex   Int
-  hour             Int // 0-23
-  date             DateTime @db.Date
-  executionRewards BigInt
-  beaconRewards    BigInt
-  attestations     Int
+  validatorIndex     Int
+  hour               Int // 0-23
+  date               DateTime @db.Date
+  executionRewards   BigInt
+  beaconRewards      BigInt
+  attestationsMissed Int
 
   @@id([validatorIndex, hour, date])
   @@index([date, hour])
 }
 
 model DailyValidatorStats {
-  validatorIndex   Int
-  date             DateTime @db.Date
-  executionRewards BigInt
-  beaconRewards    BigInt
-  attestations     Int
+  validatorIndex     Int
+  date               DateTime @db.Date
+  executionRewards   BigInt
+  beaconRewards      BigInt
+  attestationsMissed Int
 
   @@id([validatorIndex, date])
   @@index([date])
 }
 
 model WeeklyValidatorStats {
-  validatorIndex   Int
-  week             Int // 1-53
-  year             Int
-  executionRewards BigInt
-  beaconRewards    BigInt
-  attestations     Int
+  validatorIndex     Int
+  week               Int // 1-53
+  year               Int
+  executionRewards   BigInt
+  beaconRewards      BigInt
+  attestationsMissed Int
 
   @@id([validatorIndex, week, year])
   @@index([year, week])
 }
 
 model MonthlyValidatorStats {
-  validatorIndex   Int
-  month            Int // 1-12
-  year             Int
-  executionRewards BigInt
-  beaconRewards    BigInt
-  attestations     Int
+  validatorIndex     Int
+  month              Int // 1-12
+  year               Int
+  executionRewards   BigInt
+  beaconRewards      BigInt
+  attestationsMissed Int
 
   @@id([validatorIndex, month, year])
   @@index([year, month])
 }
 
 model YearlyValidatorStats {
-  validatorIndex   Int
-  year             Int
-  executionRewards BigInt
-  beaconRewards    BigInt
-  attestations     Int
+  validatorIndex     Int
+  year               Int
+  executionRewards   BigInt
+  beaconRewards      BigInt
+  attestationsMissed Int
 
   @@id([validatorIndex, year])
   @@index([year])
+}
+
+// Añade esto al final del archivo schema.prisma
+
+model LastSummaryUpdate {
+  id                    Int      @id @default(autoincrement())
+  hourlyValidatorStats  DateTime
+  dailyValidatorStats   DateTime
+  weeklyValidatorStats  DateTime
+  monthlyValidatorStats DateTime
+  yearlyValidatorStats  DateTime
+
+  @@map("Summary")
+}
+
+// --------------
+// Bot
+// --------------
+
+model User {
+  id                   BigInt              @id
+  userId               BigInt              @unique
+  chatId               BigInt              @unique
+  username             String              @unique
+  messageId            BigInt?
+  lastClaimed          DateTime?
+  statusNofi           DateTime?
+  performanceNotif     DateTime?
+  performanceThreshold Int                 @default(90)
+  attestationsNotif    DateTime?
+  attestationThreshold Int                 @default(5)
+  validators           Validator[]
+  withdrawalAddresses  WithdrawalAddress[]
+  feeRewardAddresses   FeeRewardAddress[]
+}
+
+model Validator {
+  id                Int     @id
+  status            String?
+  balance           BigInt?
+  effectiveBalance  BigInt?
+  withdrawalAddress String?
+  users             User[]
+}
+
+model WithdrawalAddress {
+  address String @id
+  users   User[]
+}
+
+model FeeRewardAddress {
+  address String @id
+  users   User[]
 }
