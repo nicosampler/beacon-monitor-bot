@@ -20,7 +20,7 @@ export function calculateSlotRange(startTime: Date, endTime: Date) {
   return { startSlot, endSlot };
 }
 
-export async function isProcessingTooEarly(endSlot: number): Promise<boolean> {
+export function isProcessingTooEarly(endSlot: number) {
   const endSlotTime = getTimestampFromSlotNumber(endSlot + 1);
   return Date.now() < endSlotTime;
 }
@@ -76,8 +76,10 @@ export async function processBatchesInTransaction(
         logger.info(`Processed batch ${i / BATCH_SIZE + 1}`);
       }
 
-      await removeProcessedCommitteeRecords(tx, startSlot, endSlot);
-      await updateLastSummaryUpdate("hourlyValidatorStats", endTime, tx);
+      if (committeeValidators.length > 0) {
+        await removeProcessedCommitteeRecords(tx, startSlot, endSlot);
+        await updateLastSummaryUpdate("hourlyValidatorStats", endTime, tx);
+      }
     },
     { timeout: TRANSACTION_TIMEOUT }
   );

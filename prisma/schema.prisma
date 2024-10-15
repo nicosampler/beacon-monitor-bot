@@ -101,14 +101,12 @@ model YearlyValidatorStats {
 // Añade esto al final del archivo schema.prisma
 
 model LastSummaryUpdate {
-  id                    Int      @id @default(autoincrement())
-  hourlyValidatorStats  DateTime
-  dailyValidatorStats   DateTime
-  weeklyValidatorStats  DateTime
-  monthlyValidatorStats DateTime
-  yearlyValidatorStats  DateTime
-
-  @@map("Summary")
+  id                    Int       @id @default(autoincrement())
+  hourlyValidatorStats  DateTime?
+  dailyValidatorStats   DateTime?
+  weeklyValidatorStats  DateTime?
+  monthlyValidatorStats DateTime?
+  yearlyValidatorStats  DateTime?
 }
 
 // --------------

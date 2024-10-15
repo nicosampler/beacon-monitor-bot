@@ -21,7 +21,8 @@ export async function summarizeAttestationsHourly(
 ): Promise<void> {
   const { startSlot, endSlot } = calculateSlotRange(startTime, endTime);
 
-  if (await isProcessingTooEarly(endSlot)) {
+  if (isProcessingTooEarly(endSlot)) {
+    logger.info("Processing too early. Skipping summarization.");
     return;
   }
 

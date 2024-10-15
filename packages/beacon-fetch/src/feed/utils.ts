@@ -82,23 +82,26 @@ export const db_getUnprocessedSlots = async ({
     take,
   });
 
-export async function updateLastSummaryUpdate<K extends keyof LastSummaryUpdate>(
-  key: K,
-  value: LastSummaryUpdate[K],
-  tx?: Prisma.TransactionClient
-) {
+export async function updateLastSummaryUpdate<
+  K extends keyof LastSummaryUpdate,
+>(key: K, value: LastSummaryUpdate[K], tx?: Prisma.TransactionClient) {
   const client = tx || prisma;
-  
+
   await client.lastSummaryUpdate.upsert({
     where: { id: 1 },
     update: { [key]: value },
     create: {
       id: 1,
-      hourlyValidatorStats: key === 'hourlyValidatorStats' ? value as Date : new Date(0),
-      dailyValidatorStats: key === 'dailyValidatorStats' ? value as Date : new Date(0),
-      weeklyValidatorStats: key === 'weeklyValidatorStats' ? value as Date : new Date(0),
-      monthlyValidatorStats: key === 'monthlyValidatorStats' ? value as Date : new Date(0),
-      yearlyValidatorStats: key === 'yearlyValidatorStats' ? value as Date : new Date(0),
+      hourlyValidatorStats:
+        key === "hourlyValidatorStats" ? (value as Date) : null,
+      dailyValidatorStats:
+        key === "dailyValidatorStats" ? (value as Date) : null,
+      weeklyValidatorStats:
+        key === "weeklyValidatorStats" ? (value as Date) : null,
+      monthlyValidatorStats:
+        key === "monthlyValidatorStats" ? (value as Date) : null,
+      yearlyValidatorStats:
+        key === "yearlyValidatorStats" ? (value as Date) : null,
     },
   });
 }

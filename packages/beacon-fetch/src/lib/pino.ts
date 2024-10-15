@@ -27,6 +27,13 @@ const createLogger = (context: string | null) => {
     ...args: any[]
   ) => {
     const logObject = context ? { context, ...args } : args;
+
+    if (
+      context?.includes("pullAttestations") ||
+      context?.includes("pullCommittee")
+    )
+      return;
+
     logger[level](logObject, message);
   };
 

@@ -24,7 +24,7 @@ export const pullAttestations = async (slotNumber: number) => {
     const slot = await checkSlotValidation(slotNumber, logger);
     if (!slot) return;
 
-    const fetchedAttestations = await fetchAttestations(slotNumber + 1, logger);
+    const fetchedAttestations = await fetchAttestations(slotNumber, logger);
     if (!fetchedAttestations) return;
     const filteredAttestations = fetchedAttestations.filter(
       (attestation) => +attestation.data.slot >= getOldestLookbackSlot()
@@ -72,11 +72,11 @@ async function checkSlotValidation(
 }
 
 async function fetchAttestations(slot: number, logger: CustomLogger) {
-  let fetchedAttestations = await getAttestations(slot);
+  let fetchedAttestations = await getAttestations(slot + 1);
 
   if (fetchedAttestations === "SLOT MISSED") {
     await prisma.slot.update({
-      where: { slot },
+      where: { slot: slot },
       data: { attestationsFetched: true },
     });
     logger.info(`slot missed.`);
