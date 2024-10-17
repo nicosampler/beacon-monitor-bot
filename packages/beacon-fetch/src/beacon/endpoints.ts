@@ -1,5 +1,9 @@
 import { instance } from "@/src/beacon/utils/instance.js";
-import { GetAttestations, GetCommittees } from "@/src/beacon/types.js";
+import {
+  GetAttestations,
+  GetCommittees,
+  GetValidatorsBalances,
+} from "@/src/beacon/types.js";
 import { env } from "@/src/env.js";
 import { AxiosError } from "axios";
 
@@ -10,7 +14,6 @@ export async function getCommittees(
     `${env.BEACON_API_URL}/eth/v1/beacon/states/${status}/committees`
   );
 
-  
   return results.data.data;
 }
 
@@ -29,4 +32,13 @@ export async function getAttestations(
     }
     throw error;
   }
+}
+
+export async function getValidatorsBalances(
+  status: string | number
+): Promise<GetValidatorsBalances["data"]> {
+  const res = await instance.get<GetValidatorsBalances>(
+    `${env.BEACON_API_URL}/eth/v1/beacon/states/${status}/validator_balances`
+  );
+  return res.data.data;
 }

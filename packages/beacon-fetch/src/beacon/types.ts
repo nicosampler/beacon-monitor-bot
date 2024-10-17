@@ -29,3 +29,12 @@ export type GetAttestations = {
     signature: string;
   }[];
 };
+
+export type GetValidatorsBalances = {
+  execution_optimistic: boolean;
+  finalized: boolean;
+  data: {
+    index: string;
+    balance: string;
+  }[];
+};

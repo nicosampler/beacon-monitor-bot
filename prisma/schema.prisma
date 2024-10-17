@@ -39,7 +39,7 @@ model Committee {
 model Validator {
   id                Int     @id
   status            String?
-  balance           BigInt?
+  balance           Decimal @db.Decimal(78, 0)
   withdrawalAddress String?
   users             User[]
 }
