@@ -7,10 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// --------------
-// Beacon
-// --------------
-
 model Epoch {
   epoch     Int     @id
   processed Boolean // TODO: add description
@@ -40,15 +36,42 @@ model Committee {
   @@index([slot, attestationDelay])
 }
 
+model Validator {
+  id                Int     @id
+  status            String?
+  balance           BigInt?
+  withdrawalAddress String?
+  users             User[]
+}
+
+model ExecutionRewards {
+  address     String
+  timestamp   DateTime
+  amount      BigInt
+  blockNumber Int
+
+  @@id(blockNumber)
+  @@index([timestamp])
+}
+
 model HourlyValidatorStats {
   validatorIndex     Int
   hour               Int // 0-23
-  date               DateTime @db.Date
-  executionRewards   BigInt
+  date               DateTime @db.Date // dd-mm-yyyy
   beaconRewards      BigInt
   attestationsMissed Int
 
   @@id([validatorIndex, hour, date])
+  @@index([date, hour])
+}
+
+model HourlyExecutionRewards {
+  address String
+  amount  Decimal  @db.Decimal(78, 0)
+  hour    Int // 0-23
+  date    DateTime @db.Date // dd-mm-yyyy
+
+  @@id([address, date, hour])
   @@index([date, hour])
 }
 
@@ -98,8 +121,6 @@ model YearlyValidatorStats {
   @@index([year])
 }
 
-// Añade esto al final del archivo schema.prisma
-
 model LastSummaryUpdate {
   id                    Int       @id @default(autoincrement())
   hourlyValidatorStats  DateTime?
@@ -108,10 +129,6 @@ model LastSummaryUpdate {
   monthlyValidatorStats DateTime?
   yearlyValidatorStats  DateTime?
 }
-
-// --------------
-// Bot
-// --------------
 
 model User {
   id                   BigInt              @id
@@ -128,15 +145,6 @@ model User {
   validators           Validator[]
   withdrawalAddresses  WithdrawalAddress[]
   feeRewardAddresses   FeeRewardAddress[]
-}
-
-model Validator {
-  id                Int     @id
-  status            String?
-  balance           BigInt?
-  effectiveBalance  BigInt?
-  withdrawalAddress String?
-  users             User[]
 }
 
 model WithdrawalAddress {

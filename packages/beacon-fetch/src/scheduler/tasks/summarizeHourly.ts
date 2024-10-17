@@ -1,49 +1,42 @@
-import { summarizeAttestationsHourly } from "@/src/feed/summarizeAttestationsHourly.js";
-import { AsyncTask } from "toad-scheduler";
+import { summarizeHourly } from "@/src/feed/summarizeHourly.js";
+import { AsyncTask, SimpleIntervalJob } from "toad-scheduler";
 import createLogger from "@/src/lib/pino.js";
-import { env } from "@/src/env.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { getTimestampFromSlotNumber } from "@/src/beacon/utils/time.js";
-import {
-  addHours,
-  startOfHour,
-  differenceInHours,
-  differenceInMinutes,
-  addMinutes,
-} from "date-fns";
+import { differenceInMinutes, addMinutes } from "date-fns";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 
 const prisma = getPrisma();
 const logger = createLogger("summarizeAttestationsHourly");
 
-const SUMMARY_INTERVAL_IN_MIN = 3;
+const HOUR_IN_MIN = 60;
 
-export async function summarizeAttestationsHourlyTask() {
+const ID = "summarizeAttestationsHourly";
+
+async function summarizeHourlyTask() {
   try {
     // Get the last summarized attestations timestamp from Summary table
     const summary = await prisma.lastSummaryUpdate.findFirst();
 
+    // If the last summary is not in the db, use the oldest lookback slot
     const startTime =
       !summary || !summary.hourlyValidatorStats
         ? new Date(getTimestampFromSlotNumber(getOldestLookbackSlot()))
         : new Date(summary.hourlyValidatorStats);
+    const endTime = addMinutes(startTime, HOUR_IN_MIN);
 
-    const now = new Date();
-
-    const minutesSinceLastSummary = differenceInMinutes(now, startTime);
-
-    if (minutesSinceLastSummary < SUMMARY_INTERVAL_IN_MIN) {
+    // check if the last summary is in the last hour
+    const minutesSinceLastSummary = differenceInMinutes(new Date(), startTime);
+    if (minutesSinceLastSummary < HOUR_IN_MIN) {
       logger.info("Skipping, still in progress.");
       return;
     }
-
-    const endTime = addMinutes(startTime, SUMMARY_INTERVAL_IN_MIN);
 
     logger.info(
       `Summarizing attestations from ${startTime.toISOString()} to ${endTime.toISOString()}`
     );
 
-    await summarizeAttestationsHourly(startTime, endTime);
+    await summarizeHourly(startTime, endTime, logger);
 
     logger.info(`Done`);
   } catch (error) {
@@ -51,7 +44,11 @@ export async function summarizeAttestationsHourlyTask() {
   }
 }
 
-export const callSummarizeAttestationsHourly = new AsyncTask(
-  "summarizeAttestationsHourly",
-  summarizeAttestationsHourlyTask
+export const job = new SimpleIntervalJob(
+  { seconds: 60, runImmediately: true },
+  new AsyncTask(`${ID}_task`, summarizeHourlyTask),
+  {
+    id: ID,
+    preventOverrun: true,
+  }
 );

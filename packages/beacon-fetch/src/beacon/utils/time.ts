@@ -1,7 +1,7 @@
 import { env } from "@/src/env.js";
 
 const GENESIS_TIMESTAMP = env.BEACON_GENESIS_TIMESTAMP;
-const SLOT_DURATION_MS = env.BEACON_SLOT_DURATION * 1000;
+const SLOT_DURATION_MS = env.BEACON_SLOT_DURATION_IN_SECONDS * 1000;
 const SLOTS_PER_EPOCH = env.BEACON_SLOTS_PER_EPOCH;
 /**
  * Given a timestamp, determine the slot number.

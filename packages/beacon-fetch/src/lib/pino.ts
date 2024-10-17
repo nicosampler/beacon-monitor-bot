@@ -2,12 +2,13 @@ import Pino, { DestinationStream, pino } from "pino";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { env } from "@/src/env.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Log configuration
-const LOG_OUTPUT = process.env.LOG_OUTPUT || "console";
+const LOG_OUTPUT = env.LOG_OUTPUT || "console";
 const logsDir = path.join(__dirname, "../../logs");
 
 // Function to get the current day's log file name
@@ -28,11 +29,17 @@ const createLogger = (context: string | null) => {
   ) => {
     const logObject = context ? { context, ...args } : args;
 
-    if (
-      context?.includes("pullAttestations") ||
-      context?.includes("pullCommittee")
-    )
-      return;
+    // if (
+    //   (level === "info" || level == "debug") &&
+    //   (context?.toLowerCase().includes("attestation") ||
+    //     message.toLowerCase().includes("attestation") ||
+    //     context?.toLowerCase().includes("committee") ||
+    //     message.toLowerCase().includes("committee") ||
+    //     context?.toLowerCase().includes("fetching block") ||
+    //     message.toLowerCase().includes("fetching block"))
+    // ) {
+    //   return;
+    // }
 
     logger[level](logObject, message);
   };
@@ -76,7 +83,7 @@ if (LOG_OUTPUT === "file") {
 // Create the logger
 const logger = pino(
   {
-    level: process.env.LOG_LEVEL || "info",
+    level: env.LOG_LEVEL || "info",
     timestamp: () => `,"time":"${new Date().toISOString()}"`,
     base: null, // This removes pid and hostname
     transport, // Use the transport configuration here

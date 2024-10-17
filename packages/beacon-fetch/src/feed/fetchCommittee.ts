@@ -41,7 +41,7 @@ function logCommitteeInfo(
  * This function can be used te fetch the current committee or the committee for a given slot
  * It might bring committees that are already in the db, we need to filter them out
  * */
-export const pullCommittee = async (
+export const fetchCommittee = async (
   stateId: number | "head"
 ): Promise<void> => {
   const logger = createLogger(`pullCommittee slot ${stateId}`);

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "pnpm -r run start",
-    "dev:data-collector": "pnpm --filter data-collector run dev"
+    "dev:beacon-fetch": "pnpm --filter beacon-fetch run dev"
   },
   "dependencies": {
     "@prisma/client": "^5.15.0"

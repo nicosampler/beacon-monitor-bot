@@ -1,0 +1,49 @@
+export type Miner = {
+  ens_domain_name: string | null;
+  hash: string; // miner address
+  implementations: any[];
+  is_contract: boolean;
+  is_verified: boolean;
+  metadata: any | null;
+  name: string | null;
+  private_tags: any[];
+  proxy_type: string | null;
+  public_tags: any[];
+  watchlist_names: any[];
+};
+
+export type Reward = {
+  reward: string; // reward in wei
+  type: string; // check for "Miner Reward"
+};
+
+export type Blocks = {
+  base_fee_per_gas: string;
+  blob_gas_price: string | null;
+  blob_gas_used: string;
+  blob_tx_count: number;
+  burnt_blob_fees: string;
+  burnt_fees: string;
+  burnt_fees_percentage: number | null;
+  difficulty: string;
+  excess_blob_gas: string;
+  gas_limit: string;
+  gas_target_percentage: number;
+  gas_used: string;
+  gas_used_percentage: number;
+  hash: string;
+  height: number;
+  miner: Miner;
+  nonce: string;
+  parent_hash: string;
+  priority_fee: number;
+  rewards: Reward[];
+  size: number;
+  timestamp: string;
+  total_difficulty: string;
+  tx_count: number;
+  tx_fees: string;
+  type: string;
+  uncles_hashes: string[];
+  withdrawals_count: number;
+};

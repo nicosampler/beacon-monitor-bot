@@ -1,4 +1,4 @@
-import { instance } from "@/src/beacon/instance.js";
+import { instance } from "@/src/beacon/utils/instance.js";
 import { GetAttestations, GetCommittees } from "@/src/beacon/types.js";
 import { env } from "@/src/env.js";
 import { AxiosError } from "axios";

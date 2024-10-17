@@ -23,6 +23,6 @@ function getCurrentSlot() {
   const currentTimestamp = Date.now();
   return Math.floor(
     (currentTimestamp - env.BEACON_GENESIS_TIMESTAMP) /
-      (env.BEACON_SLOT_DURATION * 1000)
+      (env.BEACON_SLOT_DURATION_IN_SECONDS * 1000)
   );
 }

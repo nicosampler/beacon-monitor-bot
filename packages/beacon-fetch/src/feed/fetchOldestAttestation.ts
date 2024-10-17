@@ -1,13 +1,13 @@
 import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
 import { getPrisma } from "@/src/lib/prisma.js";
-import { pullAttestations } from "@/src/feed/pullAttestations.js";
+import { fetchAttestation } from "@/src/feed/fetchAttestations.js";
 import createLogger from "@/src/lib/pino.js";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 
-export const pullOldestAttestation = async () => {
-  const logger = createLogger(null);
-  const prisma = getPrisma();
+const logger = createLogger(null);
+const prisma = getPrisma();
 
+export const fetchOldestAttestation = async () => {
   const now = new Date();
   const currentSlot = getSlotNumberFromTimestamp(now.getTime());
   const headSlot = currentSlot - 1;
@@ -52,5 +52,5 @@ export const pullOldestAttestation = async () => {
     `Pulling attestations for slot ${slotToFetch}. HeadSlot: ${headSlot}.`
   );
 
-  return pullAttestations(slotToFetch);
+  return fetchAttestation(slotToFetch);
 };

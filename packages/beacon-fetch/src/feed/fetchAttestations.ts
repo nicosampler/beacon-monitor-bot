@@ -3,7 +3,7 @@ import {
   convertBitsToString,
   convertHexStringToByteArray,
 } from "@/src/beacon/utils/bitlist.js";
-import { pullCommittee } from "@/src/feed/pullCommittee.js";
+import { fetchCommittee } from "@/src/feed/fetchCommittee.js";
 import { db_getSlotByNumber } from "@/src/feed/utils.js";
 import createLogger, { CustomLogger } from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
@@ -14,17 +14,17 @@ import { env } from "@/src/env.js";
 
 const prisma = getPrisma();
 
-export const pullAttestations = async (slotNumber: number) => {
+export const fetchAttestation = async (slotNumber: number) => {
   const logger = createLogger(`pullAttestations for slot ${slotNumber}`);
 
   try {
-    await pullCommittee(slotNumber);
+    await fetchCommittee(slotNumber);
 
     // Check if the slot is already processed
     const slot = await checkSlotValidation(slotNumber, logger);
     if (!slot) return;
 
-    const fetchedAttestations = await fetchAttestations(slotNumber, logger);
+    const fetchedAttestations = await getAttestation(slotNumber, logger);
     if (!fetchedAttestations) return;
     const filteredAttestations = fetchedAttestations.filter(
       (attestation) => +attestation.data.slot >= getOldestLookbackSlot()
@@ -71,7 +71,7 @@ async function checkSlotValidation(
   return slot;
 }
 
-async function fetchAttestations(slot: number, logger: CustomLogger) {
+async function getAttestation(slot: number, logger: CustomLogger) {
   let fetchedAttestations = await getAttestations(slot + 1);
 
   if (fetchedAttestations === "SLOT MISSED") {
@@ -91,7 +91,7 @@ async function fetchAttestations(slot: number, logger: CustomLogger) {
   return fetchedAttestations;
 }
 type Attestation = NonNullable<
-  Awaited<ReturnType<typeof fetchAttestations>>
+  Awaited<ReturnType<typeof getAttestation>>
 >[number];
 
 interface CommitteeUpdate {
@@ -232,7 +232,7 @@ async function updateValidatorsAttestations(
       });
     },
     {
-      timeout: 40_000,
+      timeout: 120_000,
     }
   );
 }
