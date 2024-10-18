@@ -2,27 +2,29 @@ import { instance } from "@/src/beacon/utils/instance.js";
 import {
   GetAttestations,
   GetCommittees,
+  GetValidators,
   GetValidatorsBalances,
+  ValidatorStatus,
 } from "@/src/beacon/types.js";
 import { env } from "@/src/env.js";
 import { AxiosError } from "axios";
 
 export async function getCommittees(
-  status: string | number
+  stateId: string | number
 ): Promise<GetCommittees["data"]> {
   const results = await instance.get<GetCommittees>(
-    `${env.BEACON_API_URL}/eth/v1/beacon/states/${status}/committees`
+    `${env.BEACON_API_URL}/eth/v1/beacon/states/${stateId}/committees`
   );
 
   return results.data.data;
 }
 
 export async function getAttestations(
-  status: string | number
+  stateId: string | number
 ): Promise<GetAttestations["data"] | "SLOT MISSED"> {
   try {
     const res = await instance.get<GetAttestations>(
-      `${env.BEACON_API_URL}/eth/v1/beacon/blocks/${status}/attestations`
+      `${env.BEACON_API_URL}/eth/v1/beacon/blocks/${stateId}/attestations`
     );
     return res.data.data;
   } catch (error) {
@@ -35,10 +37,31 @@ export async function getAttestations(
 }
 
 export async function getValidatorsBalances(
-  status: string | number
+  stateId: string | number
 ): Promise<GetValidatorsBalances["data"]> {
   const res = await instance.get<GetValidatorsBalances>(
-    `${env.BEACON_API_URL}/eth/v1/beacon/states/${status}/validator_balances`
+    `${env.BEACON_API_URL}/eth/v1/beacon/states/${stateId}/validator_balances`
+  );
+  return res.data.data;
+}
+
+export async function getValidatorsInfo(
+  stateId: string | number,
+  validatorIds: number[],
+  status?: ValidatorStatus[]
+): Promise<GetValidators["data"]> {
+  // Construct query parameters
+  const params = new URLSearchParams();
+
+  // Add validator IDs to the query
+  validatorIds.forEach((id) => params.append("id", id.toString()));
+
+  // Add status to the query if provided
+  status?.forEach((s) => params.append("status", s));
+
+  const res = await instance.get<GetValidators>(
+    `${env.BEACON_API_URL}/eth/v1/beacon/states/${stateId}/validators`,
+    { params }
   );
   return res.data.data;
 }

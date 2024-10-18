@@ -1,3 +1,14 @@
+export type ValidatorStatus =
+  | "pending_initialized"
+  | "pending_queued"
+  | "active_ongoing"
+  | "active_exiting"
+  | "active_slashed"
+  | "exited_unslashed"
+  | "exited_slashed"
+  | "withdrawal_possible"
+  | "withdrawal_done";
+
 export type GetCommittees = {
   execution_optimistic: boolean;
   finalized: boolean;
@@ -36,5 +47,24 @@ export type GetValidatorsBalances = {
   data: {
     index: string;
     balance: string;
+  }[];
+};
+
+export type GetValidators = {
+  execution_optimistic: boolean;
+  data: {
+    index: string;
+    balance: string;
+    status: ValidatorStatus;
+    validator: {
+      pubkey: string;
+      withdrawal_credentials: string;
+      effective_balance: string;
+      slashed: string;
+      activation_eligibility_epoch: string;
+      activation_epoch: string;
+      exit_epoch: string;
+      withdrawable_epoch: string;
+    };
   }[];
 };

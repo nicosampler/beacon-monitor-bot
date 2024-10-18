@@ -106,8 +106,6 @@ export const fetchCommittee = async (
         skipDuplicates: true,
       });
     }
-
-    logger.info(`done.`);
   } catch (error) {
     logger.error(`pullCommittee: for slot ${stateId}`, { error });
     throw error;

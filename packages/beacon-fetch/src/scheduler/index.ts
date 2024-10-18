@@ -3,15 +3,20 @@ import { job as summarizeHourlyJob } from "@/src/scheduler/tasks/summarizeHourly
 import { job as executionRewardsJob } from "@/src/scheduler/tasks/executionRewards.js";
 import { job as fetchOldestAttestationJob } from "@/src/scheduler/tasks/fetchOldestAttestation.js";
 import { job as validatorsBalancesJob } from "@/src/scheduler/tasks/validatorsBalances.js";
+import { job as fetchValidatorsInfo } from "@/src/scheduler/tasks/fetchValidatorsInfo.js";
 
 export function scheduleTasks() {
   // Fetch the oldest attestation
   scheduler.addSimpleIntervalJob(fetchOldestAttestationJob);
+
   // Fetch the execution rewards for the current block and store them in the db.
   scheduler.addSimpleIntervalJob(executionRewardsJob);
 
   // Fetch the validators balances for updating the validator balances in the db.
   scheduler.addSimpleIntervalJob(validatorsBalancesJob);
+
+  // Check for validators info, like status, withdrawal address, etc.
+  scheduler.addSimpleIntervalJob(fetchValidatorsInfo);
 
   // Summarize the attestations for the current hour and store them in the db.
   scheduler.addSimpleIntervalJob(summarizeHourlyJob);

@@ -105,3 +105,11 @@ export async function updateLastSummaryUpdate<
     },
   });
 }
+
+export async function getHighestValidatorId(): Promise<number> {
+  const highestValidator = await prisma.validator.findFirst({
+    orderBy: { id: "desc" },
+    select: { id: true },
+  });
+  return highestValidator?.id ?? -1;
+}

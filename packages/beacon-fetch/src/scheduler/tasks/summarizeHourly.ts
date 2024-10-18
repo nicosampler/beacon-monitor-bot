@@ -37,8 +37,6 @@ async function summarizeHourlyTask() {
     );
 
     await summarizeHourly(startTime, endTime, logger);
-
-    logger.info(`Done`);
   } catch (error) {
     logger.error("Error in summarizeAttestationsHourly task", { error });
   }

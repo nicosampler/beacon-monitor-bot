@@ -42,6 +42,7 @@ model Validator {
   balance           Decimal @db.Decimal(78, 0)
   withdrawalAddress String?
   users             User[]
+  @@index([withdrawalAddress])
 }
 
 model ExecutionRewards {
