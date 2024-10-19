@@ -4,6 +4,7 @@ import { env } from "@/src/env.js";
 import { getBlock } from "@/src/blockscout/endpoints.js";
 import { differenceInSeconds } from "date-fns";
 import { Blocks } from "@/src/blockscout/types.js";
+import { Decimal } from "@prisma/client/runtime/library";
 
 const logger = createLogger("FetchExecutionRewards");
 const prisma = getPrisma();
@@ -49,7 +50,7 @@ export async function fetchExecutionRewards() {
     data: {
       address: blockInfo.miner.hash,
       timestamp: new Date(blockInfo.timestamp),
-      amount: minerReward ? BigInt(minerReward.reward) : 0,
+      amount: minerReward ? new Decimal(minerReward.reward) : new Decimal(0),
       blockNumber: blockInfo.height,
     },
   });

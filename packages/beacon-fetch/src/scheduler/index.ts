@@ -2,7 +2,7 @@ import { scheduler } from "@/src/lib/scheduler.js";
 import { job as summarizeHourlyJob } from "@/src/scheduler/tasks/summarizeHourly.js";
 import { job as executionRewardsJob } from "@/src/scheduler/tasks/executionRewards.js";
 import { job as fetchOldestAttestationJob } from "@/src/scheduler/tasks/fetchOldestAttestation.js";
-import { job as validatorsBalancesJob } from "@/src/scheduler/tasks/validatorsBalances.js";
+import { job as validatorsBalancesJob } from "@/src/scheduler/tasks/fetchValidatorsBalances.js";
 import { job as fetchValidatorsInfo } from "@/src/scheduler/tasks/fetchValidatorsInfo.js";
 
 export function scheduleTasks() {

@@ -42,13 +42,14 @@ model Validator {
   balance           Decimal @db.Decimal(78, 0)
   withdrawalAddress String?
   users             User[]
+
   @@index([withdrawalAddress])
 }
 
 model ExecutionRewards {
   address     String
   timestamp   DateTime
-  amount      BigInt
+  amount      Decimal  @db.Decimal(78, 0)
   blockNumber Int
 
   @@id(blockNumber)
@@ -59,7 +60,7 @@ model HourlyValidatorStats {
   validatorIndex     Int
   hour               Int // 0-23
   date               DateTime @db.Date // dd-mm-yyyy
-  beaconRewards      BigInt
+  beaconRewards      Decimal  @db.Decimal(78, 0)
   attestationsMissed Int
 
   @@id([validatorIndex, hour, date])
@@ -79,8 +80,8 @@ model HourlyExecutionRewards {
 model DailyValidatorStats {
   validatorIndex     Int
   date               DateTime @db.Date
-  executionRewards   BigInt
-  beaconRewards      BigInt
+  executionRewards   Decimal  @db.Decimal(78, 0)
+  beaconRewards      Decimal  @db.Decimal(78, 0)
   attestationsMissed Int
 
   @@id([validatorIndex, date])
@@ -91,8 +92,8 @@ model WeeklyValidatorStats {
   validatorIndex     Int
   week               Int // 1-53
   year               Int
-  executionRewards   BigInt
-  beaconRewards      BigInt
+  executionRewards   Decimal @db.Decimal(78, 0)
+  beaconRewards      Decimal @db.Decimal(78, 0)
   attestationsMissed Int
 
   @@id([validatorIndex, week, year])
@@ -103,8 +104,8 @@ model MonthlyValidatorStats {
   validatorIndex     Int
   month              Int // 1-12
   year               Int
-  executionRewards   BigInt
-  beaconRewards      BigInt
+  executionRewards   Decimal @db.Decimal(78, 0)
+  beaconRewards      Decimal @db.Decimal(78, 0)
   attestationsMissed Int
 
   @@id([validatorIndex, month, year])
@@ -114,8 +115,8 @@ model MonthlyValidatorStats {
 model YearlyValidatorStats {
   validatorIndex     Int
   year               Int
-  executionRewards   BigInt
-  beaconRewards      BigInt
+  executionRewards   Decimal @db.Decimal(78, 0)
+  beaconRewards      Decimal @db.Decimal(78, 0)
   attestationsMissed Int
 
   @@id([validatorIndex, year])

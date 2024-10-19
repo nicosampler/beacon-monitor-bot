@@ -13,7 +13,7 @@ const logger = createLogger("fetchValidatorsInfo");
 export async function fetchValidatorsInfo() {
   const highestValidatorId = await getHighestValidatorId();
   const maxValidatorId = highestValidatorId;
-  const batchSize = 5000;
+  const batchSize = 6500;
   const slotNumber =
     getSlotNumberFromTimestamp(Date.now()) - env.BEACON_SLOTS_PER_EPOCH;
 
@@ -43,6 +43,9 @@ export async function fetchValidatorsInfo() {
 
   for (const validatorIds of validatorIdBatches) {
     try {
+      logger.info(
+        `Fetching validators info from ${validatorIds[0]} to ${validatorIds[validatorIds.length - 1]}`
+      );
       const validatorsInfo = await getValidatorsInfo(slotNumber, validatorIds);
 
       const updateData = validatorsInfo.map((validatorInfo) => ({
