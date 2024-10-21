@@ -8,8 +8,8 @@ datasource db {
 }
 
 model Epoch {
-  epoch     Int     @id
-  processed Boolean // TODO: add description
+  epoch          Int     @id
+  rewardsFetched Boolean // Whether the rewards for this epoch have been fetched
 }
 
 model Slot {
@@ -30,10 +30,11 @@ model Committee {
   slot_relation Slot @relation(fields: [slot], references: [slot], onDelete: Cascade)
 
   @@id([slot, index, validatorIndex])
-  @@index([slot, validatorIndex])
+  @@index([slot, validatorIndex]) // TODO: add why is each index needed
   @@index([slot, index])
   @@index([validatorIndex])
   @@index([slot, attestationDelay])
+  @@index([slot]) // used to remove processed committee records
 }
 
 model Validator {
@@ -60,8 +61,11 @@ model HourlyValidatorStats {
   validatorIndex     Int
   hour               Int // 0-23
   date               DateTime @db.Date // dd-mm-yyyy
-  beaconRewards      Decimal  @db.Decimal(78, 0)
-  attestationsMissed Int
+  head               BigInt?
+  target             BigInt?
+  source             BigInt?
+  inactivity         BigInt?
+  attestationsMissed Int?
 
   @@id([validatorIndex, hour, date])
   @@index([date, hour])

@@ -68,3 +68,26 @@ export type GetValidators = {
     };
   }[];
 };
+
+export type AttestationRewards = {
+  execution_optimistic: boolean;
+  finalized?: boolean;
+  data: {
+    ideal_rewards: {
+      effective_balance: string;
+      head: string;
+      target: string;
+      source: string;
+      inclusion_delay?: string;
+      inactivity?: string;
+    }[];
+    total_rewards: {
+      validator_index: string;
+      head: string;
+      target: string;
+      source: string;
+      inclusion_delay?: string;
+      inactivity?: string;
+    }[];
+  };
+};

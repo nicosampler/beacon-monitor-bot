@@ -51,26 +51,3 @@ export function getTimestampFromEpochNumber(epochNumber: number): number {
 
   return GENESIS_TIMESTAMP + epochNumber * slotDuration;
 }
-
-/**
- * Given an epoch number, determine the start slot number of the epoch.
- * @param epochNumber - The epoch number.
- * @returns The start slot number of the epoch.
- */
-export function getStartSlotFromEpochNumber(epochNumber: number): number {
-  return epochNumber * SLOTS_PER_EPOCH;
-}
-
-/**
- * Given an epoch number, determine the first and last slot numbers of the epoch.
- * @param epochNumber - The epoch number.
- * @returns An object containing the first and last slot numbers of the epoch.
- */
-export function getFirstAndLastSlotOfEpoch(epochNumber: number): {
-  firstSlot: number;
-  lastSlot: number;
-} {
-  const firstSlot = getStartSlotFromEpochNumber(epochNumber);
-  const lastSlot = firstSlot + SLOTS_PER_EPOCH - 1;
-  return { firstSlot, lastSlot };
-}

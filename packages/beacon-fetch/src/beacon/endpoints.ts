@@ -1,5 +1,6 @@
 import { instance } from "@/src/beacon/utils/instance.js";
 import {
+  AttestationRewards,
   GetAttestations,
   GetCommittees,
   GetValidators,
@@ -64,4 +65,14 @@ export async function getValidatorsInfo(
     { params }
   );
   return res.data.data;
+}
+
+export async function getAttestationRewards(
+  stateId: string | number,
+  validatorIds: string[]
+) {
+  return await instance.post<AttestationRewards>(
+    `${env.BEACON_API_URL}/eth/v1/beacon/rewards/attestations/${stateId}`,
+    validatorIds
+  );
 }

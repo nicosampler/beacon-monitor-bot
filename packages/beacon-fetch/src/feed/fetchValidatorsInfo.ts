@@ -6,13 +6,13 @@ import chunk from "lodash/chunk.js";
 import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
 import { env } from "@/src/env.js";
 import { VALIDATOR_STATUS } from "@/src/constants/index.js";
+import { getPrisma } from "@/src/lib/prisma.js";
 
-const prisma = new PrismaClient();
+const prisma = getPrisma();
 const logger = createLogger("fetchValidatorsInfo");
 
 export async function fetchValidatorsInfo() {
   const highestValidatorId = await getHighestValidatorId();
-  const maxValidatorId = highestValidatorId;
   const batchSize = 6500;
   const slotNumber =
     getSlotNumberFromTimestamp(Date.now()) - env.BEACON_SLOTS_PER_EPOCH;
@@ -35,7 +35,7 @@ export async function fetchValidatorsInfo() {
 
   // Create array of all validator IDs and filter out those in final states
   const allValidatorIds = Array.from(
-    { length: maxValidatorId + 1 },
+    { length: highestValidatorId + 1 },
     (_, i) => i
   ).filter((id) => !finalStateValidatorIds.has(id));
 
