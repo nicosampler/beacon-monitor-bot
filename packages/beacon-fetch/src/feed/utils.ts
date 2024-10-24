@@ -21,24 +21,18 @@ export const db_getSlotByNumber = async (slot: number) =>
   });
 
 export const db_existCommitteeForSlot = async (slot: number) => {
-  const res = await prisma.committee.count({ where: { slot } });
-  return res > 0;
+  // Use findFirst instead of count
+  const res = await prisma.committee.findFirst({
+    where: { slot },
+  });
+  // Return true if a committee is found, false otherwise
+  return res !== null;
 };
 
 export const db_getSlotByNumbers = async (slots: number[]) => {
   const res = await prisma.slot.findMany({
     where: { slot: { in: slots } },
   });
-  return res.map((r) => r.slot);
-};
-
-export const db_getUniqueSlotsFromCommittees = async (slots: number[]) => {
-  const res = await prisma.committee.findMany({
-    where: { slot: { in: slots } },
-    distinct: ["slot"],
-    select: { slot: true },
-  });
-
   return res.map((r) => r.slot);
 };
 

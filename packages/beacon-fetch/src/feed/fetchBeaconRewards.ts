@@ -6,11 +6,11 @@ import { VALIDATOR_STATUS } from "@/src/constants/index.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { Prisma } from "@prisma/client";
 import { getTimestampFromEpochNumber } from "@/src/beacon/utils/time.js";
-import { startOfDay, getHours } from "date-fns";
+import { convertToUTC } from "@/src/utils/date/index.js";
 
 const prisma = getPrisma();
 const apiBatchSize = 150000;
-const prismaBatchSize = 5000;
+const prismaBatchSize = 2500;
 
 export async function fetchBeaconRewards(
   epochNumber: number,
@@ -33,12 +33,11 @@ export async function fetchBeaconRewards(
     });
     const activeValidatorsIds = new Set(activeValidators.map((v) => v.id));
 
-    // filter out inactive validators
     const allValidatorIds = Array.from(
       { length: highestValidatorId + 1 },
       (_, i) => i
     )
-      .filter((id) => activeValidatorsIds.has(id))
+      .filter((id) => activeValidatorsIds.has(id)) // filter out inactive validators
       .map((id) => id.toString());
 
     // using createMany to be able to skip duplicates
@@ -55,7 +54,7 @@ export async function fetchBeaconRewards(
         validatorIds
       );
 
-      // if returns 404, abort the loop
+      // if returns 404, abort the loop as the epoch is not finalized yet
       if (validatorsRewardsRes.status === 404) {
         throw new Error("404 - Aborting");
       }
@@ -74,13 +73,12 @@ export async function fetchBeaconRewards(
       const rewardsDataBatches = chunk(rewardsData, prismaBatchSize);
       for (const batch of rewardsDataBatches) {
         const epochTimestamp = getTimestampFromEpochNumber(epochNumber);
-        const date = startOfDay(epochTimestamp);
-        const hour = getHours(epochTimestamp);
+        const { date, hour } = convertToUTC(epochTimestamp);
 
         const values = batch
           .map(
             (reward) =>
-              `(${reward.validatorIndex}, ${hour}, '${date.toISOString()}', ${reward.head}, ${reward.target}, ${reward.source}, ${reward.inactivity})`
+              `(${reward.validatorIndex}, ${hour}, '${date}', ${reward.head}, ${reward.target}, ${reward.source}, ${reward.inactivity})`
           )
           .join(",");
 
@@ -108,7 +106,7 @@ export async function fetchBeaconRewards(
       return;
     }
     logger.error(
-      `Error fetching or inserting rewards for epoch ${epochNumber}`,
+      `Error fetching or inserting beacon rewards for epoch ${epochNumber}`,
       error
     );
   }

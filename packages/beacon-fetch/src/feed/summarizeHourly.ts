@@ -9,38 +9,32 @@ import { updateLastSummaryUpdate } from "@/src/feed/utils.js";
 import { CustomLogger } from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import chunk from "lodash/chunk.js";
+import { convertToUTC } from "@/src/utils/date/index.js";
+import { log } from "console";
 
 const prisma = getPrisma();
 
-export function prepareHourlyStats(startTime: Date) {
-  const hour = startTime.getUTCHours();
-  const date = new Date(startTime.toISOString().split("T")[0]);
-  return { hour, date };
-}
-
 export function calculateSlotRange(startTime: Date, endTime: Date) {
   const startSlot = getSlotNumberFromTimestamp(startTime.getTime());
-  const tmpEndSlot = getSlotNumberFromTimestamp(endTime.getTime());
-  const endSlot = tmpEndSlot + env.BEACON_SLOTS_PER_EPOCH;
+  const endSlot = getSlotNumberFromTimestamp(endTime.getTime());
   return { startSlot, endSlot };
 }
 
+//
 export function isProcessingTooEarly(endSlot: number) {
-  const endSlotTime = getTimestampFromSlotNumber(endSlot + 1);
-  return Date.now() < endSlotTime;
+  const endSlotTime = getTimestampFromSlotNumber(endSlot);
+  return Date.now() <= endSlotTime;
 }
 
-export async function hasUnprocessedSlots(
-  startSlot: number,
-  endSlot: number
-): Promise<boolean> {
-  const unprocessedSlots = await prisma.slot.count({
+export async function hasUnprocessedSlots(endSlot: number): Promise<boolean> {
+  // wait until the attestations are fetched for the endSlot
+  const slot = await prisma.slot.findUnique({
     where: {
-      slot: { gte: startSlot, lte: endSlot },
-      attestationsFetched: false,
+      slot: endSlot,
+      attestationsFetched: true,
     },
   });
-  return unprocessedSlots > 0;
+  return slot == null;
 }
 
 export async function hasUnprocessedExecutionRewards(
@@ -58,14 +52,13 @@ export async function hasUnprocessedExecutionRewards(
 }
 
 export async function hasUnprocessedBeaconRewards(
-  endTime: Date
+  endSlot: number
 ): Promise<boolean> {
   // We need at least one beacon reward epoch processed after the endTime because
   // We will remove all the beacon rewards before the endTime and
   // if the table is empty, fetching restarts from env.EXECUTION_BLOCK_LOOKBACK
-  const endSlot = getEpochNumberFromTimestamp(endTime.getTime());
   const beaconRewards = await prisma.epoch.findFirst({
-    where: { epoch: { gt: endSlot }, rewardsFetched: true },
+    where: { epoch: { lt: endSlot + 1 }, rewardsFetched: true },
   });
   return beaconRewards == null;
 }
@@ -114,17 +107,17 @@ async function processCommitteeValidatorsBatch(
   tx: Prisma.TransactionClient,
   batch: ValidatorMissedAttestations[],
   hour: number,
-  date: Date
+  date: string
 ) {
   const values = batch
     .map(
       (stat) =>
-        `(${stat.validatorIndex}, ${hour}, '${date.toISOString().split("T")[0]}', 0, ${stat._count.validatorIndex})`
+        `(${stat.validatorIndex}, ${hour}, '${date}', ${stat._count.validatorIndex})`
     )
     .join(",");
 
   await tx.$executeRawUnsafe(`
-    INSERT INTO "HourlyValidatorStats" ("validatorIndex", "hour", "date", "beaconRewards", "attestationsMissed")
+    INSERT INTO "HourlyValidatorStats" ("validatorIndex", "hour", "date", "attestationsMissed")
     VALUES ${values}
     ON CONFLICT ("validatorIndex", "hour", "date") 
     DO UPDATE SET "attestationsMissed" = "HourlyValidatorStats"."attestationsMissed" + EXCLUDED."attestationsMissed"
@@ -135,15 +128,14 @@ export async function processExecutionRewardsBatch(
   tx: Prisma.TransactionClient,
   executionRewards: ValidatorExecutionRewards[],
   hour: number,
-  date: Date
+  date: string
 ) {
   const batches = chunk(executionRewards, 10000);
 
   for (const batch of batches) {
     const values = batch
       .map(
-        (stat) =>
-          `('${stat.address}', ${hour}, '${date.toISOString().split("T")[0]}', ${stat._sum.amount})`
+        (stat) => `('${stat.address}', ${hour}, '${date}', ${stat._sum.amount})`
       )
       .join(",");
 
@@ -214,13 +206,12 @@ export async function summarizeAtomicTransaction(
   committeeValidators: ValidatorMissedAttestations[],
   executionRewards: ValidatorExecutionRewards[],
   hour: number,
-  date: Date,
-  //startSlot: number,
+  date: string,
   endSlot: number,
   endTime: Date,
   logger: CustomLogger
 ) {
-  const BATCH_SIZE = 10000;
+  const BATCH_SIZE = 2500;
 
   await prisma.$transaction(
     async (tx) => {
@@ -256,21 +247,27 @@ export async function summarizeHourly(
     return;
   }
 
-  if (await hasUnprocessedSlots(startSlot, endSlot)) {
-    logger.info("Some slots are not fully processed. Skipping summarization.");
-    return;
-  }
-
-  if (await hasUnprocessedExecutionRewards(endTime)) {
+  const unprocessedSlots = await hasUnprocessedSlots(endSlot);
+  if (unprocessedSlots) {
     logger.info(
-      "Some execution rewards are not fully processed. Skipping summarization."
+      `Some slots before ${endSlot} are not fully processed. Skipping summarization.`
     );
     return;
   }
 
-  if (await hasUnprocessedBeaconRewards(endTime)) {
+  const unprocessedExecutionRewards =
+    await hasUnprocessedExecutionRewards(endTime);
+  if (unprocessedExecutionRewards) {
     logger.info(
-      "Some beacon rewards are not fully processed. Skipping summarization."
+      `Some execution rewards before ${endTime} are not fully processed. Skipping summarization.`
+    );
+    return;
+  }
+
+  const unprocessedBeaconRewards = await hasUnprocessedBeaconRewards(endSlot);
+  if (unprocessedBeaconRewards) {
+    logger.info(
+      `Some beacon rewards before ${endTime} are not fully processed. Skipping summarization.`
     );
     return;
   }
@@ -284,7 +281,8 @@ export async function summarizeHourly(
   // Execution rewards
   const executionRewards = await aggregateExecutionRewards(startTime, endTime);
 
-  const { hour, date } = prepareHourlyStats(startTime);
+  // we use hour and date in UTC to be consistent with the db timestamp
+  const { hour, date } = convertToUTC(startTime);
 
   // update the hourly validator stats
   await summarizeAtomicTransaction(
@@ -297,7 +295,5 @@ export async function summarizeHourly(
     logger
   );
 
-  logger.info(
-    `Summarized attestations for hour ${hour} on ${date.toISOString()}`
-  );
+  logger.info(`Summarized attestations for hour ${hour} on ${date}`);
 }

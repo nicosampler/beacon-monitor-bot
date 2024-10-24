@@ -1,10 +1,11 @@
 import { getCommittees } from "@/src/beacon/endpoints.js";
 import { db_existCommitteeForSlot } from "@/src/feed/utils.js";
-import _ from "lodash";
+import chunk from "lodash/chunk.js";
 
 import { getPrisma } from "@/src/lib/prisma.js";
 import createLogger from "@/src/lib/pino.js";
 import { CustomLogger } from "@/src/lib/pino.js";
+import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 
 const prisma = getPrisma();
 
@@ -64,10 +65,12 @@ export const fetchCommittee = async (
     );
 
     // Prepare slots upsert
-    const slotUpserts = uniqueSlotsInCommittees.map((slot) => ({
-      slot,
-      attestationsFetched: false,
-    }));
+    const slotUpserts = uniqueSlotsInCommittees
+      .filter((slot) => slot >= getOldestLookbackSlot())
+      .map((slot) => ({
+        slot,
+        attestationsFetched: false,
+      }));
 
     // Updated committee upsert
     const committeeUpserts = fetchedCommittees.flatMap((committee) =>
@@ -86,26 +89,39 @@ export const fetchCommittee = async (
 
     logCommitteeInfo(logger, fetchedCommittees, slotUpserts);
 
-    logger.info(`creating ${uniqueSlotsInCommittees} slots.`);
-    const slotPromises = uniqueSlotsInCommittees.map((slot) =>
-      prisma.slot.upsert({
-        where: { slot },
-        update: {}, // No update needed if it exists
-        create: { slot, attestationsFetched: false },
-      })
+    logger.info(
+      `creating ${uniqueSlotsInCommittees.length} slots and ${committeeUpserts.length} committees`
     );
-    await Promise.all(slotPromises);
-    logger.info(`slots created.`);
 
-    const batchSize = 5000;
-    logger.info(`creating ${committeeUpserts.length} committees`);
-    for (let i = 0; i < committeeUpserts.length; i += batchSize) {
-      const batch = committeeUpserts.slice(i, i + batchSize);
-      await prisma.committee.createMany({
-        data: batch,
-        skipDuplicates: true,
-      });
-    }
+    // Use prisma.$transaction for both slot upserts and committee creations
+    await prisma.$transaction(
+      async (tx) => {
+        // Slot upserts
+        const slotPromises = uniqueSlotsInCommittees.map((slot) =>
+          tx.slot.upsert({
+            where: { slot },
+            update: {}, // No update needed if it exists
+            create: { slot, attestationsFetched: false },
+          })
+        );
+        await Promise.all(slotPromises);
+
+        // Committee creations
+        const batchSize = 5000;
+        const batches = chunk(committeeUpserts, batchSize);
+        for (const batch of batches) {
+          await tx.committee.createMany({
+            data: batch,
+            skipDuplicates: true,
+          });
+        }
+      },
+      {
+        timeout: 1000 * 60, // 1 minute
+      }
+    );
+
+    logger.info(`slots and committees created.`);
   } catch (error) {
     logger.error(`pullCommittee: for slot ${stateId}`, { error });
     throw error;

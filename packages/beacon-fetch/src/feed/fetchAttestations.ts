@@ -11,6 +11,7 @@ import { Slot } from "@prisma/client";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { Prisma } from "@prisma/client";
 import { env } from "@/src/env.js";
+import chunk from "lodash/chunk.js";
 
 const prisma = getPrisma();
 
@@ -18,6 +19,7 @@ export const fetchAttestation = async (slotNumber: number) => {
   const logger = createLogger(`pullAttestations for slot ${slotNumber}`);
 
   try {
+    // Fetch the committee for the slot, as we need the validators indices and aggregation bits.
     await fetchCommittee(slotNumber);
 
     // Check if the slot is already processed
@@ -152,7 +154,7 @@ async function processAttestation(
 
 /**
  * After processing the attestations for a slot, update the validators within the Committee table.
- * Validators that attested early (within 5 slots) are deleted, for performance reasons.
+ * Validators that attested early (within BEACON_MAX_ATTESTATION_DELAY slots) are deleted, for performance reasons.
  * The others are updated with the attestation delay.
  * @param allProcessedAttestations - The attestations to update.
  * @param slotNumber - The slot number to update the attestations for.
@@ -163,6 +165,8 @@ async function updateValidatorsAttestations(
   slotNumber: number,
   logger: CustomLogger
 ): Promise<void> {
+  const prismaBatchSize = 4000;
+
   await prisma.$transaction(
     async (tx) => {
       logger.info(
@@ -170,7 +174,6 @@ async function updateValidatorsAttestations(
       );
 
       if (allProcessedAttestations.length > 0) {
-        const batchSize = 4000;
         const validatorsToDelete = allProcessedAttestations.filter(
           (a) => a.attestationDelay <= env.BEACON_MAX_ATTESTATION_DELAY
         );
@@ -178,9 +181,9 @@ async function updateValidatorsAttestations(
           (a) => a.attestationDelay > env.BEACON_MAX_ATTESTATION_DELAY
         );
 
-        // Delete attestations with delay <= 5
-        for (let i = 0; i < validatorsToDelete.length; i += batchSize) {
-          const batchDeletes = validatorsToDelete.slice(i, i + batchSize);
+        // Delete attestations with delay <= BEACON_MAX_ATTESTATION_DELAY
+        const deleteChunks = chunk(validatorsToDelete, prismaBatchSize);
+        for (const batchDeletes of deleteChunks) {
           const deleteQuery = Prisma.sql`
             DELETE FROM "Committee"
             WHERE ("slot", "index", "validatorIndex") IN (
@@ -193,12 +196,12 @@ async function updateValidatorsAttestations(
             );
           `;
 
-          await prisma.$executeRaw(deleteQuery);
+          await tx.$executeRaw(deleteQuery);
         }
 
-        // Update attestations with delay > 5
-        for (let i = 0; i < validatorsToUpdate.length; i += batchSize) {
-          const batchUpdates = validatorsToUpdate.slice(i, i + batchSize);
+        // Update attestations with delay > BEACON_MAX_ATTESTATION_DELAY
+        const updateChunks = chunk(validatorsToUpdate, prismaBatchSize);
+        for (const batchUpdates of updateChunks) {
           const updateQuery = Prisma.sql`
             UPDATE "Committee"
             SET "attestationDelay" = CASE
@@ -220,17 +223,17 @@ async function updateValidatorsAttestations(
             );
           `;
 
-          await prisma.$executeRaw(updateQuery);
+          await tx.$executeRaw(updateQuery);
         }
       }
 
-      await prisma.slot.update({
+      await tx.slot.update({
         where: { slot: slotNumber },
         data: { attestationsFetched: true },
       });
     },
     {
-      timeout: 120_000,
+      timeout: 1000 * 60 * 2, // 2 minutes
     }
   );
 }

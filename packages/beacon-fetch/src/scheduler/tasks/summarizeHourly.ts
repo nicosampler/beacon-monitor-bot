@@ -22,7 +22,7 @@ async function summarizeHourlyTask() {
     const startTime =
       !summary || !summary.hourlyValidatorStats
         ? new Date(getTimestampFromSlotNumber(getOldestLookbackSlot()))
-        : new Date(summary.hourlyValidatorStats);
+        : summary.hourlyValidatorStats;
     const endTime = addMinutes(startTime, HOUR_IN_MIN);
 
     // check if the last summary is in the last hour
@@ -45,7 +45,7 @@ async function summarizeHourlyTask() {
 }
 
 export const job = new SimpleIntervalJob(
-  { minutes: 1, runImmediately: true },
+  { minutes: 5, runImmediately: true },
   new AsyncTask(`${ID}_task`, summarizeHourlyTask),
   {
     id: ID,

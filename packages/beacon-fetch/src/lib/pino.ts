@@ -58,38 +58,42 @@ const createLogger = (context: string | null) => {
 // Define the Logger type using ReturnType based on the createLogger function
 export type CustomLogger = ReturnType<typeof createLogger>;
 
-// Configure log destination and prettifier
-let logDestination: DestinationStream | undefined;
-let transport;
-if (LOG_OUTPUT === "file") {
-  const logPath = path.join(logsDir, getCurrentLogFileName());
-  logDestination = Pino.destination({ dest: logPath, sync: false });
-  transport = {
-    target: "pino-pretty",
-    options: {
-      destination: logPath,
-      colorize: false, // Disable colors for file output
-    },
-  };
-} else {
-  transport = {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-    },
-  };
-}
+// Modify the logger creation to be a function
+const createPinoLogger = () => {
+  let logDestination: DestinationStream | undefined;
+  let transport;
+  if (LOG_OUTPUT === "file") {
+    const logPath = path.join(logsDir, getCurrentLogFileName());
+    logDestination = Pino.destination({ dest: logPath, sync: false });
+    transport = {
+      target: "pino-pretty",
+      options: {
+        destination: logPath,
+        colorize: false, // Disable colors for file output
+      },
+    };
+  } else {
+    transport = {
+      target: "pino-pretty",
+      options: {
+        colorize: true,
+      },
+    };
+  }
 
-// Create the logger
-const logger = pino(
-  {
-    level: env.LOG_LEVEL || "info",
-    timestamp: () => `,"time":"${new Date().toISOString()}"`,
-    base: null, // This removes pid and hostname
-    transport, // Use the transport configuration here
-  },
-  LOG_OUTPUT === "file" ? logDestination : undefined
-);
+  return pino(
+    {
+      level: env.LOG_LEVEL || "info",
+      timestamp: () => `,"time":"${new Date().toISOString()}"`,
+      base: null, // This removes pid and hostname
+      transport, // Use the transport configuration here
+    },
+    LOG_OUTPUT === "file" ? logDestination : undefined
+  );
+};
+
+// Create the initial logger
+let logger = createPinoLogger();
 
 // Ensure the logs directory exists if file output is used
 if (LOG_OUTPUT === "file") {
@@ -100,9 +104,10 @@ if (LOG_OUTPUT === "file") {
 
 // Function to rotate logs daily
 const rotateLogsDaily = () => {
-  if (LOG_OUTPUT === "file" && logDestination) {
-    const newLogPath = path.join(logsDir, getCurrentLogFileName());
-    (logDestination as any).reopen(newLogPath);
+  if (LOG_OUTPUT === "file") {
+    // Create a new logger instance with the new file
+    logger = createPinoLogger();
+    console.log("Log rotated to new file:", getCurrentLogFileName());
   }
 };
 

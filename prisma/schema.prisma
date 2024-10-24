@@ -26,15 +26,12 @@ model Committee {
   aggregationBitsIndex Int // indicates what position in the aggregation bits this validator was assigned to
   validatorIndex       Int
   attestationDelay     Int?
-
-  slot_relation Slot @relation(fields: [slot], references: [slot], onDelete: Cascade)
+  slot_relation        Slot @relation(fields: [slot], references: [slot], onDelete: Cascade)
 
   @@id([slot, index, validatorIndex])
-  @@index([slot, validatorIndex]) // TODO: add why is each index needed
-  @@index([slot, index])
-  @@index([validatorIndex])
   @@index([slot, attestationDelay])
-  @@index([slot]) // used to remove processed committee records
+  @@index([slot, index])
+  @@index([slot])
 }
 
 model Validator {
@@ -42,7 +39,7 @@ model Validator {
   status            String?
   balance           Decimal @db.Decimal(78, 0)
   withdrawalAddress String?
-  users             User[]
+  users             User[]  @relation("UserToValidator")
 
   @@index([withdrawalAddress])
 }
@@ -51,9 +48,8 @@ model ExecutionRewards {
   address     String
   timestamp   DateTime
   amount      Decimal  @db.Decimal(78, 0)
-  blockNumber Int
+  blockNumber Int      @id
 
-  @@id(blockNumber)
   @@index([timestamp])
 }
 
@@ -148,17 +144,17 @@ model User {
   performanceThreshold Int                 @default(90)
   attestationsNotif    DateTime?
   attestationThreshold Int                 @default(5)
-  validators           Validator[]
-  withdrawalAddresses  WithdrawalAddress[]
-  feeRewardAddresses   FeeRewardAddress[]
+  feeRewardAddresses   FeeRewardAddress[]  @relation("FeeRewardAddressToUser")
+  validators           Validator[]         @relation("UserToValidator")
+  withdrawalAddresses  WithdrawalAddress[] @relation("UserToWithdrawalAddress")
 }
 
 model WithdrawalAddress {
   address String @id
-  users   User[]
+  users   User[] @relation("UserToWithdrawalAddress")
 }
 
 model FeeRewardAddress {
   address String @id
-  users   User[]
+  users   User[] @relation("FeeRewardAddressToUser")
 }
