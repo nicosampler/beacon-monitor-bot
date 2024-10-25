@@ -13,20 +13,19 @@ services:
     networks:
       - app-network
 
-  # migrate:
-  #   image: node:18-alpine
-  #   working_dir: /app
-  #   volumes:
-  #     - ./beacon-fetch:/app  # O el directorio donde tienes Prisma configurado
-  #   environment:
-  #     DATABASE_URL: ${DATABASE_URL}
-  #   depends_on:
-  #     - postgres
-  #   command: >
-  #     sh -c "
-  #     npx prisma db push"
-  #   networks:
-  #     - app-network
+  migrate:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      - postgres
+    command: >
+      sh -c "npx prisma db push"
+    networks:
+      - app-network
 
   beacon-fetch:
     container_name: beacon-monitor-fetch
@@ -35,8 +34,8 @@ services:
     build:
       context: .
       dockerfile: packages/beacon-fetch/Dockerfile
-    # depends_on:
-    #   - migrate
+    depends_on:
+      - migrate
     networks:
       - app-network
 

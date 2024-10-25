@@ -31,6 +31,12 @@ export async function fetchBeaconRewards(
       },
       select: { id: true },
     });
+
+    if (!activeValidators.length) {
+      logger.info(`No active validators found for epoch ${epochNumber}`);
+      return;
+    }
+
     const activeValidatorsIds = new Set(activeValidators.map((v) => v.id));
 
     const allValidatorIds = Array.from(
