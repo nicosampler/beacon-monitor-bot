@@ -5,6 +5,7 @@ import { job as fetchOldestAttestationJob } from "@/src/scheduler/tasks/fetchOld
 import { job as validatorsBalancesJob } from "@/src/scheduler/tasks/fetchValidatorsBalances.js";
 import { job as fetchValidatorsInfo } from "@/src/scheduler/tasks/fetchValidatorsInfo.js";
 import { job as fetchBeaconRewardsJob } from "@/src/scheduler/tasks/fetchBeaconRewards.js";
+import { job as summarizeDailyJob } from "@/src/scheduler/tasks/summarizeDaily.js";
 
 export function scheduleTasks() {
   // Fetch the oldest attestation
@@ -22,6 +23,9 @@ export function scheduleTasks() {
   // Fetch the beacon rewards for the current epoch and store them in the db.
   scheduler.addSimpleIntervalJob(fetchBeaconRewardsJob);
 
-  // Summarize the attestations for the current hour and store them in the db.
+  // Summarize hourly attestation and rewards
   scheduler.addSimpleIntervalJob(summarizeHourlyJob);
+
+  // Summarize daily attestation and rewards
+  scheduler.addSimpleIntervalJob(summarizeDailyJob);
 }

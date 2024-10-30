@@ -4,7 +4,7 @@ import { fetchExecutionRewards } from "@/src/feed/fetchExecutionRewards.js";
 const ID = "executionRewards";
 
 export const job = new SimpleIntervalJob(
-  { seconds: 1, runImmediately: true },
+  { milliseconds: 500, runImmediately: true },
   new AsyncTask(`${ID}_task`, fetchExecutionRewards),
   {
     id: ID,

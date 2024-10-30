@@ -7,11 +7,9 @@ import { differenceInMinutes, addMinutes } from "date-fns";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 
 const prisma = getPrisma();
-const logger = createLogger("summarizeAttestationsHourly");
-
+const ID = "Summarize:Hourly";
+const logger = createLogger(ID);
 const HOUR_IN_MIN = 60;
-
-const ID = "summarizeAttestationsHourly";
 
 async function summarizeHourlyTask() {
   try {
@@ -25,15 +23,17 @@ async function summarizeHourlyTask() {
         : summary.hourlyValidatorStats;
     const endTime = addMinutes(startTime, HOUR_IN_MIN);
 
-    // check if the last summary is in the last hour
+    // make sure we always have data for the last 2 hours.
+    // Note that performance is calculated on an hourly basis, so we need to make sure
+    // we have data for the last hour. So we only summarize if have passed 2 hours since the last summary.
     const minutesSinceLastSummary = differenceInMinutes(new Date(), startTime);
-    if (minutesSinceLastSummary < HOUR_IN_MIN) {
+    if (minutesSinceLastSummary < HOUR_IN_MIN * 2) {
       logger.info("Skipping, still in progress.");
       return;
     }
 
     logger.info(
-      `Summarizing attestations from ${startTime.toISOString()} to ${endTime.toISOString()}`
+      `Summarizing hourly stats from ${startTime.toISOString()} to ${endTime.toISOString()}`
     );
 
     await summarizeHourly(startTime, endTime, logger);

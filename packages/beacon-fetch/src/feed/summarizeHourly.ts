@@ -10,7 +10,7 @@ import { CustomLogger } from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import chunk from "lodash/chunk.js";
 import { convertToUTC } from "@/src/utils/date/index.js";
-import { log } from "console";
+import { addMinutes } from "date-fns";
 
 const prisma = getPrisma();
 
@@ -155,38 +155,13 @@ export async function removeProcessedCommitteeRecords(
   endSlot: number,
   logger: CustomLogger
 ) {
-  const batchSize = 5000;
   logger.info(`Removing processed committee records up to Slot ${endSlot}`);
 
-  while (true) {
-    // Find a batch of records to delete
-    const recordsToDelete = await tx.committee.findMany({
-      where: {
-        slot: { lte: endSlot },
-      },
-      select: { slot: true, index: true, validatorIndex: true },
-      take: batchSize,
-    });
-
-    if (recordsToDelete.length === 0) {
-      break; // No more records to delete
-    }
-
-    // Delete the found records
-    await tx.committee.deleteMany({
-      where: {
-        OR: recordsToDelete.map((record) => ({
-          slot: record.slot,
-          index: record.index,
-          validatorIndex: record.validatorIndex,
-        })),
-      },
-    });
-
-    if (recordsToDelete.length < batchSize) {
-      break; // This was the last batch
-    }
-  }
+  await tx.committee.deleteMany({
+    where: {
+      slot: { lte: endSlot },
+    },
+  });
 }
 
 export async function removeProcessedExecutionRewards(
@@ -242,12 +217,12 @@ export async function summarizeHourly(
 ): Promise<void> {
   const { startSlot, endSlot } = calculateSlotRange(startTime, endTime);
 
-  if (isProcessingTooEarly(endSlot)) {
-    logger.info("Processing too early. Skipping summarization.");
-    return;
-  }
+  // add 1 hour to the endSlot to account for the slot duration
+  const endSlotPlusOneHour =
+    endSlot + (60 / env.BEACON_SLOT_DURATION_IN_SECONDS) * 60;
+  const endTimePlusOneHour = addMinutes(endTime, 60);
 
-  const unprocessedSlots = await hasUnprocessedSlots(endSlot);
+  const unprocessedSlots = await hasUnprocessedSlots(endSlotPlusOneHour);
   if (unprocessedSlots) {
     logger.info(
       `Some slots before ${endSlot} are not fully processed. Skipping summarization.`
@@ -256,7 +231,7 @@ export async function summarizeHourly(
   }
 
   const unprocessedExecutionRewards =
-    await hasUnprocessedExecutionRewards(endTime);
+    await hasUnprocessedExecutionRewards(endTimePlusOneHour);
   if (unprocessedExecutionRewards) {
     logger.info(
       `Some execution rewards before ${endTime} are not fully processed. Skipping summarization.`
@@ -264,7 +239,8 @@ export async function summarizeHourly(
     return;
   }
 
-  const unprocessedBeaconRewards = await hasUnprocessedBeaconRewards(endSlot);
+  const unprocessedBeaconRewards =
+    await hasUnprocessedBeaconRewards(endSlotPlusOneHour);
   if (unprocessedBeaconRewards) {
     logger.info(
       `Some beacon rewards before ${endTime} are not fully processed. Skipping summarization.`

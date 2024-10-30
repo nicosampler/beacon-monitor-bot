@@ -65,6 +65,7 @@ model HourlyValidatorStats {
 
   @@id([validatorIndex, hour, date])
   @@index([date, hour])
+  @@index([date])
 }
 
 model HourlyExecutionRewards {
@@ -75,16 +76,29 @@ model HourlyExecutionRewards {
 
   @@id([address, date, hour])
   @@index([date, hour])
+  @@index([date])
 }
 
 model DailyValidatorStats {
   validatorIndex     Int
   date               DateTime @db.Date
-  executionRewards   Decimal  @db.Decimal(78, 0)
-  beaconRewards      Decimal  @db.Decimal(78, 0)
-  attestationsMissed Int
+  head               BigInt?
+  target             BigInt?
+  source             BigInt?
+  inactivity         BigInt?
+  attestationsMissed Int?
 
   @@id([validatorIndex, date])
+  @@index([date])
+}
+
+model DailyExecutionRewards {
+  address String
+  amount  Decimal  @db.Decimal(78, 0)
+  day     Int // 1-31
+  date    DateTime @db.Date
+
+  @@id([address, date])
   @@index([date])
 }
 
@@ -126,7 +140,7 @@ model YearlyValidatorStats {
 model LastSummaryUpdate {
   id                    Int       @id @default(autoincrement())
   hourlyValidatorStats  DateTime?
-  dailyValidatorStats   DateTime?
+  dailyValidatorStats   DateTime? @db.Date
   weeklyValidatorStats  DateTime?
   monthlyValidatorStats DateTime?
   yearlyValidatorStats  DateTime?

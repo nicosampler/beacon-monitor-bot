@@ -45,7 +45,7 @@ async function fetchBeaconRewardsTask() {
 }
 
 export const job = new SimpleIntervalJob(
-  { seconds: 5, runImmediately: true },
+  { milliseconds: 500, runImmediately: true },
   new AsyncTask(`${ID}_task`, fetchBeaconRewardsTask),
   {
     id: ID,

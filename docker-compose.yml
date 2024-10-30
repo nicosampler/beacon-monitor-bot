@@ -18,8 +18,8 @@ services:
     working_dir: /app
     volumes:
       - .:/app
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
+    env_file:
+      - .env
     depends_on:
       - postgres
     command: >

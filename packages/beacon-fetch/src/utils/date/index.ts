@@ -9,11 +9,14 @@ export function convertToUTC(dateInput: Date | number) {
 
   // Extract hours and date from ISO string
   const hour = Number(isoString.slice(11, 13));
+  // Extract day of month from ISO string
+  const day = Number(isoString.slice(8, 10));
   // Format date string as yyyy-mm-dd for PostgreSQL
   const dateString = isoString.slice(0, 10);
 
   return {
     hour,
+    day,
     date: dateString,
   };
 }
