@@ -19,9 +19,8 @@ export async function hasAllHourlyStats(date: Date): Promise<boolean> {
   const hasLastHour = await prisma.hourlyValidatorStats.findFirst({
     where: {
       hour: 23,
-      date: {
-        equals: date,
-      },
+      // Adding 1 day to be sure there is always 1 day of data to get daily stats
+      date: addDays(date, 1),
     },
   });
   return hasLastHour != null;
@@ -31,20 +30,19 @@ export async function hasAllExecutionRewards(date: Date): Promise<boolean> {
   const hasLastHour = await prisma.hourlyExecutionRewards.findFirst({
     where: {
       hour: 23,
-      date: {
-        equals: date,
-      },
+      // Adding 1 day to be sure there is always 1 day of data to get daily stats
+      date: addDays(date, 1),
     },
   });
 
   return hasLastHour != null;
 }
 
-export async function aggregateHourlyStats(date: string) {
+export async function aggregateHourlyStats(date: Date) {
   return prisma.hourlyValidatorStats.groupBy({
     by: ["validatorIndex"],
     where: {
-      date: new Date(date),
+      date,
     },
     _sum: {
       head: true,
@@ -59,11 +57,11 @@ export type AggregateHourlyStats = Awaited<
   ReturnType<typeof aggregateHourlyStats>
 >[number];
 
-export async function aggregateExecutionRewards(date: string) {
+export async function aggregateExecutionRewards(date: Date) {
   return prisma.hourlyExecutionRewards.groupBy({
     by: ["address"],
     where: {
-      date: new Date(date),
+      date,
     },
     _sum: {
       amount: true,
@@ -102,27 +100,27 @@ export async function processExecutionRewardsBatch(
 
 export async function removeProcessedHourlyStatsRecords(
   tx: Prisma.TransactionClient,
-  date: string,
+  date: Date,
   logger: CustomLogger
 ) {
   logger.info(`Removing processed HourlyStats for ${date}`);
 
   await tx.hourlyValidatorStats.deleteMany({
     where: {
-      date: new Date(date),
+      date,
     },
   });
 }
 
 export async function removeProcessedExecutionRewards(
   tx: Prisma.TransactionClient,
-  date: string,
+  date: Date,
   logger: CustomLogger
 ) {
   logger.info(`Removing processed ExecutionRewards for ${date}`);
   await tx.hourlyExecutionRewards.deleteMany({
     where: {
-      date: new Date(date),
+      date,
     },
   });
 }
@@ -131,7 +129,7 @@ export async function summarizeAtomicTransaction(
   hourlyStates: AggregateHourlyStats[],
   executionRewards: AggregateExecutionRewards[],
   day: number,
-  date: string,
+  date: Date,
   logger: CustomLogger
 ) {
   const BATCH_SIZE = 5000;
@@ -145,7 +143,7 @@ export async function summarizeAtomicTransaction(
         await tx.dailyValidatorStats.createMany({
           data: batch.map((stat) => ({
             validatorIndex: stat.validatorIndex,
-            date: new Date(date),
+            date,
             head: stat._sum.head || null,
             target: stat._sum.target || null,
             source: stat._sum.source || null,
@@ -162,7 +160,7 @@ export async function summarizeAtomicTransaction(
           data: batch.map((stat) => ({
             address: stat.address,
             amount: stat._sum.amount || 0,
-            date: new Date(date),
+            date,
             day,
           })),
         });
@@ -185,18 +183,16 @@ export async function summarizeAtomicTransaction(
 }
 
 export async function summarizeDaily(
-  date: string,
+  date: Date,
   day: number,
   logger: CustomLogger
 ): Promise<void> {
-  const endTimePlusOneDay = addDays(new Date(date), 1);
-
-  if (!(await hasAllHourlyStats(endTimePlusOneDay))) {
+  if (!(await hasAllHourlyStats(date))) {
     logger.info(`No hourly stats ready, skipping`);
     return;
   }
 
-  if (!(await hasAllExecutionRewards(endTimePlusOneDay))) {
+  if (!(await hasAllExecutionRewards(date))) {
     logger.info(`No execution rewards ready, skipping`);
     return;
   }
@@ -213,6 +209,4 @@ export async function summarizeDaily(
     date,
     logger
   );
-
-  logger.info(`Summarized attestations for day ${day} on ${date}`);
 }
