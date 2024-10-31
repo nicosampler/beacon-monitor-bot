@@ -16,22 +16,28 @@ export function calculateSlotRange(startTime: Date, endTime: Date) {
 }
 
 export async function hasAllHourlyStats(date: Date): Promise<boolean> {
+  const now = new Date();
+  // Adding 1 day to be sure there is always 1 day of data to get daily stats
+  const dateWithBuffer = addDays(date, 1);
+  const _date = dateWithBuffer < now ? date : dateWithBuffer;
   const hasLastHour = await prisma.hourlyValidatorStats.findFirst({
     where: {
       hour: 23,
-      // Adding 1 day to be sure there is always 1 day of data to get daily stats
-      date: addDays(date, 1),
+      date: _date,
     },
   });
   return hasLastHour != null;
 }
 
 export async function hasAllExecutionRewards(date: Date): Promise<boolean> {
+  const now = new Date();
+  // Adding 1 day to be sure there is always 1 day of data to get daily stats
+  const dateWithBuffer = addDays(date, 1);
+  const _date = dateWithBuffer < now ? date : dateWithBuffer;
   const hasLastHour = await prisma.hourlyExecutionRewards.findFirst({
     where: {
       hour: 23,
-      // Adding 1 day to be sure there is always 1 day of data to get daily stats
-      date: addDays(date, 1),
+      date: _date,
     },
   });
 
@@ -167,11 +173,7 @@ export async function summarizeAtomicTransaction(
       }
 
       if (hasAllHourlyStats.length > 0 || hasAllExecutionRewards.length > 0) {
-        await updateLastSummaryUpdate(
-          "dailyValidatorStats",
-          new Date(date),
-          tx
-        );
+        await updateLastSummaryUpdate("dailyValidatorStats", date, tx);
         await removeProcessedHourlyStatsRecords(tx, date, logger);
         await removeProcessedExecutionRewards(tx, date, logger);
       }
