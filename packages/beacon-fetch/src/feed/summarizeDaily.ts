@@ -16,28 +16,20 @@ export function calculateSlotRange(startTime: Date, endTime: Date) {
 }
 
 export async function hasAllHourlyStats(date: Date): Promise<boolean> {
-  const now = new Date();
-  // Adding 1 day to be sure there is always 1 day of data to get daily stats
-  const dateWithBuffer = addDays(date, 1);
-  const _date = dateWithBuffer < now ? date : dateWithBuffer;
   const hasLastHour = await prisma.hourlyValidatorStats.findFirst({
     where: {
       hour: 0,
-      date: addDays(_date, 1),
+      date: addDays(date, 1),
     },
   });
   return hasLastHour != null;
 }
 
 export async function hasAllExecutionRewards(date: Date): Promise<boolean> {
-  const now = new Date();
-  // Adding 1 day to be sure there is always 1 day of data to get daily stats
-  const dateWithBuffer = addDays(date, 1);
-  const _date = dateWithBuffer < now ? date : dateWithBuffer;
   const hasLastHour = await prisma.hourlyExecutionRewards.findFirst({
     where: {
       hour: 0,
-      date: addDays(_date, 1),
+      date: addDays(date, 1),
     },
   });
 
@@ -189,15 +181,15 @@ export async function summarizeDaily(
   day: number,
   logger: CustomLogger
 ): Promise<void> {
-  if (!(await hasAllHourlyStats(date))) {
-    logger.info(`No hourly stats ready, skipping`);
-    return;
-  }
+  // if (!(await hasAllHourlyStats(date))) {
+  //   logger.info(`No hourly stats ready, skipping`);
+  //   return;
+  // }
 
-  if (!(await hasAllExecutionRewards(date))) {
-    logger.info(`No execution rewards ready, skipping`);
-    return;
-  }
+  // if (!(await hasAllExecutionRewards(date))) {
+  //   logger.info(`No execution rewards ready, skipping`);
+  //   return;
+  // }
 
   // Missed attestations
   const hourlyStats = await aggregateHourlyStats(date);

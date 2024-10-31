@@ -17,17 +17,31 @@ const oldestLookbackSlotDate = new Date(
 async function summarizeHourlyTask() {
   try {
     const summary = await prisma.lastSummaryUpdate.findFirst();
+
     const lastSummaryDate =
       summary?.hourlyValidatorStats ?? oldestLookbackSlotDate;
-    const now = new Date();
-    const nowMinus1 = subHours(now, 1);
-
-    if (lastSummaryDate < nowMinus1) {
-      logger.info("Skipping, still in progress.");
-      return;
-    }
 
     const nextSummaryDate = addHours(lastSummaryDate, 1);
+    const now = new Date();
+    const oneHourBefore = subHours(now, 1);
+
+    // We should only summarize data that is older than 1 hour
+    // Examples:
+    // Case 1 - Skip:
+    //   now = 12:00
+    //   nowMinus1h = 11:00
+    //   nextSummaryDate = 11:00
+    //   Skip because we can't process data from 11:00 yet
+    //
+    // Case 2 - Process:
+    //   now = 12:00
+    //   nowMinus1h = 11:00
+    //   nextSummaryDate = 10:00
+    //   Process because 10:00 is older than 11:00 (data is complete)
+    if (nextSummaryDate > oneHourBefore) {
+      logger.info("Skipping, data is too recent (less than 1 hour old)");
+      return;
+    }
 
     logger.info(`Summarizing hourly stats for ${nextSummaryDate}`);
 

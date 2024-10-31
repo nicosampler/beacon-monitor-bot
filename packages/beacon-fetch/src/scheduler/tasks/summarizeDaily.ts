@@ -27,11 +27,9 @@ async function summarizeDailyTask() {
 
     const dayToProcess = addDays(lastProcessedDay, 1);
 
-    // make sure we always have data for the last 2 days.
-    // Note that performance is calculated on an daily basis, so we need to make sure
-    // we have data for the last day. So we only summarize if have passed 2 days since the last summary.
-    const hoursSinceLastSummary = differenceInHours(new Date(), dayToProcess);
-    if (hoursSinceLastSummary < HOURS_IN_DAY * 2) {
+    // Make sure the hourly summary stats have been processed
+    // so we check that hourlyValidatorStats is greater than the day we want to process
+    if (summary?.hourlyValidatorStats < addDays(dayToProcess, 1)) {
       logger.info("Skipping, still in progress.");
       return;
     }
