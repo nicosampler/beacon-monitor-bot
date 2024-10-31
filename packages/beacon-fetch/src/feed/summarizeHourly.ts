@@ -216,12 +216,7 @@ export async function summarizeHourly(
 ): Promise<void> {
   const { startSlot, endSlot } = calculateSlotRange(startTime, endTime);
 
-  // add 1 hour to the endSlot to account for the slot duration
-  const endSlotPlusOneHour =
-    endSlot + (60 / env.BEACON_SLOT_DURATION_IN_SECONDS) * 60;
-  const endTimePlusOneHour = addMinutes(endTime, 60);
-
-  const unprocessedSlots = await hasUnprocessedSlots(endSlotPlusOneHour);
+  const unprocessedSlots = await hasUnprocessedSlots(endSlot);
   if (unprocessedSlots) {
     logger.info(
       `Some slots before ${endSlot} are not fully processed. Skipping summarization.`
@@ -230,7 +225,7 @@ export async function summarizeHourly(
   }
 
   const unprocessedExecutionRewards =
-    await hasUnprocessedExecutionRewards(endTimePlusOneHour);
+    await hasUnprocessedExecutionRewards(endTime);
   if (unprocessedExecutionRewards) {
     logger.info(
       `Some execution rewards before ${endTime} are not fully processed. Skipping summarization.`
@@ -238,8 +233,7 @@ export async function summarizeHourly(
     return;
   }
 
-  const unprocessedBeaconRewards =
-    await hasUnprocessedBeaconRewards(endSlotPlusOneHour);
+  const unprocessedBeaconRewards = await hasUnprocessedBeaconRewards(endSlot);
   if (unprocessedBeaconRewards) {
     logger.info(
       `Some beacon rewards before ${endTime} are not fully processed. Skipping summarization.`

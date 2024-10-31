@@ -22,8 +22,8 @@ export async function hasAllHourlyStats(date: Date): Promise<boolean> {
   const _date = dateWithBuffer < now ? date : dateWithBuffer;
   const hasLastHour = await prisma.hourlyValidatorStats.findFirst({
     where: {
-      hour: 23,
-      date: _date,
+      hour: 0,
+      date: addDays(_date, 1),
     },
   });
   return hasLastHour != null;
@@ -36,8 +36,8 @@ export async function hasAllExecutionRewards(date: Date): Promise<boolean> {
   const _date = dateWithBuffer < now ? date : dateWithBuffer;
   const hasLastHour = await prisma.hourlyExecutionRewards.findFirst({
     where: {
-      hour: 23,
-      date: _date,
+      hour: 0,
+      date: addDays(_date, 1),
     },
   });
 
