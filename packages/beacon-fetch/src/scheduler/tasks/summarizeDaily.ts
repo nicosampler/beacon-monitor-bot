@@ -2,7 +2,7 @@ import { AsyncTask, SimpleIntervalJob } from "toad-scheduler";
 import createLogger from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { getTimestampFromSlotNumber } from "@/src/beacon/utils/time.js";
-import { differenceInHours } from "date-fns";
+import { addDays, differenceInHours } from "date-fns";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { summarizeDaily } from "@/src/feed/summarizeDaily.js";
 import { convertToUTC } from "@/src/utils/date/index.js";
@@ -22,20 +22,23 @@ async function summarizeDailyTask() {
     const summary = await prisma.lastSummaryUpdate.findFirst();
 
     // If the last summary is not in the db, use the oldest lookback slot
-    const startTime = summary?.dailyValidatorStats
+    const lastDayProcessed = summary?.dailyValidatorStats
       ? summary.dailyValidatorStats
       : oldestLookbackSlotDate;
 
     // make sure we always have data for the last 2 days.
     // Note that performance is calculated on an daily basis, so we need to make sure
     // we have data for the last day. So we only summarize if have passed 2 days since the last summary.
-    const hoursSinceLastSummary = differenceInHours(new Date(), startTime);
+    const hoursSinceLastSummary = differenceInHours(
+      new Date(),
+      lastDayProcessed
+    );
     if (hoursSinceLastSummary < HOURS_IN_DAY * 2) {
       logger.info("Skipping, still in progress.");
       return;
     }
 
-    const { date, day } = convertToUTC(startTime);
+    const { date, day } = convertToUTC(addDays(lastDayProcessed, 1));
 
     logger.info(`Summarizing daily stats for ${date}`);
 

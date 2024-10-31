@@ -1,7 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { env } from "@/src/env.js";
 import {
-  getEpochNumberFromTimestamp,
   getSlotNumberFromTimestamp,
   getTimestampFromSlotNumber,
 } from "@/src/beacon/utils/time.js";
@@ -270,6 +269,4 @@ export async function summarizeHourly(
     endTime,
     logger
   );
-
-  logger.info(`Summarized attestations for hour ${hour} on ${date}`);
 }
