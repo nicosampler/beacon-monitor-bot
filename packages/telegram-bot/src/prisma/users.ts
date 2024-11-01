@@ -28,9 +28,16 @@ export function getUserFull_db(userId: number) {
 }
 
 export function getUsers_db() {
-  return prisma.user.findMany().catch((error) => {
-    throw new AppError("Error getting users", "BD_ERROR", error);
-  });
+  return prisma.user
+    .findMany({
+      select: {
+        id: true,
+        messageId: true,
+      },
+    })
+    .catch((error) => {
+      throw new AppError("Error getting users", "BD_ERROR", error);
+    });
 }
 
 export function countUsers_db() {

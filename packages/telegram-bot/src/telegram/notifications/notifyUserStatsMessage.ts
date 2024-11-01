@@ -14,28 +14,36 @@ import {
 import { formatEther } from "ethers/lib/utils.js";
 import { formatNumber } from "@/src/utils/misc.js";
 import { AppError } from "@/src/utils/errors/AppError.js";
+import { getWithdrawableAmountByUserId } from "@/src/utils/getWithdrawableAmountByUserId.js";
+import { getUserFull_db } from "@/src/prisma/users.js";
 
 export async function notifyUserStatsMessage(
   userId: number
 ): Promise<number | undefined> {
-  const user = inMemoryUsers[userId];
-  const performance = user.performance;
-  const feeRewards = user.priorityFeeRewards;
-  const status = user.status;
+  const user = await getUserFull_db(userId);
 
-  const totalBalance = performance?.balance || 0;
+  const performance = 0; //user.performance;
+  const feeRewards = 0; //user.priorityFeeRewards;
+  const status = {
+    active: [],
+    inactiveIds: [],
+    slashedIds: [],
+    exitedIds: [],
+  };
+
+  const totalBalance = 0; //performance?.balance || 0;
   const totalBalancePrice = (totalBalance * tokenPrice).toFixed(2);
 
-  const blockRewards1d = performance?.performance1d || 0;
-  const blockRewards7d = performance?.performance7d || 0;
-  const blockRewards31d = performance?.performance31d || 0;
+  const blockRewards1d = 0; //performance?.performance1d || 0;
+  const blockRewards7d = 0; //performance?.performance7d || 0;
+  const blockRewards31d = 0; //performance?.performance31d || 0;
   const blockRewards1dUSD = blockRewards1d * tokenPrice;
   const blockRewards7dUSD = blockRewards7d * tokenPrice;
   const blockRewards31dUSD = blockRewards31d * tokenPrice;
 
-  const feeRewards1d = Number(formatEther(feeRewards?.d || 0));
-  const feeRewards7d = Number(formatEther(feeRewards?.w || 0));
-  const feeRewards31d = Number(formatEther(feeRewards?.m || 0));
+  const feeRewards1d = 0; //Number(formatEther(feeRewards?.d || 0));
+  const feeRewards7d = 0; //Number(formatEther(feeRewards?.w || 0));
+  const feeRewards31d = 0; //Number(formatEther(feeRewards?.m || 0));
   const feeRewards1dUSD =
     feeRewards1d * (FEE_REWARDS_IN_STABLE ? 1 : tokenPrice);
   const feeRewards7dUSD =
@@ -59,25 +67,25 @@ export async function notifyUserStatsMessage(
     "$"
   );
 
-  const rewards1dRow = user.performance
+  const rewards1dRow = 0 //user.performance
     ? `${formatNumber(blockRewards1d)}  ${formatNumber(
         feeRewards1d
       )}  ${rewards1dUSD}`
     : "        loading...";
 
-  const rewards7dRow = user.performance
+  const rewards7dRow = 0 //user.performance
     ? `${formatNumber(blockRewards7d)}  ${formatNumber(
         feeRewards7d
       )}  ${rewards7dUSD}`
     : "        loading...";
 
-  const rewards31dRow = user.performance
+  const rewards31dRow = 0 //user.performance
     ? `${formatNumber(blockRewards31d)}  ${formatNumber(
         feeRewards31d
       )}  ${rewards31dUSD}`
     : "        loading...";
 
-  const withdrawable = user.withdrawable || 0;
+  const withdrawable = await getWithdrawableAmountByUserId(userId);
   const withdrawablePrice = withdrawable * tokenPrice;
   const withdrawableFormatted = withdrawable.toFixed(4);
   const withdrawablePriceFormatted = withdrawablePrice.toFixed(2);
@@ -86,7 +94,7 @@ export async function notifyUserStatsMessage(
     ? `🟢 ${status.active} | 🟡 ${status.inactiveIds.length} | 🚫 ${status.slashedIds.length} | 🔚 ${status.exitedIds.length}`
     : `🟢 ⌛️ | 🟡 ⌛️ | 🚫 ⌛️ | 🔚 ⌛️`;
 
-  const claimableMsg = user.withdrawable
+  const claimableMsg = withdrawable
     ? `${withdrawableFormatted} ${TOKEN_SYMBOL} ($${withdrawablePriceFormatted})`
     : `loading...`;
 
@@ -100,12 +108,10 @@ export async function notifyUserStatsMessage(
   const apyMsg = apy !== undefined ? `${apy.toFixed(2)}%` : "loading...";
 
   const balanceMsg = totalBalance
-    ? `${totalBalance.toFixed(3)} ${TOKEN_SYMBOL} ($${totalBalancePrice})`
+    ? `${Number(totalBalance).toFixed(3)} ${TOKEN_SYMBOL} ($${totalBalancePrice})`
     : "loading...";
 
-  const attestationsMsg = user.last100AttestedPercentage
-    ? `${user.last100AttestedPercentage}%`
-    : "loading...";
+  const attestationsMsg = 0 ? `${0}%` : "loading...";
 
   const tokenPriceFormatted = tokenPrice
     ? `${TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}`
@@ -130,7 +136,7 @@ ${tokenPriceFormatted}
 Updated: ${format(new Date(), "MM/dd hh:mmaaa")} UTC
   \``;
 
-  let _messageId = user.messageId;
+  let _messageId = Number(user.messageId);
   const chatId = user.chatId;
 
   // send stats message

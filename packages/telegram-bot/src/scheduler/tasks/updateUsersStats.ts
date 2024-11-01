@@ -1,38 +1,40 @@
-import { updateUserMessageId_db } from "@/src/prisma/users";
-import { notifyMissedAttestations } from "@/src/telegram/notifications/notifyMissedAttestations";
-import { notifyUnderPerformance } from "@/src/telegram/notifications/notifyUnderPerformance";
-import { notifyUserStatsMessage } from "@/src/telegram/notifications/notifyUserStatsMessage";
-import { notifyValidatorsActivityChanged } from "@/src/telegram/notifications/notifyValidatorsActivityChanged";
-import { handleError } from "@/src/utils/errors/handleError";
-import { inMemoryUsers } from "@/src/utils/inMemoryDB";
+import {
+  getUserFull_db,
+  getUsers_db,
+  updateUserMessageId_db,
+} from "@/src/prisma/users.js";
+import { notifyMissedAttestations } from "@/src/telegram/notifications/notifyMissedAttestations.js";
+import { notifyUnderPerformance } from "@/src/telegram/notifications/notifyUnderPerformance.js";
+import { notifyUserStatsMessage } from "@/src/telegram/notifications/notifyUserStatsMessage.js";
+import { notifyValidatorsActivityChanged } from "@/src/telegram/notifications/notifyValidatorsActivityChanged.js";
+import { handleError } from "@/src/utils/errors/handleError.js";
 import { AsyncTask } from "toad-scheduler";
 
 export async function updateUsersStatsImp(userId?: number) {
-  const users = userId ? { [userId]: inMemoryUsers[userId] } : inMemoryUsers;
+  const users = userId ? [await getUserFull_db(userId)] : await getUsers_db();
 
-  Object.values(users).forEach(async (user) => {
+  users.forEach(async (user) => {
     const userId = Number(user.id);
 
     // stats notification
     const messageIdStats = await notifyUserStatsMessage(userId);
     if (messageIdStats && messageIdStats !== Number(user.messageId)) {
-      user.messageId = messageIdStats;
       await updateUserMessageId_db(userId, messageIdStats);
     }
 
-    if (
-      inMemoryUsers[userId]?.performance !== undefined &&
-      !inMemoryUsers[userId]?.status !== undefined
-    ) {
-      // missed Attestations
-      await notifyMissedAttestations(userId);
+    // if (
+    //   inMemoryUsers[userId]?.performance !== undefined &&
+    //   !inMemoryUsers[userId]?.status !== undefined
+    // ) {
+    //   // missed Attestations
+    //   await notifyMissedAttestations(userId);
 
-      // notify under performance
-      await notifyUnderPerformance(userId);
+    //   // notify under performance
+    //   await notifyUnderPerformance(userId);
 
-      // notify validators status changed
-      await notifyValidatorsActivityChanged(userId);
-    }
+    //   // notify validators status changed
+    //   await notifyValidatorsActivityChanged(userId);
+    // }
   });
 }
 
