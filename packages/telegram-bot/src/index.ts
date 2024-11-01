@@ -3,7 +3,7 @@ import "dotenv/config";
 import { session } from "grammy";
 import { conversations, createConversation } from "@grammyjs/conversations";
 
-import { scheduleUsersTasks } from "./scheduler/scheduleNewUserTasks.js";
+import { scheduleUsersTasks } from "./scheduler/index.js";
 import { botStats } from "./telegram/commands/botStats.js";
 import { help } from "./telegram/commands/help.js";
 import { getPrisma } from "@/src/config/prisma.js";
@@ -17,7 +17,7 @@ import { registerMainMenu } from "@/src/telegram/menus/index.js";
 const prisma = getPrisma();
 
 async function main() {
-  await loadInMemoryUsers();
+  //await loadInMemoryUsers();
 
   bot.start();
 

@@ -10,6 +10,9 @@ import { editMessage } from "@/src/telegram/utils/messaging.js";
 import { getUserFull_db, upsertUser_db } from "@/src/prisma/users.js";
 import { dashboard } from "@/src/telegram/commands/dashboard.js";
 import { getDataFromContext } from "@/src/telegram/utils/getUserIdFromCtx.js";
+import { getPrisma } from "@/src/config/prisma.js";
+
+const prisma = getPrisma();
 
 async function _waitForWithdrawalAddress(
   conversation: LoadValidatorsConversation,
@@ -59,8 +62,8 @@ export async function loadValidators(
   ctx: MyContext
 ) {
   try {
-    const loadedValidatorsCount = await _checkValidatorsLimits(ctx);
-    const availableValidatorsSpotsCount = 600;
+    //const loadedValidatorsCount = await _checkValidatorsLimits(ctx);
+    //const availableValidatorsSpotsCount = 600;
     //MAX_VALIDATORS_SUPPORTED - loadedValidatorsCount;
 
     // get uerId
@@ -79,15 +82,13 @@ export async function loadValidators(
     }
 
     // Loading validators message
-    let tmpReply = await ctx.reply(
-      `🔄 Loading validators... Please be patient, it may take a few minutes!`
-    );
+    let tmpReply = await ctx.reply(`🔄 Loading validators...!`);
 
     // recover user data from the database
     const userDB = await getUserFull_db(userId);
 
     // check if the user has already reached the maximum number of validators allowed
-    const currentUserValidators = userDB?.validators ?? [];
+    // const currentUserValidators = userDB?.validators ?? [];
 
     // await editMessage(
     //   tmpReply,
@@ -96,28 +97,33 @@ export async function loadValidators(
     // return;
 
     // call the api to bring all the validators associated with the address
-    // and filter the ones that are not already in the user's validators list
-    const newUserValidators = [];
-    //  (
-    //   await getValidatorsByWithdrawalAddresses(withdrawalAddress)
-    // ).filter(
-    //   (validatorId) =>
-    //     !currentUserValidators.find(
-    //       (userValidator) => userValidator.id == validatorId
-    //     )
-    // );
+    const userValidators = await prisma.validator.findMany({
+      where: {
+        withdrawalAddress: {
+          equals: withdrawalAddress,
+          mode: "insensitive",
+        },
+        NOT: {
+          users: {
+            some: {
+              id: userId,
+            },
+          },
+        },
+      },
+    });
 
     // check if there are validators for the address
-    if (!newUserValidators.length) {
+    if (!userValidators.length) {
       await editMessage(
         tmpReply,
-        `No new validators have been found for this address.`
+        `👎 No new validators have been found for this address.`
       );
       return;
     }
 
     // limit validators to the maximum number of validators per user
-    const availableSeats = 600;
+    //const availableSeats = 600;
     // Math.min(
     //   availableValidatorsSpotsCount,
     //   MAX_VALIDATORS_PER_USER,
@@ -125,18 +131,18 @@ export async function loadValidators(
     // );
 
     // Get the validators to be added
-    const validatorsToBeAdded = newUserValidators.slice(0, availableSeats);
-    const validatorsNotAddedCount =
-      newUserValidators.length - validatorsToBeAdded.length;
+    // const validatorsToBeAdded = newUserValidators.slice(0, availableSeats);
+    // const validatorsNotAddedCount =
+    //   newUserValidators.length - validatorsToBeAdded.length;
 
-    // get the new withdrawal addresses
-    const newWithdrawalAddresses = userDB?.withdrawalAddresses || [];
-    if (!newWithdrawalAddresses.some((o) => o.address === withdrawalAddress)) {
-      newWithdrawalAddresses.push({ address: withdrawalAddress });
-    }
+    // // get the new withdrawal addresses
+    // const newWithdrawalAddresses = userDB?.withdrawalAddresses || [];
+    // if (!newWithdrawalAddresses.some((o) => o.address === withdrawalAddress)) {
+    //   newWithdrawalAddresses.push({ address: withdrawalAddress });
+    // }
 
     // create or update user
-    const userData: any = {
+    const userData = {
       id: userId,
       userId,
       chatId: userId,
@@ -149,9 +155,8 @@ export async function loadValidators(
         },
       },
       validators: {
-        connectOrCreate: validatorsToBeAdded.map((validatorindex) => ({
-          where: { id: validatorindex },
-          create: { id: validatorindex },
+        connect: userValidators.map((validator) => ({
+          id: validator.id,
         })),
       },
     };
@@ -159,25 +164,20 @@ export async function loadValidators(
     await upsertUser_db(userId, userData, userData);
 
     // add user to inMemoryDB
-    if (!inMemoryUsers[userId]) {
-      inMemoryUsers[userId] = {
-        id: userId,
-        chatId: userId,
-      };
-    }
+    // if (!inMemoryUsers[userId]) {
+    //   inMemoryUsers[userId] = {
+    //     id: userId,
+    //     chatId: userId,
+    //   };
+    // }
 
     // reset user inMemoryDB
-    resetUser(userId);
+    // resetUser(userId);
 
     // Notify the user
     await editMessage(
       tmpReply,
-      `${validatorsToBeAdded.length} validators were added to your account 💪!
-${
-  validatorsNotAddedCount
-    ? "" //`⚠️ ${validatorsNotAddedCount} Validators weren't added. Allowed: ${MAX_VALIDATORS_PER_USER} per user and ${MAX_VALIDATORS_SUPPORTED} bot limit.`
-    : ""
-}
+      `${userValidators.length} validators were added to your account 💪!
 - It will take some minutes to start providing stats -
 `
     );

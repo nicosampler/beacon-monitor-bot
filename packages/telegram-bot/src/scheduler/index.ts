@@ -5,7 +5,6 @@ import { scheduler } from "@/src/config/index.js";
 import {
   TOKEN_PRICE_JOB_TIME,
   NOTIFY_USERS_JOB_TIME,
-  WITHDRAWABLE_JOB_TIME,
 } from "@/src/constants/index.js";
 
 if (
@@ -18,16 +17,6 @@ if (
 }
 
 export function scheduleUsersTasks() {
-  // withdrawable
-  const withdrawableJob = new SimpleIntervalJob(
-    { minutes: WITHDRAWABLE_JOB_TIME, runImmediately: true },
-    allTasks.withdrawable.task,
-    {
-      id: "withdrawable",
-      preventOverrun: true,
-    }
-  );
-
   // token price
   const tokenPriceJob = new SimpleIntervalJob(
     { minutes: TOKEN_PRICE_JOB_TIME, runImmediately: true },
@@ -49,6 +38,5 @@ export function scheduleUsersTasks() {
   );
 
   scheduler.addSimpleIntervalJob(tokenPriceJob);
-  scheduler.addSimpleIntervalJob(withdrawableJob);
   scheduler.addSimpleIntervalJob(notifyUsersJob);
 }
