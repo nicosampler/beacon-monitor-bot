@@ -2,15 +2,36 @@
   "name": "telegram-bot",
   "version": "1.0.0",
   "description": "Telegram bot to monitor beacon chain validators.",
-  "main": "src/bot.js",
+  "main": "src/index.ts",
+  "type": "module",
   "scripts": {
-    "start": "node src/bot.js",
-    "start:dev": "nodemon src/bot.js"
+    "dev": "dotenv -e ../../.env npx tsx src/index.ts"
   },
   "dependencies": {
-    "pg": "^8.5.1"
+    "@grammyjs/conversations": "^1.2.0",
+    "@grammyjs/stateless-question": "^3.0.1",
+    "@prisma/client": "5.15.0",
+    "axios": "^1.5.1",
+    "axios-logger": "^2.7.0",
+    "date-fns": "^2.30.0",
+    "dotenv": "^16.3.1",
+    "ethers": "^5.7.2",
+    "ethers-multicall-provider": "3.1.2",
+    "grammy": "^1.19.0",
+    "grammy-inline-menu": "^9.0.0",
+    "lodash": "^4.17.21",
+    "rate-limiter-flexible": "^5.0.3",
+    "toad-scheduler": "^3.0.1"
   },
   "devDependencies": {
-    "nodemon": "^2.0.7"
+    "@types/lodash": "^4.14.200",
+    "@types/nedb": "^1.8.16",
+    "@types/node": "^20.8.4",
+    "dotenv-cli": "^7.4.2",
+    "prisma": "5.15.0",
+    "ts-node": "10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "tscpaths": "^0.0.9",
+    "typescript": "^5.4.5"
   }
 }

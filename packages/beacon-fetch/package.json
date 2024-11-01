@@ -12,7 +12,7 @@
     "has-log-errors": "grep -Ei 'error' \"./logs/$(date +'%d-%m-%Y').log\""
   },
   "dependencies": {
-    "@prisma/client": "^5.15.0",
+    "@prisma/client": "5.15.0",
     "@t3-oss/env-core": "^0.10.1",
     "axios": "^1.7.2",
     "axios-logger": "^2.8.1",
@@ -42,7 +42,7 @@
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-sort-destructure-keys": "^2.0.0",
     "jest": "^29.7.0",
-    "prisma": "^5.15.0",
+    "prisma": "5.15.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
