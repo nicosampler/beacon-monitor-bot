@@ -197,6 +197,7 @@ async function updateValidatorsAttestations(
 
         // Delete attestations with delay <= BEACON_MAX_ATTESTATION_DELAY
         const deleteChunks = chunk(validatorsToDelete, prismaBatchSize);
+        logger.info(`Deleting ${validatorsToDelete.length} attestations.`);
         for (const batchDeletes of deleteChunks) {
           const deleteQuery = Prisma.sql`
             DELETE FROM "Committee"
@@ -212,9 +213,11 @@ async function updateValidatorsAttestations(
 
           await tx.$executeRaw(deleteQuery);
         }
+        logger.info(`Done deleting.`);
 
         // Update attestations with delay > BEACON_MAX_ATTESTATION_DELAY
         const updateChunks = chunk(validatorsToUpdate, prismaBatchSize);
+        logger.info(`Updating ${validatorsToUpdate.length} attestations.`);
         for (const batchUpdates of updateChunks) {
           const updateQuery = Prisma.sql`
             UPDATE "Committee"
@@ -236,6 +239,7 @@ async function updateValidatorsAttestations(
               )}
             );
           `;
+          logger.info(`Done updating.`);
 
           await tx.$executeRaw(updateQuery);
         }
