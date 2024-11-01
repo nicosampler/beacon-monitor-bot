@@ -1,6 +1,5 @@
 import { getValidatorsBalances } from "@/src/beacon/endpoints.js";
 import { getPrisma } from "@/src/lib/prisma.js";
-import createLogger from "@/src/lib/pino.js";
 import { CustomLogger } from "@/src/lib/pino.js";
 import { Decimal } from "@prisma/client/runtime/library";
 import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
@@ -34,8 +33,9 @@ function logValidatorBalances(
  * We use raw SQL queries for both updates and inserts to maximize efficiency.
  * Each operation (update or insert) is performed in a single transaction with up to 5000 records.
  */
-export const fetchValidatorsBalances = async (): Promise<void> => {
-  const logger = createLogger(`FetchValidatorsBalances`);
+export const fetchValidatorsBalances = async (
+  logger: CustomLogger
+): Promise<void> => {
   const slotNumber =
     getSlotNumberFromTimestamp(Date.now()) - env.BEACON_SLOTS_PER_EPOCH;
   try {

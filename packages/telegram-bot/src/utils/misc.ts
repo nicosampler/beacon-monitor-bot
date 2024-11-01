@@ -49,3 +49,15 @@ export function isNumberInRange(value: string, min: number, max: number) {
   // Check if the number is within the range
   return num >= min && num <= max;
 }
+
+export const VALIDATOR_STATUS = {
+  PENDING_INITIALIZED: "pending_initialized",
+  PENDING_QUEUED: "pending_queued",
+  ACTIVE_ONGOING: "active_ongoing",
+  ACTIVE_EXITING: "active_exiting",
+  ACTIVE_SLASHED: "active_slashed",
+  EXITED_UNSLASHED: "exited_unslashed",
+  EXITED_SLASHED: "exited_slashed",
+  WITHDRAWAL_POSSIBLE: "withdrawal_possible",
+  WITHDRAWAL_DONE: "withdrawal_done",
+};

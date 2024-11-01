@@ -12,26 +12,74 @@ import {
   DAYS_IN_MONTH,
 } from "@/src/constants/index.js";
 import { formatEther } from "ethers/lib/utils.js";
-import { formatNumber } from "@/src/utils/misc.js";
+import { formatNumber, VALIDATOR_STATUS } from "@/src/utils/misc.js";
 import { AppError } from "@/src/utils/errors/AppError.js";
 import { getWithdrawableAmountByUserId } from "@/src/utils/getWithdrawableAmountByUserId.js";
 import { getUserFull_db } from "@/src/prisma/users.js";
+import { getPrisma } from "@/src/config/prisma.js";
+import { subHours } from "date-fns";
+import { getSlotNumberFromTimestamp } from "@/src/utils/time.js";
+
+const prisma = getPrisma();
+
+const tokenUnit = 32000000000;
+
+const BEACON_SLOT_DURATION_IN_SECONDS = Number(
+  process.env.BEACON_SLOT_DURATION_IN_SECONDS
+);
+const slotsIn1h = 3600 / BEACON_SLOT_DURATION_IN_SECONDS;
 
 export async function notifyUserStatsMessage(
   userId: number
 ): Promise<number | undefined> {
-  const user = await getUserFull_db(userId);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      //withdrawalAddresses: true,
+      validators: true,
+    },
+  });
 
-  const performance = 0; //user.performance;
-  const feeRewards = 0; //user.priorityFeeRewards;
+  const beaconActiveValidators = user.validators.filter(
+    (validator) =>
+      validator.status === VALIDATOR_STATUS.ACTIVE_ONGOING ||
+      validator.status === VALIDATOR_STATUS.ACTIVE_EXITING
+  );
+  const oneHourBefore = subHours(new Date(), 1);
+
+  const missedAttestedSlots = await prisma.committee.findMany({
+    where: {
+      validatorIndex: {
+        in: beaconActiveValidators.map((v) => v.id),
+      },
+      slot: { gte: getSlotNumberFromTimestamp(oneHourBefore.getTime()) },
+    },
+  });
+
   const status = {
     active: [],
     inactiveIds: [],
-    slashedIds: [],
-    exitedIds: [],
+    slashedIds: user.validators.filter(
+      (validator) =>
+        validator.status === VALIDATOR_STATUS.ACTIVE_SLASHED ||
+        validator.status === VALIDATOR_STATUS.EXITED_SLASHED
+    ),
+    exitedIds: user.validators.filter(
+      (validator) =>
+        validator.status === VALIDATOR_STATUS.EXITED_UNSLASHED ||
+        validator.status === VALIDATOR_STATUS.WITHDRAWAL_DONE
+    ),
   };
+  // calc performance percentage between slotsIn1h and missedAttestedSlots
+  const performance =
+    ((slotsIn1h - missedAttestedSlots.length) / slotsIn1h) * 100;
+  const feeRewards = 0; //user.priorityFeeRewards;
 
-  const totalBalance = 0; //performance?.balance || 0;
+  const totalBalanceInGwei = user.validators.reduce(
+    (acc, validator) => acc + BigInt(validator.balance.toString()),
+    BigInt(0)
+  );
+  const totalBalance = Number(totalBalanceInGwei) / tokenUnit;
   const totalBalancePrice = (totalBalance * tokenPrice).toFixed(2);
 
   const blockRewards1d = 0; //performance?.performance1d || 0;
@@ -91,7 +139,7 @@ export async function notifyUserStatsMessage(
   const withdrawablePriceFormatted = withdrawablePrice.toFixed(2);
 
   const validatorsStatusMsg = status
-    ? `🟢 ${status.active} | 🟡 ${status.inactiveIds.length} | 🚫 ${status.slashedIds.length} | 🔚 ${status.exitedIds.length}`
+    ? `🟢 ${status.active.length} | 🟡 ${status.inactiveIds.length} | 🚫 ${status.slashedIds.length} | 🔚 ${status.exitedIds.length}`
     : `🟢 ⌛️ | 🟡 ⌛️ | 🚫 ⌛️ | 🔚 ⌛️`;
 
   const claimableMsg = withdrawable
@@ -108,10 +156,10 @@ export async function notifyUserStatsMessage(
   const apyMsg = apy !== undefined ? `${apy.toFixed(2)}%` : "loading...";
 
   const balanceMsg = totalBalance
-    ? `${Number(totalBalance).toFixed(3)} ${TOKEN_SYMBOL} ($${totalBalancePrice})`
+    ? `${totalBalance.toFixed(2)} ${TOKEN_SYMBOL} ($${totalBalancePrice})`
     : "loading...";
 
-  const attestationsMsg = 0 ? `${0}%` : "loading...";
+  const oneHourPerformanceMsg = performance ? `${performance}%` : "loading...";
 
   const tokenPriceFormatted = tokenPrice
     ? `${TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}`
@@ -119,7 +167,7 @@ export async function notifyUserStatsMessage(
 
   const finalMessage = `\`${validatorsStatusMsg}      
 
-Attestations: ${attestationsMsg}
+1h performance: ${oneHourPerformanceMsg}
 Balance: ${balanceMsg} 
 APY: ${apyMsg}
 Claimable: ${claimableMsg}

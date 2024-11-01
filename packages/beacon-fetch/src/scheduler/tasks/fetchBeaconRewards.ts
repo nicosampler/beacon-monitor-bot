@@ -7,10 +7,10 @@ import { env } from "@/src/env.js";
 import { fetchBeaconRewards } from "@/src/feed/fetchBeaconRewards.js"; // Assuming this function exists
 
 const prisma = getPrisma();
-const logger = createLogger("Fetch BeaconRewards");
+const ID = "fetchBeaconRewards";
+const logger = createLogger(ID, true);
 
 const SLOTS_PER_EPOCH = env.BEACON_SLOTS_PER_EPOCH;
-const ID = "fetchBeaconRewards";
 
 async function fetchBeaconRewardsTask() {
   const now = new Date();

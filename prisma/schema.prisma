@@ -147,20 +147,23 @@ model LastSummaryUpdate {
 }
 
 model User {
-  id                   BigInt              @id
-  userId               BigInt              @unique
-  chatId               BigInt              @unique
-  username             String              @unique
-  messageId            BigInt?
-  lastClaimed          DateTime?
-  statusNofi           DateTime?
-  performanceNotif     DateTime?
-  performanceThreshold Int                 @default(90)
-  attestationsNotif    DateTime?
-  attestationThreshold Int                 @default(5)
-  feeRewardAddresses   FeeRewardAddress[]  @relation("FeeRewardAddressToUser")
-  validators           Validator[]         @relation("UserToValidator")
-  withdrawalAddresses  WithdrawalAddress[] @relation("UserToWithdrawalAddress")
+  id          BigInt    @id
+  userId      BigInt    @unique
+  chatId      BigInt    @unique
+  username    String    @unique
+  messageId   BigInt?
+  lastClaimed DateTime?
+  statusNofi  DateTime?
+
+  performanceNotif  DateTime?
+  attestationsNotif DateTime?
+
+  performanceThreshold Int @default(90)
+  attestationThreshold Int @default(5)
+
+  feeRewardAddresses  FeeRewardAddress[]  @relation("FeeRewardAddressToUser")
+  validators          Validator[]         @relation("UserToValidator")
+  withdrawalAddresses WithdrawalAddress[] @relation("UserToWithdrawalAddress")
 }
 
 model WithdrawalAddress {

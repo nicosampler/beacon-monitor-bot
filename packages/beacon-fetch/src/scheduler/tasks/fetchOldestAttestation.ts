@@ -6,7 +6,8 @@ import { fetchAttestation } from "@/src/feed/fetchAttestations.js";
 import createLogger from "@/src/lib/pino.js";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 
-const logger = createLogger(null);
+const ID = "fetchOldestAttestation";
+const logger = createLogger(ID);
 const prisma = getPrisma();
 
 export const fetchOldestAttestation = async () => {
@@ -51,8 +52,6 @@ export const fetchOldestAttestation = async () => {
 
   return fetchAttestation(slotToFetch);
 };
-
-const ID = "fetchOldestAttestation";
 
 export const job = new SimpleIntervalJob(
   { milliseconds: 250, runImmediately: true },

@@ -1,15 +1,14 @@
 import { getPrisma } from "@/src/lib/prisma.js";
-import createLogger from "@/src/lib/pino.js";
+import { CustomLogger } from "@/src/lib/pino.js";
 import { env } from "@/src/env.js";
 import { getBlock } from "@/src/blockscout/endpoints.js";
 import { differenceInSeconds } from "date-fns";
 import { Blocks } from "@/src/blockscout/types.js";
 import { Decimal } from "@prisma/client/runtime/library";
 
-const logger = createLogger("FetchExecutionRewards");
 const prisma = getPrisma();
 
-export async function fetchExecutionRewards() {
+export async function fetchExecutionRewards(logger: CustomLogger) {
   // Get the latest saved block
   const latestReward = await prisma.executionRewards.findFirst({
     orderBy: { timestamp: "desc" },

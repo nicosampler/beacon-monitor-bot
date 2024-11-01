@@ -49,6 +49,8 @@ export const fetchAttestation = async (slotNumber: number) => {
       slotNumber,
       logger
     );
+
+    logger.info(`Done.`);
   } catch (error) {
     logger.error("There was an error.", { error });
     throw error;

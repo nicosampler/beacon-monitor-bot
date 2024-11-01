@@ -1,6 +1,6 @@
-import { PrismaClient, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { getValidatorsInfo } from "@/src/beacon/endpoints.js";
-import createLogger from "@/src/lib/pino.js";
+import createLogger, { CustomLogger } from "@/src/lib/pino.js";
 import { getHighestValidatorId } from "@/src/feed/utils.js";
 import chunk from "lodash/chunk.js";
 import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
@@ -9,9 +9,8 @@ import { VALIDATOR_STATUS } from "@/src/constants/index.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 
 const prisma = getPrisma();
-const logger = createLogger("fetchValidatorsInfo");
 
-export async function fetchValidatorsInfo() {
+export async function fetchValidatorsInfo(logger: CustomLogger) {
   const highestValidatorId = await getHighestValidatorId();
   const batchSize = 6500;
   const slotNumber =
