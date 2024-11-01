@@ -121,7 +121,7 @@ export const fetchCommittee = async (
       }
     );
 
-    logger.info(`slots and committees created.`);
+    logger.info(`done!`);
   } catch (error) {
     logger.error(`pullCommittee: for slot ${stateId}`, { error });
     throw error;

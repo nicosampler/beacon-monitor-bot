@@ -1,3 +1,6 @@
+import ms from "ms";
+import chunk from "lodash/chunk.js";
+
 import { getAttestations } from "@/src/beacon/endpoints.js";
 import {
   convertBitsToString,
@@ -11,7 +14,6 @@ import { Slot } from "@prisma/client";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { Prisma } from "@prisma/client";
 import { env } from "@/src/env.js";
-import chunk from "lodash/chunk.js";
 
 const prisma = getPrisma();
 
@@ -23,14 +25,22 @@ export const fetchAttestation = async (slotNumber: number) => {
     await fetchCommittee(slotNumber);
 
     // Check if the slot is already processed
-    const slot = await checkSlotValidation(slotNumber, logger);
-    if (!slot) return;
+    // const slot = await checkSlotValidation(slotNumber, logger);
+    // if (!slot) return;
 
     const fetchedAttestations = await getAttestation(slotNumber, logger);
     if (!fetchedAttestations) return;
-    const filteredAttestations = fetchedAttestations.filter(
-      (attestation) => +attestation.data.slot >= getOldestLookbackSlot()
-    );
+
+    let filteredAttestations = fetchedAttestations;
+
+    if (
+      env.BEACON_LOOKBACK_SLOT - slotNumber <
+      env.BEACON_SLOTS_PER_EPOCH * 2
+    ) {
+      filteredAttestations = fetchedAttestations.filter(
+        (attestation) => +attestation.data.slot >= getOldestLookbackSlot()
+      );
+    }
 
     // Process all attestations
     const allProcessedAttestations: CommitteeUpdate[] = [];
@@ -124,15 +134,17 @@ async function processAttestation(
   // indices are the same as the position in the aggregation bits.
   const validators = await prisma.committee.findMany({
     where: {
-      slot: +attestation.data.slot,
-      index: +attestation.data.index,
-    },
-    orderBy: {
-      aggregationBitsIndex: "asc",
+      AND: [
+        { slot: +attestation.data.slot },
+        { index: +attestation.data.index },
+      ],
     },
     select: {
       validatorIndex: true,
       aggregationBitsIndex: true,
+    },
+    orderBy: {
+      aggregationBitsIndex: "asc",
     },
   });
 
@@ -167,7 +179,7 @@ async function updateValidatorsAttestations(
   slotNumber: number,
   logger: CustomLogger
 ): Promise<void> {
-  const prismaBatchSize = 4000;
+  const prismaBatchSize = 5000;
 
   await prisma.$transaction(
     async (tx) => {
@@ -235,7 +247,7 @@ async function updateValidatorsAttestations(
       });
     },
     {
-      timeout: 1000 * 60 * 2, // 2 minutes
+      timeout: ms("3m"),
     }
   );
 }
