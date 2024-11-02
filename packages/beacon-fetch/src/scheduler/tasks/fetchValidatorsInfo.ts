@@ -7,7 +7,7 @@ const ID = "fetchValidatorsWithoutWithdrawalAddress";
 const logger = createLogger(ID);
 
 export const job = new SimpleIntervalJob(
-  { milliseconds: ms("1h"), runImmediately: true },
+  { milliseconds: ms("10m"), runImmediately: true },
   new AsyncTask(`${ID}_task`, () => fetchValidatorsInfo(logger)),
   {
     id: ID,

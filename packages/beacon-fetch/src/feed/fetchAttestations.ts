@@ -163,7 +163,7 @@ async function updateValidatorsAttestations(
   slotNumber: number,
   logger: CustomLogger
 ): Promise<void> {
-  const prismaBatchSize = 5000;
+  const prismaBatchSize = 4000;
 
   await prisma.$transaction(
     async (tx) => {
