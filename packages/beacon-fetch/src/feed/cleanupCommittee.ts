@@ -22,7 +22,7 @@ export async function cleanupCommittee(logger: CustomLogger) {
     WITH rows_to_delete AS (
         SELECT slot FROM "Committee" 
         WHERE slot <= ${maxProcessedSlot.slot}
-        AND ("attestationDelay" IS NULL OR "attestationDelay" <= ${env.BEACON_MAX_ATTESTATION_DELAY})
+        AND "attestationDelay" <= ${env.BEACON_MAX_ATTESTATION_DELAY}
         ORDER BY slot
         LIMIT ${BATCH_SIZE}
     )

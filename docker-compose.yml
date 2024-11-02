@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:17
-    container_name: beacon-monitor-postgres
+    container_name: db
     env_file:
       - .env
     ports:
@@ -28,7 +28,7 @@ services:
       - app-network
 
   beacon-fetch:
-    container_name: beacon-monitor-fetch
+    container_name: fetch
     env_file:
       - .env
     build:
@@ -39,17 +39,17 @@ services:
     networks:
       - app-network
 
-  # bot:
-  #   container_name: beacon-monitor-bot
-  #   build: ./packages/telegram-bot
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     DATABASE_URL: ${DATABASE_URL}
-  #   depends_on:
-  #     - beacon-fetch
-  #   networks:
-  #     - app-network
+  bot:
+    container_name: bot
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: packages/telegram-bot/Dockerfile
+    depends_on:
+      - beacon-fetch
+    networks:
+      - app-network
 
 networks:
   app-network:

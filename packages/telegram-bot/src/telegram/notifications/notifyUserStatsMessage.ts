@@ -1,8 +1,14 @@
 import format from "date-fns/format";
-import { bot } from "@/src//config/index.js";
+import { subHours } from "date-fns";
+import { formatEther } from "ethers/lib/utils.js";
+import { bot } from "@/src/config/index.js";
+import { getPrisma } from "@/src/config/prisma.js";
 import { tokenPrice } from "@/src/scheduler/tasks/tokenPriceTask.js";
-import { inMemoryUsers } from "@/src/utils/inMemoryDB.js";
 import { sendMessage } from "@/src/telegram/utils/messaging.js";
+import { formatNumber, VALIDATOR_STATUS } from "@/src/utils/misc.js";
+import { AppError } from "@/src/utils/errors/AppError.js";
+import { getWithdrawableAmountByUserId } from "@/src/utils/getWithdrawableAmountByUserId.js";
+import { getSlotNumberFromTimestamp } from "@/src/utils/time.js";
 import {
   TOKEN_SYMBOL,
   FEE_REWARDS_IN_STABLE,
@@ -11,210 +17,259 @@ import {
   DAYS_IN_YEAR,
   DAYS_IN_MONTH,
 } from "@/src/constants/index.js";
-import { formatEther } from "ethers/lib/utils.js";
-import { formatNumber, VALIDATOR_STATUS } from "@/src/utils/misc.js";
-import { AppError } from "@/src/utils/errors/AppError.js";
-import { getWithdrawableAmountByUserId } from "@/src/utils/getWithdrawableAmountByUserId.js";
-import { getUserFull_db } from "@/src/prisma/users.js";
-import { getPrisma } from "@/src/config/prisma.js";
-import { subHours } from "date-fns";
-import { getSlotNumberFromTimestamp } from "@/src/utils/time.js";
+import { Committee, User, Validator } from "@prisma/client";
 
 const prisma = getPrisma();
-
 const tokenUnit = 32000000000;
-
 const BEACON_SLOT_DURATION_IN_SECONDS = Number(
   process.env.BEACON_SLOT_DURATION_IN_SECONDS
 );
 const slotsIn1h = 3600 / BEACON_SLOT_DURATION_IN_SECONDS;
+
+interface ValidatorStats {
+  activeIds: number[];
+  inactiveIds: number[];
+  slashedIds: number[];
+  exitedIds: number[];
+}
+
+interface UserStats {
+  performance: number;
+  balance: {
+    total: number;
+    value: string;
+  };
+  withdrawable: {
+    total: number;
+    value: string;
+  };
+  apy?: number;
+  rewards: {
+    daily: { block: number; fee: number; usd: string };
+    weekly: { block: number; fee: number; usd: string };
+    monthly: { block: number; fee: number; usd: string };
+  };
+  validatorStats: ValidatorStats;
+}
 
 export async function notifyUserStatsMessage(
   userId: number
 ): Promise<number | undefined> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: {
-      //withdrawalAddresses: true,
-      validators: true,
-    },
+    include: { validators: true },
   });
-
-  const beaconActiveValidators = user.validators.filter(
-    (validator) =>
-      validator.status === VALIDATOR_STATUS.ACTIVE_ONGOING ||
-      validator.status === VALIDATOR_STATUS.ACTIVE_EXITING
+  const stats = await calculateUserStats(user);
+  const message = formatStatsMessage(stats);
+  return await updateOrSendMessage(
+    Number(user.chatId),
+    Number(user.messageId),
+    message
   );
-  const oneHourBefore = subHours(new Date(), 1);
+}
 
-  const missedAttestedSlots = await prisma.committee.findMany({
-    where: {
-      validatorIndex: {
-        in: beaconActiveValidators.map((v) => v.id),
-      },
-      slot: { gte: getSlotNumberFromTimestamp(oneHourBefore.getTime()) },
-    },
-  });
+function calculateValidatorStats(
+  validators: Validator[],
+  missedAttestations: Committee[],
+  amountOfMissedAttestationsToBeInactive: number
+): ValidatorStats {
+  // Filter validators that are "active" for the beacon chain
+  const beaconActiveValidators = validators.filter(
+    (v) =>
+      v.status === VALIDATOR_STATUS.ACTIVE_ONGOING ||
+      v.status === VALIDATOR_STATUS.ACTIVE_EXITING
+  );
 
-  const status = {
-    active: [],
-    inactiveIds: [],
-    slashedIds: user.validators.filter(
-      (validator) =>
-        validator.status === VALIDATOR_STATUS.ACTIVE_SLASHED ||
-        validator.status === VALIDATOR_STATUS.EXITED_SLASHED
-    ),
-    exitedIds: user.validators.filter(
-      (validator) =>
-        validator.status === VALIDATOR_STATUS.EXITED_UNSLASHED ||
-        validator.status === VALIDATOR_STATUS.WITHDRAWAL_DONE
-    ),
+  // A validator is inactive if it appears in all of the last amountOfMissedAttestationsToBeInactive entries
+  const lastEntries = missedAttestations.slice(
+    0,
+    amountOfMissedAttestationsToBeInactive
+  );
+  const inactiveIds = beaconActiveValidators
+    .map((v) => v.id)
+    .filter((validatorId) =>
+      lastEntries.every((entry) => entry.validatorIndex === validatorId)
+    );
+
+  // Active validators are those that are beacon active but not inactive
+  const activeIds = beaconActiveValidators
+    .filter((v) => !inactiveIds.includes(v.id))
+    .map((v) => v.id);
+
+  return {
+    activeIds,
+    inactiveIds,
+    slashedIds: validators
+      .filter(
+        (v) =>
+          v.status === VALIDATOR_STATUS.ACTIVE_SLASHED ||
+          v.status === VALIDATOR_STATUS.EXITED_SLASHED
+      )
+      .map((v) => v.id),
+    exitedIds: validators
+      .filter(
+        (v) =>
+          v.status === VALIDATOR_STATUS.EXITED_UNSLASHED ||
+          v.status === VALIDATOR_STATUS.WITHDRAWAL_DONE
+      )
+      .map((v) => v.id),
   };
-  // calc performance percentage between slotsIn1h and missedAttestedSlots
-  const performance =
-    ((slotsIn1h - missedAttestedSlots.length) / slotsIn1h) * 100;
-  const feeRewards = 0; //user.priorityFeeRewards;
+}
 
-  const totalBalanceInGwei = user.validators.reduce(
+async function calculateUserStats(
+  user: User & { validators: Validator[] }
+): Promise<UserStats> {
+  const performance = await calculatePerformanceStats(user);
+  const balanceStats = calculateBalanceStats(user.validators);
+  const rewardsStats = calculateRewardsStats();
+  const withdrawable = await getWithdrawableAmountByUserId(user.id);
+  const activeValidators = user.validators.filter(
+    (v) =>
+      v.status === VALIDATOR_STATUS.ACTIVE_ONGOING ||
+      v.status === VALIDATOR_STATUS.ACTIVE_EXITING
+  );
+  const missedAttestations = await getMissedAttestations(activeValidators);
+  const validatorStats = calculateValidatorStats(
+    user.validators,
+    missedAttestations,
+    user.attestationThreshold
+  );
+
+  return {
+    performance,
+    validatorStats,
+    balance: {
+      total: balanceStats.total,
+      value: balanceStats.value,
+    },
+    withdrawable: {
+      total: withdrawable,
+      value: (withdrawable * tokenPrice).toFixed(2),
+    },
+    apy: 0,
+    rewards: rewardsStats,
+  };
+}
+
+async function calculatePerformanceStats(
+  user: User & { validators: Validator[] }
+) {
+  const activeValidators = user.validators.filter(
+    (v) =>
+      v.status === VALIDATOR_STATUS.ACTIVE_ONGOING ||
+      v.status === VALIDATOR_STATUS.ACTIVE_EXITING
+  );
+
+  const missedAttestations = await getMissedAttestations(activeValidators);
+
+  const expectedAttestations = slotsIn1h * activeValidators.length;
+  if (expectedAttestations === 0) return 0;
+  return (
+    ((expectedAttestations - missedAttestations.length) /
+      expectedAttestations) *
+    100
+  );
+}
+
+function calculateBalanceStats(validators: Validator[]) {
+  const totalBalanceInGwei = validators.reduce(
     (acc, validator) => acc + BigInt(validator.balance.toString()),
     BigInt(0)
   );
-  const totalBalance = Number(totalBalanceInGwei) / tokenUnit;
-  const totalBalancePrice = (totalBalance * tokenPrice).toFixed(2);
 
-  const blockRewards1d = 0; //performance?.performance1d || 0;
-  const blockRewards7d = 0; //performance?.performance7d || 0;
-  const blockRewards31d = 0; //performance?.performance31d || 0;
-  const blockRewards1dUSD = blockRewards1d * tokenPrice;
-  const blockRewards7dUSD = blockRewards7d * tokenPrice;
-  const blockRewards31dUSD = blockRewards31d * tokenPrice;
+  const total = Number(totalBalanceInGwei) / tokenUnit;
 
-  const feeRewards1d = 0; //Number(formatEther(feeRewards?.d || 0));
-  const feeRewards7d = 0; //Number(formatEther(feeRewards?.w || 0));
-  const feeRewards31d = 0; //Number(formatEther(feeRewards?.m || 0));
-  const feeRewards1dUSD =
-    feeRewards1d * (FEE_REWARDS_IN_STABLE ? 1 : tokenPrice);
-  const feeRewards7dUSD =
-    feeRewards7d * (FEE_REWARDS_IN_STABLE ? 1 : tokenPrice);
-  const feeRewards31dUSD =
-    feeRewards31d * (FEE_REWARDS_IN_STABLE ? 1 : tokenPrice);
+  return {
+    total,
+    value: (total * tokenPrice).toFixed(2),
+  };
+}
 
-  const rewards1dUSD = formatNumber(
-    blockRewards1dUSD + feeRewards1dUSD,
-    5,
-    "$"
+function calculateRewardsStats() {
+  // Por ahora retornamos datos mock, aquí iría la lógica real de rewards
+  return {
+    daily: { block: 0, fee: 0, usd: formatNumber(0, 2, "$") },
+    weekly: { block: 0, fee: 0, usd: formatNumber(0, 2, "$") },
+    monthly: { block: 0, fee: 0, usd: formatNumber(0, 2, "$") },
+  };
+}
+
+function calculateAPY(totalBalance: number, monthlyRewards: number): number {
+  if (!totalBalance || !monthlyRewards) return 0;
+  return (
+    ((1 + monthlyRewards / totalBalance) ** (DAYS_IN_YEAR / DAYS_IN_MONTH) -
+      1) *
+    100
   );
-  const rewards7dUSD = formatNumber(
-    blockRewards7dUSD + feeRewards7dUSD,
-    5,
-    "$"
-  );
-  const rewards31dUSD = formatNumber(
-    blockRewards31dUSD + feeRewards31dUSD,
-    5,
-    "$"
-  );
+}
 
-  const rewards1dRow = 0 //user.performance
-    ? `${formatNumber(blockRewards1d)}  ${formatNumber(
-        feeRewards1d
-      )}  ${rewards1dUSD}`
-    : "        loading...";
+function formatStatsMessage(stats: UserStats): string {
+  const { performance, balance, withdrawable, validatorStats } = stats;
 
-  const rewards7dRow = 0 //user.performance
-    ? `${formatNumber(blockRewards7d)}  ${formatNumber(
-        feeRewards7d
-      )}  ${rewards7dUSD}`
-    : "        loading...";
+  return `\`🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}
 
-  const rewards31dRow = 0 //user.performance
-    ? `${formatNumber(blockRewards31d)}  ${formatNumber(
-        feeRewards31d
-      )}  ${rewards31dUSD}`
-    : "        loading...";
-
-  const withdrawable = await getWithdrawableAmountByUserId(userId);
-  const withdrawablePrice = withdrawable * tokenPrice;
-  const withdrawableFormatted = withdrawable.toFixed(4);
-  const withdrawablePriceFormatted = withdrawablePrice.toFixed(2);
-
-  const validatorsStatusMsg = status
-    ? `🟢 ${status.active.length} | 🟡 ${status.inactiveIds.length} | 🚫 ${status.slashedIds.length} | 🔚 ${status.exitedIds.length}`
-    : `🟢 ⌛️ | 🟡 ⌛️ | 🚫 ⌛️ | 🔚 ⌛️`;
-
-  const claimableMsg = withdrawable
-    ? `${withdrawableFormatted} ${TOKEN_SYMBOL} ($${withdrawablePriceFormatted})`
-    : `loading...`;
-
-  const apy =
-    totalBalance && blockRewards31d
-      ? ((1 + blockRewards31d / totalBalance) **
-          (DAYS_IN_YEAR / DAYS_IN_MONTH) -
-          1) *
-        100
-      : undefined;
-  const apyMsg = apy !== undefined ? `${apy.toFixed(2)}%` : "loading...";
-
-  const balanceMsg = totalBalance
-    ? `${totalBalance.toFixed(2)} ${TOKEN_SYMBOL} ($${totalBalancePrice})`
-    : "loading...";
-
-  const oneHourPerformanceMsg = performance ? `${performance}%` : "loading...";
-
-  const tokenPriceFormatted = tokenPrice
-    ? `${TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}`
-    : `${TOKEN_SYMBOL}: loading...`;
-
-  const finalMessage = `\`${validatorsStatusMsg}      
-
-1h performance: ${oneHourPerformanceMsg}
-Balance: ${balanceMsg} 
-APY: ${apyMsg}
-Claimable: ${claimableMsg}
+1h performance: ${performance}%
+Balance: ${balance.total.toFixed(2)} ${TOKEN_SYMBOL} ($${balance.value})
+APY: WIP
+Claimable: ${withdrawable.total.toFixed(4)} ${TOKEN_SYMBOL} ($${withdrawable.value})
 
 Rewards:
 ----------------------------
   |    ${TOKEN_SYMBOL}    ${FEE_REWARDS_SYMBOL}    Total
-d | ${rewards1dRow}
-w | ${rewards7dRow}
-m | ${rewards31dRow}
+d |    WIP     WIP     WIP
+w |    WIP     WIP     WIP
+m |    WIP     WIP     WIP
 
-${tokenPriceFormatted}
+${TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}
 
 Updated: ${format(new Date(), "MM/dd hh:mmaaa")} UTC
   \``;
+}
 
-  let _messageId = Number(user.messageId);
-  const chatId = user.chatId;
-
-  // send stats message
-  if (_messageId) {
-    await bot.api
-      .editMessageText(Number(chatId), Number(_messageId), finalMessage, {
+async function updateOrSendMessage(
+  chatId: number,
+  messageId: number | null,
+  message: string
+): Promise<number | undefined> {
+  if (messageId) {
+    try {
+      await bot.api.editMessageText(chatId, messageId, message, {
         parse_mode: "MarkdownV2",
-      })
-      .catch((error: any) => {
-        // if the message is the same, ignore
-        // if the message is not the same, might have happened because of a message deletion
-        // in this case, we need to send a new message
-        if (error.description !== TG_ERROR_SAME_MESSAGE) {
-          _messageId = undefined;
-        }
       });
-  } else {
-    _messageId = await sendMessage(Number(chatId), finalMessage, {
-      disable_notification: true,
-      parse_mode: "MarkdownV2",
-    })
-      .then((res) => res.message_id)
-      .catch((error) => {
-        throw new AppError(
-          "Error editing message",
-          "TELEGRAM_INTERACTION_ERROR",
-          error
-        );
-      });
+      return messageId;
+    } catch (error: any) {
+      if (error.description === TG_ERROR_SAME_MESSAGE) {
+        return messageId;
+      }
+    }
   }
 
-  return _messageId;
+  return await sendMessage(chatId, message, {
+    disable_notification: true,
+    parse_mode: "MarkdownV2",
+  })
+    .then((res) => res.message_id)
+    .catch((error) => {
+      throw new AppError(
+        "Error editing message",
+        "TELEGRAM_INTERACTION_ERROR",
+        error
+      );
+    });
+}
+
+async function getMissedAttestations(activeValidators: Validator[]) {
+  const oneHourBefore = subHours(new Date(), 1);
+  return await prisma.committee.findMany({
+    where: {
+      validatorIndex: { in: activeValidators.map((v) => v.id) },
+      slot: { gte: getSlotNumberFromTimestamp(oneHourBefore.getTime()) },
+      attestationDelay: {
+        gt: Number(process.env.BEACON_MAX_ATTESTATION_DELAY),
+      },
+    },
+    orderBy: {
+      slot: "desc",
+    },
+  });
 }

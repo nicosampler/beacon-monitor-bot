@@ -2,7 +2,7 @@ import { AsyncTask, SimpleIntervalJob } from "toad-scheduler";
 import createLogger from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { getTimestampFromSlotNumber } from "@/src/beacon/utils/time.js";
-import { addDays, differenceInHours } from "date-fns";
+import { addDays } from "date-fns";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { summarizeDaily } from "@/src/feed/summarizeDaily.js";
 import { convertToUTC } from "@/src/utils/date/index.js";
@@ -46,7 +46,7 @@ async function summarizeDailyTask() {
 }
 
 export const job = new SimpleIntervalJob(
-  { minutes: 5, runImmediately: true },
+  { minutes: 10, runImmediately: false },
   new AsyncTask(`${ID}_task`, summarizeDailyTask),
   {
     id: ID,

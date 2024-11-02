@@ -30,8 +30,6 @@ model Committee {
 
   @@id([slot, index, validatorIndex])
   @@index([slot, attestationDelay])
-  @@index([slot, index])
-  @@index([slot])
 }
 
 model Validator {

@@ -1,9 +1,7 @@
 import { getCommittees } from "@/src/beacon/endpoints.js";
-import { db_existCommitteeForSlot } from "@/src/feed/utils.js";
 import chunk from "lodash/chunk.js";
 
 import { getPrisma } from "@/src/lib/prisma.js";
-import createLogger from "@/src/lib/pino.js";
 import { CustomLogger } from "@/src/lib/pino.js";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 
@@ -43,18 +41,18 @@ function logCommitteeInfo(
  * It might bring committees that are already in the db, we need to filter them out
  * */
 export const fetchCommittee = async (
-  stateId: number | "head"
+  stateId: number | "head",
+  logger: CustomLogger
 ): Promise<void> => {
-  const logger = createLogger(`pullCommittee slot ${stateId}`);
-
   try {
-    if (stateId !== "head") {
-      const existCommittee = await db_existCommitteeForSlot(stateId);
-      if (existCommittee) {
-        logger.info(`already fetched.`);
-        return Promise.resolve();
-      }
-    }
+    // if (stateId !== "head") {
+    //   const existCommittee = await db_existCommitteeForSlot(stateId);
+    //   if (existCommittee) {
+    //     return Promise.resolve();
+    //   }
+    // }
+
+    logger.info(`fetching`);
 
     // getCommittees returns the committees for more than one slot.
     const fetchedCommittees = await getCommittees(stateId);
@@ -123,7 +121,7 @@ export const fetchCommittee = async (
 
     logger.info(`done!`);
   } catch (error) {
-    logger.error(`pullCommittee: for slot ${stateId}`, { error });
+    logger.error(`ERROR`, { error });
     throw error;
   }
 };

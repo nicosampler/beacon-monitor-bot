@@ -1,7 +1,7 @@
 import {
   COINGECKO_TOKEN_NAME,
   COINGECKO_TOKEN_PRICE_API_URL,
-} from "@/src/constants";
+} from "@/src/constants/index.js";
 import axios, { AxiosResponse } from "axios";
 import { AsyncTask, Task } from "toad-scheduler";
 

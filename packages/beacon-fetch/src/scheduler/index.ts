@@ -7,8 +7,11 @@ import { job as fetchValidatorsInfo } from "@/src/scheduler/tasks/fetchValidator
 import { job as fetchBeaconRewardsJob } from "@/src/scheduler/tasks/fetchBeaconRewards.js";
 import { job as summarizeDailyJob } from "@/src/scheduler/tasks/summarizeDaily.js";
 import { job as cleanupCommitteeJob } from "@/src/scheduler/tasks/cleanupCommittee.js";
+import { job as fetchCommitteeJob } from "@/src/scheduler/tasks/fetchCommittee.js";
+
 export function scheduleTasks() {
   // Fetch the oldest attestation
+  scheduler.addSimpleIntervalJob(fetchCommitteeJob);
   scheduler.addSimpleIntervalJob(fetchOldestAttestationJob);
   scheduler.addSimpleIntervalJob(cleanupCommitteeJob);
 

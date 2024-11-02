@@ -5,7 +5,8 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "dotenv -e ../../.env npx tsx src/index.ts"
+    "dev": "dotenv -e ../../.env npx tsx src/index.ts",
+    "start": "tsc --noEmit && npx tsx src/index.ts"
   },
   "dependencies": {
     "@grammyjs/conversations": "^1.2.0",

@@ -6,27 +6,25 @@ import {
   convertBitsToString,
   convertHexStringToByteArray,
 } from "@/src/beacon/utils/bitlist.js";
-import { fetchCommittee } from "@/src/feed/fetchCommittee.js";
-import { db_getSlotByNumber } from "@/src/feed/utils.js";
-import createLogger, { CustomLogger } from "@/src/lib/pino.js";
+import { db_existCommitteeForSlot } from "@/src/feed/utils.js";
+import { CustomLogger } from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
-import { Slot } from "@prisma/client";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { Prisma } from "@prisma/client";
 import { env } from "@/src/env.js";
 
 const prisma = getPrisma();
 
-export const fetchAttestation = async (slotNumber: number) => {
-  const logger = createLogger(`pullAttestations for slot ${slotNumber}`);
-
+export const fetchAttestation = async (
+  slotNumber: number,
+  logger: CustomLogger
+) => {
   try {
-    // Fetch the committee for the slot, as we need the validators indices and aggregation bits.
-    await fetchCommittee(slotNumber);
-
-    // Check if the slot is already processed
-    // const slot = await checkSlotValidation(slotNumber, logger);
-    // if (!slot) return;
+    const existCommittee = await db_existCommitteeForSlot(slotNumber);
+    if (!existCommittee) {
+      logger.info(`Skipping, no committee found for slot ${slotNumber}.`);
+      return;
+    }
 
     const fetchedAttestations = await getAttestation(slotNumber, logger);
     if (!fetchedAttestations) return;
@@ -60,7 +58,7 @@ export const fetchAttestation = async (slotNumber: number) => {
       logger
     );
 
-    logger.info(`Done.`);
+    logger.info(`Done for slot ${slotNumber}.`);
   } catch (error) {
     logger.error("There was an error.", { error });
     throw error;
@@ -165,42 +163,31 @@ async function updateValidatorsAttestations(
 ): Promise<void> {
   const prismaBatchSize = 4000;
 
+  logger.info(`Saving ${allProcessedAttestations.length} attestations.`);
+
   await prisma.$transaction(
     async (tx) => {
-      logger.info(
-        `Processing ${allProcessedAttestations.length} attestations.`
-      );
-
       if (allProcessedAttestations.length > 0) {
-        const validatorsToUpdate = allProcessedAttestations.filter(
-          (a) => a.attestationDelay > env.BEACON_MAX_ATTESTATION_DELAY
-        );
+        // Group updates by slot and index to reduce the number of WHERE clauses
+        const updateChunks = chunk(allProcessedAttestations, prismaBatchSize);
 
-        // Update attestations with delay > BEACON_MAX_ATTESTATION_DELAY
-        const updateChunks = chunk(validatorsToUpdate, prismaBatchSize);
-        logger.info(`Updating ${validatorsToUpdate.length} attestations.`);
         for (const batchUpdates of updateChunks) {
+          // Create a more efficient update query using VALUES list
           const updateQuery = Prisma.sql`
-            UPDATE "Committee"
-            SET "attestationDelay" = CASE
+            UPDATE "Committee" c
+            SET "attestationDelay" = v.delay
+            FROM (VALUES
               ${Prisma.join(
                 batchUpdates.map(
                   (u) =>
-                    Prisma.sql`WHEN "slot" = ${u.slot} AND "index" = ${u.index} AND "validatorIndex" = ${u.validatorIndex} THEN ${u.attestationDelay}`
-                ),
-                " "
-              )}
-            END
-            WHERE ("slot", "index", "validatorIndex") IN (
-              ${Prisma.join(
-                batchUpdates.map(
-                  (u) =>
-                    Prisma.sql`(${u.slot}, ${u.index}, ${u.validatorIndex})`
+                    Prisma.sql`(${u.slot}, ${u.index}, ${u.validatorIndex}, ${u.attestationDelay})`
                 )
               )}
-            );
+            ) AS v(slot, index, validator_index, delay)
+            WHERE c.slot = v.slot 
+              AND c.index = v.index 
+              AND c."validatorIndex" = v.validator_index;
           `;
-          logger.info(`Done updating.`);
 
           await tx.$executeRaw(updateQuery);
         }
@@ -215,4 +202,6 @@ async function updateValidatorsAttestations(
       timeout: ms("3m"),
     }
   );
+
+  logger.info(`Saved.`);
 }
