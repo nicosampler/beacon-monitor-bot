@@ -3,7 +3,7 @@ import createLogger from "@/src/lib/pino.js";
 import { cleanupCommittee } from "@/src/feed/cleanupCommittee.js";
 
 const ID = "cleanupCommittee";
-const logger = createLogger(ID, true);
+const logger = createLogger(ID);
 
 export const job = new SimpleIntervalJob(
   { milliseconds: 500, runImmediately: true },
