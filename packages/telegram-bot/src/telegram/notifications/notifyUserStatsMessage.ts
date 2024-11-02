@@ -260,16 +260,25 @@ async function updateOrSendMessage(
 
 async function getMissedAttestations(activeValidators: Validator[]) {
   const oneHourBefore = subHours(new Date(), 1);
+  const fromSlot = getSlotNumberFromTimestamp(oneHourBefore.getTime());
+  
   return await prisma.committee.findMany({
     where: {
-      validatorIndex: { in: activeValidators.map((v) => v.id) },
-      slot: { gte: getSlotNumberFromTimestamp(oneHourBefore.getTime()) },
-      attestationDelay: {
-        gt: Number(process.env.BEACON_MAX_ATTESTATION_DELAY),
+      validatorIndex: { 
+        in: activeValidators.map(v => v.id) 
       },
+      slot: { 
+        gte: fromSlot 
+      },
+      OR: [
+        { attestationDelay: null },
+        { attestationDelay: { 
+          gt: Number(process.env.BEACON_MAX_ATTESTATION_DELAY) 
+        }}
+      ]
     },
     orderBy: {
-      slot: "desc",
+      slot: 'desc',
     },
   });
 }
