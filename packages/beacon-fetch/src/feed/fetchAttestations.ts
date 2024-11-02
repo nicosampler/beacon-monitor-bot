@@ -67,22 +67,6 @@ export const fetchAttestation = async (slotNumber: number) => {
   }
 };
 
-async function checkSlotValidation(
-  slotNumber: number,
-  logger: CustomLogger
-): Promise<Slot | null> {
-  const slot = await db_getSlotByNumber(slotNumber);
-  if (!slot) {
-    logger.error(`Slot not found in DB.`);
-    throw new Error(`Slot not found in DB.`);
-  }
-  if (slot.attestationsFetched) {
-    logger.info(`Attestations already fetched.`);
-    return null;
-  }
-  return slot;
-}
-
 async function getAttestation(slot: number, logger: CustomLogger) {
   let fetchedAttestations = await getAttestations(slot + 1);
 
@@ -188,32 +172,9 @@ async function updateValidatorsAttestations(
       );
 
       if (allProcessedAttestations.length > 0) {
-        const validatorsToDelete = allProcessedAttestations.filter(
-          (a) => a.attestationDelay <= env.BEACON_MAX_ATTESTATION_DELAY
-        );
         const validatorsToUpdate = allProcessedAttestations.filter(
           (a) => a.attestationDelay > env.BEACON_MAX_ATTESTATION_DELAY
         );
-
-        // Delete attestations with delay <= BEACON_MAX_ATTESTATION_DELAY
-        const deleteChunks = chunk(validatorsToDelete, prismaBatchSize);
-        logger.info(`Deleting ${validatorsToDelete.length} attestations.`);
-        for (const batchDeletes of deleteChunks) {
-          const deleteQuery = Prisma.sql`
-            DELETE FROM "Committee"
-            WHERE ("slot", "index", "validatorIndex") IN (
-              ${Prisma.join(
-                batchDeletes.map(
-                  (u) =>
-                    Prisma.sql`(${u.slot}, ${u.index}, ${u.validatorIndex})`
-                )
-              )}
-            );
-          `;
-
-          await tx.$executeRaw(deleteQuery);
-        }
-        logger.info(`Done deleting.`);
 
         // Update attestations with delay > BEACON_MAX_ATTESTATION_DELAY
         const updateChunks = chunk(validatorsToUpdate, prismaBatchSize);

@@ -6,10 +6,11 @@ import { job as validatorsBalancesJob } from "@/src/scheduler/tasks/fetchValidat
 import { job as fetchValidatorsInfo } from "@/src/scheduler/tasks/fetchValidatorsInfo.js";
 import { job as fetchBeaconRewardsJob } from "@/src/scheduler/tasks/fetchBeaconRewards.js";
 import { job as summarizeDailyJob } from "@/src/scheduler/tasks/summarizeDaily.js";
-
+import { job as cleanupCommitteeJob } from "@/src/scheduler/tasks/cleanupCommittee.js";
 export function scheduleTasks() {
   // Fetch the oldest attestation
   scheduler.addSimpleIntervalJob(fetchOldestAttestationJob);
+  scheduler.addSimpleIntervalJob(cleanupCommitteeJob);
 
   // Fetch the validators balances for updating the validator balances in the db.
   scheduler.addSimpleIntervalJob(validatorsBalancesJob);
