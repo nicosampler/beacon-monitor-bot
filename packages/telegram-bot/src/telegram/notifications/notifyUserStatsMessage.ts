@@ -59,8 +59,27 @@ export async function notifyUserStatsMessage(
     where: { id: userId },
     include: { validators: true },
   });
+
+  const headSlot = getSlotNumberFromTimestamp(new Date().getTime()) - 1;
+  const lastSlotProcessed = await prisma.slot.findFirst({
+    where: { slot: headSlot, attestationsFetched: true },
+    orderBy: { slot: "desc" },
+  });
+  let syncing = false;
+  if (
+    headSlot - lastSlotProcessed?.slot >
+    Number(process.env.BEACON_MAX_ATTESTATION_DELAY)
+  ) {
+    syncing = true;
+  }
+
+  if (!lastSlotProcessed) return;
   const stats = await calculateUserStats(user);
-  const message = formatStatsMessage(stats);
+  const message = formatStatsMessage(stats, {
+    syncing,
+    headSlot,
+    lastSlotProcessed: lastSlotProcessed.slot,
+  });
   return await updateOrSendMessage(
     Number(user.chatId),
     Number(user.messageId),
@@ -203,12 +222,15 @@ function calculateAPY(totalBalance: number, monthlyRewards: number): number {
   );
 }
 
-function formatStatsMessage(stats: UserStats): string {
+function formatStatsMessage(
+  stats: UserStats,
+  status: { syncing: boolean; headSlot: number; lastSlotProcessed: number }
+): string {
   const { performance, balance, withdrawable, validatorStats } = stats;
 
   return `\`🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}
 
-1h performance: ${performance}%
+1h performance: ${status.syncing ? "..." : `${performance}%`}
 Balance: ${balance.total.toFixed(2)} ${TOKEN_SYMBOL} ($${balance.value})
 APY: WIP
 Claimable: ${withdrawable.total.toFixed(4)} ${TOKEN_SYMBOL} ($${withdrawable.value})
@@ -222,8 +244,36 @@ m |    WIP     WIP     WIP
 
 ${TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}
 
+Bot status: ${status.syncing ? "🟡" : "🟢"} ${status.lastSlotProcessed}/${status.headSlot}
 Updated: ${format(new Date(), "MM/dd hh:mmaaa")} UTC
   \``;
+}
+
+async function getMissedAttestations(activeValidators: Validator[]) {
+  const oneHourBefore = subHours(new Date(), 1);
+  const fromSlot = getSlotNumberFromTimestamp(oneHourBefore.getTime());
+
+  return await prisma.committee.findMany({
+    where: {
+      validatorIndex: {
+        in: activeValidators.map((v) => v.id),
+      },
+      slot: {
+        gte: fromSlot,
+      },
+      OR: [
+        { attestationDelay: null },
+        {
+          attestationDelay: {
+            gt: Number(process.env.BEACON_MAX_ATTESTATION_DELAY),
+          },
+        },
+      ],
+    },
+    orderBy: {
+      slot: "desc",
+    },
+  });
 }
 
 async function updateOrSendMessage(
@@ -256,29 +306,4 @@ async function updateOrSendMessage(
         error
       );
     });
-}
-
-async function getMissedAttestations(activeValidators: Validator[]) {
-  const oneHourBefore = subHours(new Date(), 1);
-  const fromSlot = getSlotNumberFromTimestamp(oneHourBefore.getTime());
-  
-  return await prisma.committee.findMany({
-    where: {
-      validatorIndex: { 
-        in: activeValidators.map(v => v.id) 
-      },
-      slot: { 
-        gte: fromSlot 
-      },
-      OR: [
-        { attestationDelay: null },
-        { attestationDelay: { 
-          gt: Number(process.env.BEACON_MAX_ATTESTATION_DELAY) 
-        }}
-      ]
-    },
-    orderBy: {
-      slot: 'desc',
-    },
-  });
 }
