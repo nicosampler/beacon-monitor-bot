@@ -39,17 +39,17 @@ services:
     networks:
       - app-network
 
-  # bot:
-  #   container_name: bot
-  #   env_file:
-  #     - .env
-  #   build:
-  #     context: .
-  #     dockerfile: packages/telegram-bot/Dockerfile
-  #   depends_on:
-  #     - beacon-fetch
-  #   networks:
-  #     - app-network
+  bot:
+    container_name: bot
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: packages/telegram-bot/Dockerfile
+    depends_on:
+      - beacon-fetch
+    networks:
+      - app-network
 
 networks:
   app-network:
