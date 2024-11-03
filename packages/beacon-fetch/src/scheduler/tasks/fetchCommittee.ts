@@ -23,7 +23,7 @@ export const fetchNextCommittee = async () => {
     ? lastProcessedSlot.slot + 1
     : oldestLookbackSlot;
 
-  const logger = createLogger(`${ID} for slot ${slotToFetch}`);
+  const logger = createLogger(`${ID} for slot ${slotToFetch}`, false);
 
   if (Math.min(slotToFetch, headSlot) > headSlot) {
     logger.info(`head slot reached`);

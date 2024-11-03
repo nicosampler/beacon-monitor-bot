@@ -1,16 +1,16 @@
 import { getDataFromContext } from "../utils/getUserIdFromCtx.js";
-import { inMemoryUsers } from "@/src/utils/inMemoryDB.js";
 import { updateUsersStatsImp } from "@/src/scheduler/tasks/updateUsersStats.js";
 import { handleError } from "@/src/utils/errors/handleError.js";
 import { MyContext } from "@/src/config/session.js";
 import { getWithdrawalAddresses_db } from "@/src/prisma/withdrawalAddresses.js";
 import { sendMessage } from "@/src/telegram/utils/messaging.js";
+import { getPrisma } from "@/src/config/prisma.js";
+
+const prisma = getPrisma();
 
 export async function dashboard(ctx: MyContext) {
   try {
     const { userId } = await getDataFromContext(ctx);
-
-    const user = inMemoryUsers[userId];
 
     const wa = await getWithdrawalAddresses_db(userId);
     if (!wa.length) {
@@ -24,7 +24,10 @@ You can add one in: /menu > Validators management > Add withdrawal address.`
     }
 
     // Force a new TG message
-    user.messageId = undefined;
+    await prisma.user.update({
+      where: { id: userId },
+      data: { messageId: null },
+    });
 
     await updateUsersStatsImp(userId);
   } catch (error) {

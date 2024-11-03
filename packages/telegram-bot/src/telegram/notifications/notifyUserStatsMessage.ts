@@ -62,7 +62,7 @@ export async function notifyUserStatsMessage(
 
   const headSlot = getSlotNumberFromTimestamp(new Date().getTime()) - 1;
   const lastSlotProcessed = await prisma.slot.findFirst({
-    where: { slot: headSlot, attestationsFetched: true },
+    where: { attestationsFetched: true },
     orderBy: { slot: "desc" },
   });
   let syncing = false;
@@ -228,12 +228,20 @@ function formatStatsMessage(
 ): string {
   const { performance, balance, withdrawable, validatorStats } = stats;
 
+  if (status.syncing) {
+    return `\`   ⚠️ ...bot is syncing... ⚠️
+    Slot: ${status.lastSlotProcessed}/${status.headSlot}
+   
+User stats will be updated once the bot is synced.
+   \``;
+  }
+
   return `\`🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}
 
 1h performance: ${status.syncing ? "..." : `${performance}%`}
 Balance: ${balance.total.toFixed(2)} ${TOKEN_SYMBOL} ($${balance.value})
 APY: WIP
-Claimable: ${withdrawable.total.toFixed(4)} ${TOKEN_SYMBOL} ($${withdrawable.value})
+Claimable: ${withdrawable.total.toFixed(2)} ${TOKEN_SYMBOL} ($${withdrawable.value})
 
 Rewards:
 ----------------------------
@@ -243,8 +251,6 @@ w |    WIP     WIP     WIP
 m |    WIP     WIP     WIP
 
 ${TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}
-
-Bot status: ${status.syncing ? "🟡" : "🟢"} ${status.lastSlotProcessed}/${status.headSlot}
 Updated: ${format(new Date(), "MM/dd hh:mmaaa")} UTC
   \``;
 }

@@ -5,6 +5,7 @@ import { getPrisma } from "@/src/lib/prisma.js";
 import { getTimestampFromSlotNumber } from "@/src/beacon/utils/time.js";
 import { addHours, subHours } from "date-fns";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
+import { convertToUTC } from "@/src/utils/date/index.js";
 
 const prisma = getPrisma();
 const ID = "Summarize:Hourly";
@@ -14,16 +15,21 @@ const oldestLookbackSlotDate = new Date(
   getTimestampFromSlotNumber(getOldestLookbackSlot())
 );
 
+const _lastSummaryDate = oldestLookbackSlotDate;
+console.log("_lastSummaryDate", _lastSummaryDate);
+const _nextSummaryDate = addHours(_lastSummaryDate, 1);
+console.log("_nextSummaryDate", _nextSummaryDate);
+const { hour, date } = convertToUTC(_nextSummaryDate);
+console.log("hour", hour);
+console.log("date", date);
+
 async function summarizeHourlyTask() {
   try {
     const summary = await prisma.lastSummaryUpdate.findFirst();
 
     const lastSummaryDate =
       summary?.hourlyValidatorStats ?? oldestLookbackSlotDate;
-
     const nextSummaryDate = addHours(lastSummaryDate, 1);
-    const now = new Date();
-    const oneHourBefore = subHours(now, 1);
 
     // We should only summarize data that is older than 1 hour
     // Examples:
@@ -38,6 +44,8 @@ async function summarizeHourlyTask() {
     //   nowMinus1h = 11:00
     //   nextSummaryDate = 10:00
     //   Process because 10:00 is older than 11:00 (data is complete)
+    const now = new Date();
+    const oneHourBefore = subHours(now, 1);
     if (nextSummaryDate > oneHourBefore) {
       logger.info("Skipping, data is too recent (less than 1 hour old)");
       return;
