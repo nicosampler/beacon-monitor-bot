@@ -199,10 +199,14 @@ export async function summarizeAtomicTransaction(
         await processExecutionRewardsBatch(tx, batch, hour, date);
       }
 
-      if (committeeValidators.length > 0) {
+      if (committeeValidators.length > 0 && executionRewards.length > 0) {
         await updateLastSummaryUpdate("hourlyValidatorStats", endTime, tx);
         await removeProcessedCommitteeRecords(tx, endSlot, logger);
         await removeProcessedExecutionRewards(tx, endTime, logger);
+      } else {
+        logger.warn(
+          "ABORT: No committee validators or execution rewards to process"
+        );
       }
     },
     { timeout: 1000 * 60 * 20 }
@@ -215,6 +219,8 @@ export async function summarizeHourly(
   logger: CustomLogger
 ): Promise<void> {
   const { startSlot, endSlot } = calculateSlotRange(startTime, endTime);
+
+  logger.info(`StartSlot: ${startSlot}, EndSlot: ${endSlot}`);
 
   const unprocessedSlots = await hasUnprocessedSlots(endSlot);
   if (unprocessedSlots) {

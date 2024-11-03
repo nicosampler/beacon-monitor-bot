@@ -6,7 +6,7 @@ import createLogger from "@/src/lib/pino.js";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { fetchCommittee } from "@/src/feed/fetchCommittee.js";
 
-const ID = ">>>>>>>>>> FetchCommittee";
+const ID = "FetchCommittee";
 const prisma = getPrisma();
 
 export const fetchNextCommittee = async () => {
@@ -23,7 +23,7 @@ export const fetchNextCommittee = async () => {
     ? lastProcessedSlot.slot + 1
     : oldestLookbackSlot;
 
-  const logger = createLogger(`${ID} for slot ${slotToFetch}`, false);
+  const logger = createLogger(`${ID} for slot ${slotToFetch}`, true);
 
   if (Math.min(slotToFetch, headSlot) > headSlot) {
     logger.info(`head slot reached`);

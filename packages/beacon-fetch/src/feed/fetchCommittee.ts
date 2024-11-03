@@ -72,12 +72,14 @@ export const fetchCommittee = async (
 
     // Updated committee upsert
     const committeeUpserts = fetchedCommittees.flatMap((committee) =>
-      committee.validators.map((validatorIndex, index) => ({
-        slot: +committee.slot,
-        index: +committee.index,
-        aggregationBitsIndex: index,
-        validatorIndex: +validatorIndex,
-      }))
+      committee.validators
+        .map((validatorIndex, index) => ({
+          slot: +committee.slot,
+          index: +committee.index,
+          aggregationBitsIndex: index,
+          validatorIndex: +validatorIndex,
+        }))
+        .filter((committee) => +committee.slot >= getOldestLookbackSlot())
     );
 
     if (!slotUpserts.length && !committeeUpserts.length) {

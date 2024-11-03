@@ -24,7 +24,10 @@ async function summarizeDailyTask() {
     const lastProcessedDay =
       summary?.dailyValidatorStats ?? oldestLookbackSlotDate;
 
-    const dayToProcess = addDays(lastProcessedDay, 1);
+    const dayToProcess =
+      lastProcessedDay == oldestLookbackSlotDate
+        ? lastProcessedDay
+        : addDays(lastProcessedDay, 1);
 
     // Make sure the hourly summary stats have been processed
     // so we check that hourlyValidatorStats is greater than the day we want to process
