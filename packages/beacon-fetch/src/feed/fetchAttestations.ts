@@ -28,6 +28,7 @@ export const fetchAttestation = async (
     const fetchedAttestations = await getAttestation(slotNumber, logger);
     if (!fetchedAttestations) return;
 
+    // Filter out attestations that are older than the oldest lookback slot
     const filteredAttestations = fetchedAttestations.filter(
       (attestation) => +attestation.data.slot >= getOldestLookbackSlot()
     );
@@ -37,8 +38,7 @@ export const fetchAttestation = async (
     for (const attestation of filteredAttestations) {
       const processedAttestations = await processAttestation(
         slotNumber,
-        attestation,
-        logger
+        attestation
       );
       allProcessedAttestations.push(...processedAttestations);
     }
@@ -97,15 +97,14 @@ interface CommitteeUpdate {
  */
 async function processAttestation(
   slotNumber: number,
-  attestation: Attestation,
-  logger: CustomLogger
+  attestation: Attestation
 ): Promise<CommitteeUpdate[]> {
   const aggregationBits = convertBitsToString(
     convertHexStringToByteArray(attestation.aggregation_bits)
   );
 
-  // Retrieve validators indices from the committee to be able to check if they attested
-  // indices are the same as the position in the aggregation bits.
+  // Retrieve validators indices from the committee to be able to check if they attested.
+  // Indices are the same as the position in the aggregation bits.
   const validators = await prisma.committee.findMany({
     where: {
       AND: [
@@ -117,9 +116,9 @@ async function processAttestation(
       validatorIndex: true,
       aggregationBitsIndex: true,
     },
-    orderBy: {
-      aggregationBitsIndex: "asc",
-    },
+    // orderBy: {
+    //   aggregationBitsIndex: "asc",
+    // },
   });
 
   const updates: CommitteeUpdate[] = [];
