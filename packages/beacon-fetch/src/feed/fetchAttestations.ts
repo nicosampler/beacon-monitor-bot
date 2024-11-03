@@ -11,7 +11,6 @@ import { CustomLogger } from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { Prisma } from "@prisma/client";
-import { env } from "@/src/env.js";
 
 const prisma = getPrisma();
 
@@ -29,18 +28,11 @@ export const fetchAttestation = async (
     const fetchedAttestations = await getAttestation(slotNumber, logger);
     if (!fetchedAttestations) return;
 
-    let filteredAttestations = fetchedAttestations;
+    const filteredAttestations = fetchedAttestations.filter(
+      (attestation) => +attestation.data.slot >= getOldestLookbackSlot()
+    );
 
-    if (
-      env.BEACON_LOOKBACK_SLOT - slotNumber <
-      env.BEACON_SLOTS_PER_EPOCH * 2
-    ) {
-      filteredAttestations = fetchedAttestations.filter(
-        (attestation) => +attestation.data.slot >= getOldestLookbackSlot()
-      );
-    }
-
-    // Process all attestations
+    // Process all attestations and calculate the attestation delay
     const allProcessedAttestations: CommitteeUpdate[] = [];
     for (const attestation of filteredAttestations) {
       const processedAttestations = await processAttestation(
