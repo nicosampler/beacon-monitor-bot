@@ -1,4 +1,6 @@
 import { Prisma } from "@prisma/client";
+import ms from "ms";
+
 import { env } from "@/src/env.js";
 import {
   getEpochNumberFromTimestamp,
@@ -119,11 +121,12 @@ async function processCommitteeValidatorsBatch(
     )
     .join(",");
 
+  // if a validator haven't had rewards, the row won't exist
   await tx.$executeRawUnsafe(`
     INSERT INTO "HourlyValidatorStats" ("validatorIndex", "hour", "date", "attestationsMissed")
     VALUES ${values}
     ON CONFLICT ("validatorIndex", "hour", "date") 
-    DO UPDATE SET "attestationsMissed" = "HourlyValidatorStats"."attestationsMissed" + EXCLUDED."attestationsMissed"
+    DO UPDATE SET "attestationsMissed" = "HourlyValidatorStats"."attestationsMissed"
   `);
 }
 
@@ -136,20 +139,17 @@ export async function processExecutionRewardsBatch(
   const batches = chunk(executionRewards, 10000);
 
   for (const batch of batches) {
-    const values = batch
-      .map(
-        (stat) => `('${stat.address}', ${hour}, '${date}', ${stat._sum.amount})`
-      )
-      .join(",");
+    // Convert the batch data to the format needed for createMany
+    const data = batch.map((stat) => ({
+      address: stat.address,
+      hour: hour,
+      date: date,
+      amount: stat._sum.amount!,
+    }));
 
-    await tx.$executeRawUnsafe(
-      `
-      INSERT INTO "HourlyExecutionRewards" ("address", "hour", "date", "amount")
-      VALUES ${values}
-      ON CONFLICT ("address", "hour", "date")
-      DO UPDATE SET "amount" = "HourlyExecutionRewards"."amount" + EXCLUDED."amount"
-      `
-    );
+    await tx.hourlyExecutionRewards.createMany({
+      data: data,
+    });
   }
 }
 
@@ -189,7 +189,7 @@ export async function summarizeAtomicTransaction(
   endTime: Date,
   logger: CustomLogger
 ) {
-  const BATCH_SIZE = 2500;
+  const BATCH_SIZE = 5000;
 
   await prisma.$transaction(
     async (tx) => {
@@ -213,7 +213,7 @@ export async function summarizeAtomicTransaction(
         );
       }
     },
-    { timeout: 1000 * 60 * 20 }
+    { timeout: ms("10m") }
   );
 }
 
@@ -246,7 +246,7 @@ export async function summarizeHourly(
   const unprocessedBeaconRewards = await hasUnprocessedBeaconRewards(endSlot);
   if (unprocessedBeaconRewards) {
     logger.info(
-      `Some beacon rewards before ${endTime} are not fully processed. Skipping summarization.`
+      `Some beacon rewards before slot ${endSlot} are not fully processed. Skipping summarization.`
     );
     return;
   }
