@@ -21,7 +21,7 @@ export const fetchAttestation = async (
   try {
     const existCommittee = await db_existCommitteeForSlot(slotNumber);
     if (!existCommittee) {
-      //logger.info(`Skipping, no committee found for slot ${slotNumber}.`);
+      logger.info(`Skipping, no committee found for slot ${slotNumber}.`);
       return;
     }
 
