@@ -24,7 +24,7 @@ export async function cleanupCommittee(logger: CustomLogger) {
         WHERE slot <= ${maxProcessedSlot.slot}
         AND "attestationDelay" <= ${env.BEACON_MAX_ATTESTATION_DELAY}
         ORDER BY slot
-        LIMIT 5000
+        LIMIT 10000
     )
     DELETE FROM "Committee"
     WHERE (slot, index, "validatorIndex") IN (
