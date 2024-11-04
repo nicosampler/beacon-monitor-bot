@@ -170,8 +170,8 @@ export async function summarizeAtomicTransaction(
           addDays(date, 1),
           tx
         );
-        //await removeProcessedHourlyStatsRecords(tx, date, logger);
-        //await removeProcessedExecutionRewards(tx, date, logger);
+        await removeProcessedHourlyStatsRecords(tx, date, logger);
+        await removeProcessedExecutionRewards(tx, date, logger);
       }
     },
     { timeout: 1000 * 60 * 20 }
