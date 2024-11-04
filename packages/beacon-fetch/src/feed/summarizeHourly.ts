@@ -57,7 +57,7 @@ export async function hasUnprocessedBeaconRewards(
   // We will remove all the beacon rewards before the endTime and
   // if the table is empty, fetching restarts from env.EXECUTION_BLOCK_LOOKBACK
   const beaconRewards = await prisma.epoch.findFirst({
-    where: { epoch: { lt: endSlot + 1 }, rewardsFetched: true },
+    where: { epoch: { gt: endSlot }, rewardsFetched: true },
   });
   return beaconRewards == null;
 }

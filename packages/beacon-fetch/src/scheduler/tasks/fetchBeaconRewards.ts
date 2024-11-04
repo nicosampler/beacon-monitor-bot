@@ -8,7 +8,7 @@ import { fetchBeaconRewards } from "@/src/feed/fetchBeaconRewards.js"; // Assumi
 
 const prisma = getPrisma();
 const ID = "fetchBeaconRewards";
-const logger = createLogger(ID, true);
+const logger = createLogger(ID, false);
 
 const SLOTS_PER_EPOCH = env.BEACON_SLOTS_PER_EPOCH;
 
