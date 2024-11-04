@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { env } from "@/src/env.js";
 import {
+  getEpochNumberFromTimestamp,
   getSlotNumberFromTimestamp,
   getTimestampFromSlotNumber,
 } from "@/src/beacon/utils/time.js";
@@ -53,11 +54,14 @@ export async function hasUnprocessedExecutionRewards(
 export async function hasUnprocessedBeaconRewards(
   endSlot: number
 ): Promise<boolean> {
+  const endSlotTime = getTimestampFromSlotNumber(endSlot);
+  const endEpoch = getEpochNumberFromTimestamp(endSlotTime);
+
   // We need at least one beacon reward epoch processed after the endTime because
   // We will remove all the beacon rewards before the endTime and
   // if the table is empty, fetching restarts from env.EXECUTION_BLOCK_LOOKBACK
   const beaconRewards = await prisma.epoch.findFirst({
-    where: { epoch: { gt: endSlot }, rewardsFetched: true },
+    where: { epoch: { gt: endEpoch }, rewardsFetched: true },
   });
   return beaconRewards == null;
 }
