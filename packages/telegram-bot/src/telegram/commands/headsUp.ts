@@ -2,12 +2,14 @@ import { InlineKeyboard } from "grammy";
 import { Conversation } from "@grammyjs/conversations";
 
 import { sendMessage } from "@/src/telegram/utils/messaging.js";
-import { inMemoryUsers } from "@/src/utils/inMemoryDB.js";
 import { MyContext } from "@/src/config/session.js";
 import { getDataFromContext } from "@/src/telegram/utils/getUserIdFromCtx.js";
 import { TG_ADMIN_USER_IDS } from "@/src/constants/index.js";
 import { AppError } from "@/src/utils/errors/AppError.js";
 import { handleError } from "@/src/utils/errors/handleError.js";
+import { getPrisma } from "@/src/config/prisma.js";
+
+const prisma = getPrisma();
 
 type HeadsUpConversation = Conversation<MyContext>;
 
@@ -16,7 +18,7 @@ export async function headsUp(
   ctx: MyContext
 ) {
   try {
-    const { userId, username } = getDataFromContext(ctx);
+    const { userId } = getDataFromContext(ctx);
 
     // Check if the user is authorized
     if (!TG_ADMIN_USER_IDS.includes(userId)) {
@@ -41,9 +43,10 @@ export async function headsUp(
       "Dismiss",
       "remove_message"
     );
-    Object.keys(inMemoryUsers).forEach(async (userId) => {
-      const user = inMemoryUsers[Number(userId)];
-      await sendMessage(username, announcementMessage, {
+
+    const users = await prisma.user.findMany();
+    users.forEach(async (user) => {
+      await sendMessage(user.userId.toString(), announcementMessage, {
         reply_markup: inlineKeyboard,
       });
     });

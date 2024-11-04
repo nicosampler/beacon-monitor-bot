@@ -229,8 +229,8 @@ function formatStatsMessage(
   const { performance, balance, withdrawable, validatorStats } = stats;
 
   if (status.syncing) {
-    return `\`   ⚠️ ...bot is syncing... ⚠️
-    Slot: ${status.lastSlotProcessed}/${status.headSlot}
+    return `\`⚠️ ...bot is syncing... ⚠️
+Slot: ${status.lastSlotProcessed}/${status.headSlot}
    
 User stats will be updated once the bot is synced.
    \``;

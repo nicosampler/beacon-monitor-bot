@@ -181,15 +181,15 @@ export async function summarizeDaily(
   day: number,
   logger: CustomLogger
 ): Promise<void> {
-  // if (!(await hasAllHourlyStats(date))) {
-  //   logger.info(`No hourly stats ready, skipping`);
-  //   return;
-  // }
+  if (!(await hasAllHourlyStats(date))) {
+    logger.info(`No hourly stats ready, skipping`);
+    return;
+  }
 
-  // if (!(await hasAllExecutionRewards(date))) {
-  //   logger.info(`No execution rewards ready, skipping`);
-  //   return;
-  // }
+  if (!(await hasAllExecutionRewards(date))) {
+    logger.info(`No execution rewards ready, skipping`);
+    return;
+  }
 
   // Missed attestations
   const hourlyStats = await aggregateHourlyStats(date);

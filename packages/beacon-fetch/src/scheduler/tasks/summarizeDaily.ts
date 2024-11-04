@@ -21,13 +21,12 @@ async function summarizeDailyTask() {
     const summary = await prisma.lastSummaryUpdate.findFirst();
 
     // If the last summary is not in the db, use the oldest lookback slot
-    const lastProcessedDay =
-      summary?.dailyValidatorStats ?? oldestLookbackSlotDate;
+    const dayToProcess = summary?.dailyValidatorStats ?? oldestLookbackSlotDate;
 
-    const dayToProcess =
-      lastProcessedDay == oldestLookbackSlotDate
-        ? lastProcessedDay
-        : addDays(lastProcessedDay, 1);
+    // const dayToProcess =
+    //   lastProcessedDay == oldestLookbackSlotDate
+    //     ? lastProcessedDay
+    //     : addDays(lastProcessedDay, 1);
 
     // Make sure the hourly summary stats have been processed
     // so we check that hourlyValidatorStats is greater than the day we want to process
