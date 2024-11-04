@@ -165,9 +165,13 @@ export async function summarizeAtomicTransaction(
       }
 
       if (hasAllHourlyStats.length > 0 || hasAllExecutionRewards.length > 0) {
-        await updateLastSummaryUpdate("dailyValidatorStats", date, tx);
-        await removeProcessedHourlyStatsRecords(tx, date, logger);
-        await removeProcessedExecutionRewards(tx, date, logger);
+        await updateLastSummaryUpdate(
+          "dailyValidatorStats",
+          addDays(date, 1),
+          tx
+        );
+        //await removeProcessedHourlyStatsRecords(tx, date, logger);
+        //await removeProcessedExecutionRewards(tx, date, logger);
       }
     },
     { timeout: 1000 * 60 * 20 }
