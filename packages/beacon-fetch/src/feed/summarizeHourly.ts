@@ -12,7 +12,6 @@ import { CustomLogger } from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import chunk from "lodash/chunk.js";
 import { convertToUTC } from "@/src/utils/date/index.js";
-import { addMinutes } from "date-fns";
 
 const prisma = getPrisma();
 
@@ -231,30 +230,30 @@ export async function summarizeHourly(
 
   logger.info(`StartSlot: ${startSlot}, EndSlot: ${endSlot}`);
 
-  // const unprocessedSlots = await hasUnprocessedSlots(endSlot);
-  // if (unprocessedSlots) {
-  //   logger.info(
-  //     `Some slots before ${endSlot} are not fully processed. Skipping summarization.`
-  //   );
-  //   return;
-  // }
+  const unprocessedSlots = await hasUnprocessedSlots(endSlot);
+  if (unprocessedSlots) {
+    logger.info(
+      `Some slots before ${endSlot} are not fully processed. Skipping summarization.`
+    );
+    return;
+  }
 
-  // const unprocessedExecutionRewards =
-  //   await hasUnprocessedExecutionRewards(endTime);
-  // if (unprocessedExecutionRewards) {
-  //   logger.info(
-  //     `Some execution rewards before ${endTime} are not fully processed. Skipping summarization.`
-  //   );
-  //   return;
-  // }
+  const unprocessedExecutionRewards =
+    await hasUnprocessedExecutionRewards(endTime);
+  if (unprocessedExecutionRewards) {
+    logger.info(
+      `Some execution rewards before ${endTime} are not fully processed. Skipping summarization.`
+    );
+    return;
+  }
 
-  // const unprocessedBeaconRewards = await hasUnprocessedBeaconRewards(endSlot);
-  // if (unprocessedBeaconRewards) {
-  //   logger.info(
-  //     `Some beacon rewards before slot ${endSlot} are not fully processed. Skipping summarization.`
-  //   );
-  //   return;
-  // }
+  const unprocessedBeaconRewards = await hasUnprocessedBeaconRewards(endSlot);
+  if (unprocessedBeaconRewards) {
+    logger.info(
+      `Some beacon rewards before slot ${endSlot} are not fully processed. Skipping summarization.`
+    );
+    return;
+  }
 
   // Missed attestations
   const committeeValidators = await aggregateMissedAttestations(
