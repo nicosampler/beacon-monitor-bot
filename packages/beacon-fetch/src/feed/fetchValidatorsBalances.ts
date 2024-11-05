@@ -102,9 +102,10 @@ export const fetchValidatorsBalances = async (
       insertCount
     );
   } catch (error) {
-    logger.error(`Error in fetchValidatorsBalances for state ${slotNumber}`, {
-      error,
-    });
+    logger.error(
+      `Error in fetchValidatorsBalances for state ${slotNumber}`,
+      error
+    );
     throw error;
   }
 };

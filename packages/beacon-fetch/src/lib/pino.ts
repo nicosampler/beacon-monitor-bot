@@ -29,7 +29,7 @@ const createLogger = (context: string | null, ignore: boolean = false) => {
   ) => {
     // Return early if ignore is true
     if (ignore) return;
-    
+
     const logObject = context ? { context, ...args } : args;
     logger[level](logObject, message);
   };
@@ -39,8 +39,10 @@ const createLogger = (context: string | null, ignore: boolean = false) => {
       logWithContext("info", message, ...args),
     warn: (message: string, ...args: any[]) =>
       logWithContext("warn", message, ...args),
-    error: (message: string, ...args: any[]) =>
-      logWithContext("error", message, ...args),
+    error: (message: string, error: any) => {
+      console.error(message, error);
+      logWithContext("error", message, error);
+    },
     debug: (message: string, ...args: any[]) =>
       logWithContext("debug", message, ...args),
   };

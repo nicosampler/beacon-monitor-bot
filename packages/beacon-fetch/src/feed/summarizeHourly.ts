@@ -75,10 +75,15 @@ export async function aggregateMissedAttestations(
   return prisma.committee.groupBy({
     by: ["validatorIndex"],
     where: {
-      slot: { gte: startSlot, lte: endSlot },
-      OR: [
-        { attestationDelay: null },
-        { attestationDelay: { gt: env.BEACON_MAX_ATTESTATION_DELAY } },
+      AND: [
+        //{ validatorIndex: 171663 },
+        { slot: { gte: startSlot, lte: endSlot } },
+        {
+          OR: [
+            { attestationDelay: null },
+            { attestationDelay: { gt: env.BEACON_MAX_ATTESTATION_DELAY } },
+          ],
+        },
       ],
     },
     _count: {
@@ -126,7 +131,7 @@ async function processCommitteeValidatorsBatch(
     INSERT INTO "HourlyValidatorStats" ("validatorIndex", "hour", "date", "attestationsMissed")
     VALUES ${values}
     ON CONFLICT ("validatorIndex", "hour", "date") 
-    DO UPDATE SET "attestationsMissed" = "HourlyValidatorStats"."attestationsMissed"
+    DO UPDATE SET "attestationsMissed" = EXCLUDED."attestationsMissed"
   `);
 }
 
@@ -143,7 +148,7 @@ export async function processExecutionRewardsBatch(
     const data = batch.map((stat) => ({
       address: stat.address,
       hour: hour,
-      date: date,
+      date: new Date(date),
       amount: stat._sum.amount!,
     }));
 
@@ -226,30 +231,30 @@ export async function summarizeHourly(
 
   logger.info(`StartSlot: ${startSlot}, EndSlot: ${endSlot}`);
 
-  const unprocessedSlots = await hasUnprocessedSlots(endSlot);
-  if (unprocessedSlots) {
-    logger.info(
-      `Some slots before ${endSlot} are not fully processed. Skipping summarization.`
-    );
-    return;
-  }
+  // const unprocessedSlots = await hasUnprocessedSlots(endSlot);
+  // if (unprocessedSlots) {
+  //   logger.info(
+  //     `Some slots before ${endSlot} are not fully processed. Skipping summarization.`
+  //   );
+  //   return;
+  // }
 
-  const unprocessedExecutionRewards =
-    await hasUnprocessedExecutionRewards(endTime);
-  if (unprocessedExecutionRewards) {
-    logger.info(
-      `Some execution rewards before ${endTime} are not fully processed. Skipping summarization.`
-    );
-    return;
-  }
+  // const unprocessedExecutionRewards =
+  //   await hasUnprocessedExecutionRewards(endTime);
+  // if (unprocessedExecutionRewards) {
+  //   logger.info(
+  //     `Some execution rewards before ${endTime} are not fully processed. Skipping summarization.`
+  //   );
+  //   return;
+  // }
 
-  const unprocessedBeaconRewards = await hasUnprocessedBeaconRewards(endSlot);
-  if (unprocessedBeaconRewards) {
-    logger.info(
-      `Some beacon rewards before slot ${endSlot} are not fully processed. Skipping summarization.`
-    );
-    return;
-  }
+  // const unprocessedBeaconRewards = await hasUnprocessedBeaconRewards(endSlot);
+  // if (unprocessedBeaconRewards) {
+  //   logger.info(
+  //     `Some beacon rewards before slot ${endSlot} are not fully processed. Skipping summarization.`
+  //   );
+  //   return;
+  // }
 
   // Missed attestations
   const committeeValidators = await aggregateMissedAttestations(
@@ -262,6 +267,8 @@ export async function summarizeHourly(
 
   // we use hour and date in UTC to be consistent with the db timestamp
   const { hour, date } = convertToUTC(startTime);
+
+  logger.info(`Ready to summarize.`);
 
   // update the hourly validator stats
   await summarizeAtomicTransaction(

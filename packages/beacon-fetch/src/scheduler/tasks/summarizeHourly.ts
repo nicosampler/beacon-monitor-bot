@@ -51,7 +51,7 @@ async function summarizeHourlyTask() {
 
     logger.info("Done.");
   } catch (error) {
-    logger.error("Error in summarizeAttestationsHourly task", { error });
+    logger.error("Error in summarizeAttestationsHourly task", error);
   }
 }
 

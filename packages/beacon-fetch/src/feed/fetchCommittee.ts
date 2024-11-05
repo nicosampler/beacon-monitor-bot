@@ -136,7 +136,7 @@ async function processAndSaveCommittees(
 
     logger.info(`Successfully processed slot ${committees[0].slot}`);
   } catch (error) {
-    logger.error(`Failed to process slot ${committees[0].slot}`, { error });
+    logger.error(`Failed to process slot ${committees[0].slot}`, error);
     throw error;
   }
 }
@@ -173,7 +173,7 @@ export async function fetchNextCommittees(): Promise<void> {
     }
 
     if (validResults.length === 0) {
-      logger.error("All committee fetches failed");
+      logger.error("All committee fetches failed", {});
       return;
     }
 
@@ -183,9 +183,7 @@ export async function fetchNextCommittees(): Promise<void> {
       try {
         await processAndSaveCommittees(logger, result.committees);
       } catch (error) {
-        logger.error(`Error saving committees for slot ${result.slot}`, {
-          error,
-        });
+        logger.error(`Error saving committees for slot ${result.slot}`, error);
         // Stop processing remaining slots if one fails
         break;
       }
@@ -193,7 +191,7 @@ export async function fetchNextCommittees(): Promise<void> {
 
     logger.info(`Done!`);
   } catch (error) {
-    logger.error("Error in fetchNextCommittees", { error });
+    logger.error("Error in fetchNextCommittees", error);
     throw error;
   }
 }

@@ -52,7 +52,7 @@ export const fetchAttestation = async (
 
     logger.info(`Done for slot ${slotNumber}.`);
   } catch (error) {
-    logger.error("There was an error.", { error });
+    logger.error("There was an error.", error);
     throw error;
   }
 };

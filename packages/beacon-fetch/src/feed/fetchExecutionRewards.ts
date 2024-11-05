@@ -40,7 +40,7 @@ export async function fetchExecutionRewards(logger: CustomLogger) {
   try {
     blockInfo = await getBlock(blockToQuery);
   } catch (error) {
-    logger.error(`Error fetching block ${blockToQuery}: ${error}`);
+    logger.error(`Error fetching block ${blockToQuery}: ${error}`, error);
     return;
   }
 

@@ -16,7 +16,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    logger.error("", { e });
+    logger.error("", e);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

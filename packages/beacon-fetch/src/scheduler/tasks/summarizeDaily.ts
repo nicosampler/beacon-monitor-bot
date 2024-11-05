@@ -38,7 +38,7 @@ async function summarizeDailyTask() {
 
     logger.info("Done.");
   } catch (error) {
-    logger.error("Error in summarizeAttestationsDaily task", { error });
+    logger.error("Error in summarizeAttestationsDaily task", error);
   }
 }
 

@@ -1,10 +1,11 @@
+import ms from "ms";
+
 import { Prisma } from "@prisma/client";
 import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
 import { updateLastSummaryUpdate } from "@/src/feed/utils.js";
 import { CustomLogger } from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import chunk from "lodash/chunk.js";
-import { convertToUTC } from "@/src/utils/date/index.js";
 import { addDays } from "date-fns";
 
 const prisma = getPrisma();
@@ -174,7 +175,7 @@ export async function summarizeAtomicTransaction(
         await removeProcessedExecutionRewards(tx, date, logger);
       }
     },
-    { timeout: 1000 * 60 * 20 }
+    { timeout: ms("10m") } //
   );
 
   logger.info("Done.");
