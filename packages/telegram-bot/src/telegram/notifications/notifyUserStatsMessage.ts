@@ -26,7 +26,7 @@ const BEACON_SLOT_DURATION_IN_SECONDS = Number(
 );
 const slotsIn1h = 3600 / BEACON_SLOT_DURATION_IN_SECONDS;
 
-interface ValidatorStats {
+interface ValidatorByStatus {
   activeIds: number[];
   inactiveIds: number[];
   slashedIds: number[];
@@ -49,22 +49,27 @@ interface UserStats {
     weekly: { block: number; fee: number; usd: string };
     monthly: { block: number; fee: number; usd: string };
   };
-  validatorStats: ValidatorStats;
+  validatorStats: ValidatorByStatus;
 }
 
 export async function notifyUserStatsMessage(
   userId: number
 ): Promise<number | undefined> {
+  // get user
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: { validators: true },
   });
 
+  // get head slot and last slot processed
   const headSlot = getSlotNumberFromTimestamp(new Date().getTime()) - 1;
   const lastSlotProcessed = await prisma.slot.findFirst({
     where: { attestationsFetched: true },
     orderBy: { slot: "desc" },
   });
+  if (!lastSlotProcessed) return;
+
+  // check if bot is syncing
   let syncing = false;
   if (
     headSlot - lastSlotProcessed?.slot >
@@ -73,8 +78,10 @@ export async function notifyUserStatsMessage(
     syncing = true;
   }
 
-  if (!lastSlotProcessed) return;
-  const stats = await calculateUserStats(user);
+  // calculate user stats
+  const stats = await calculateUserStats(syncing, user);
+
+  // send message to the user
   const message = formatStatsMessage(stats, {
     syncing,
     headSlot,
@@ -91,7 +98,7 @@ function calculateValidatorStats(
   validators: Validator[],
   missedAttestations: Committee[],
   amountOfMissedAttestationsToBeInactive: number
-): ValidatorStats {
+): ValidatorByStatus {
   // Filter validators that are "active" for the beacon chain
   const beaconActiveValidators = validators.filter(
     (v) =>
@@ -135,17 +142,12 @@ function calculateValidatorStats(
   };
 }
 
-async function calculateUserStats(
-  user: User & { validators: Validator[] }
-): Promise<UserStats> {
-  const performance = await calculatePerformanceStats(user);
-  const balanceStats = calculateBalanceStats(user.validators);
-  const rewardsStats = calculateRewardsStats();
-  const withdrawable = await getWithdrawableAmountByUserId(user.id);
+async function getValidatorByStatus(user: User & { validators: Validator[] }) {
   const activeValidators = user.validators.filter(
     (v) =>
       v.status === VALIDATOR_STATUS.ACTIVE_ONGOING ||
-      v.status === VALIDATOR_STATUS.ACTIVE_EXITING
+      v.status === VALIDATOR_STATUS.ACTIVE_EXITING ||
+      v.status === VALIDATOR_STATUS.PENDING_QUEUED
   );
   const missedAttestations = await getMissedAttestations(activeValidators);
   const validatorStats = calculateValidatorStats(
@@ -153,6 +155,24 @@ async function calculateUserStats(
     missedAttestations,
     user.attestationThreshold
   );
+
+  return validatorStats;
+}
+
+async function calculateUserStats(
+  syncing: boolean,
+  user: User & { validators: Validator[] }
+): Promise<UserStats> {
+  // get validator stats
+  const validatorStats = await getValidatorByStatus(user);
+  // calculate performance stats
+  const performance = await calculatePerformanceStats(syncing, user);
+  // sum all validators balance in tokens and in usd.
+  const balanceStats = getUserBalance(user.validators);
+  // calculate rewards stats
+  const rewardsStats = calculateRewardsStats();
+  // get withdrawable amount
+  const withdrawable = await getWithdrawableAmountByUserId(user.id);
 
   return {
     performance,
@@ -171,8 +191,11 @@ async function calculateUserStats(
 }
 
 async function calculatePerformanceStats(
+  syncing: boolean,
   user: User & { validators: Validator[] }
 ) {
+  if (syncing) return 0;
+
   const activeValidators = user.validators.filter(
     (v) =>
       v.status === VALIDATOR_STATUS.ACTIVE_ONGOING ||
@@ -190,7 +213,7 @@ async function calculatePerformanceStats(
   );
 }
 
-function calculateBalanceStats(validators: Validator[]) {
+function getUserBalance(validators: Validator[]) {
   const totalBalanceInGwei = validators.reduce(
     (acc, validator) => acc + BigInt(validator.balance.toString()),
     BigInt(0)
@@ -205,7 +228,6 @@ function calculateBalanceStats(validators: Validator[]) {
 }
 
 function calculateRewardsStats() {
-  // Por ahora retornamos datos mock, aquí iría la lógica real de rewards
   return {
     daily: { block: 0, fee: 0, usd: formatNumber(0, 2, "$") },
     weekly: { block: 0, fee: 0, usd: formatNumber(0, 2, "$") },
@@ -228,31 +250,46 @@ function formatStatsMessage(
 ): string {
   const { performance, balance, withdrawable, validatorStats } = stats;
 
-  if (status.syncing) {
-    return `\`⚠️ ...bot is syncing... ⚠️
-Slot: ${status.lastSlotProcessed}/${status.headSlot}
-   
-User stats will be updated once the bot is synced.
-   \``;
-  }
+  const syncStatus = status.syncing
+    ? `⚠️ Syncing: ${status.lastSlotProcessed}/${status.headSlot} ⚠️`
+    : null;
 
-  return `\`🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}
+  // Define message sections
+  const validatorStatus = status.syncing
+    ? null
+    : `🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`;
 
-1h performance: ${status.syncing ? "..." : `${performance}%`}
-Balance: ${balance.total.toFixed(2)} ${TOKEN_SYMBOL} ($${balance.value})
-APY: WIP
-Claimable: ${withdrawable.total.toFixed(2)} ${TOKEN_SYMBOL} ($${withdrawable.value})
+  const mainStats = [
+    `1h performance: ${status.syncing ? "🔜" : `${performance}%`}`,
+    `Balance: ${balance.total.toFixed(2)} ${TOKEN_SYMBOL} ($${balance.value})`,
+    `APY: 🔜`,
+    `Claimable: ${withdrawable.total.toFixed(2)} ${TOKEN_SYMBOL} ($${withdrawable.value})`,
+  ].join("\n");
 
-Rewards:
-----------------------------
-  |    ${TOKEN_SYMBOL}    ${FEE_REWARDS_SYMBOL}    Total
-d |    WIP     WIP     WIP
-w |    WIP     WIP     WIP
-m |    WIP     WIP     WIP
+  const rewardsSection = [
+    `Rewards:`,
+    `----------------------------`,
+    `  |    ${TOKEN_SYMBOL}    ${FEE_REWARDS_SYMBOL}    Total`,
+    `d |            🔜`,
+    `w |            🔜`,
+    `m |            🔜`,
+  ].join("\n");
 
-${TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}
-Updated: ${format(new Date(), "MM/dd hh:mmaaa")} UTC
-  \``;
+  const footer = [
+    `${TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}`,
+    `Updated: ${format(new Date(), "MM/dd hh:mmaaa")} UTC`,
+  ].join("\n");
+
+  // Combine all sections
+  return `\`${[
+    syncStatus,
+    validatorStatus,
+    mainStats,
+    "", // empty line
+    rewardsSection,
+    "", // empty line
+    footer,
+  ].join("\n")}\``;
 }
 
 async function getMissedAttestations(activeValidators: Validator[]) {

@@ -21,20 +21,6 @@ export async function updateUsersStatsImp(userId?: number) {
     if (messageIdStats && messageIdStats !== Number(user.messageId)) {
       await updateUserMessageId_db(userId, messageIdStats);
     }
-
-    // if (
-    //   inMemoryUsers[userId]?.performance !== undefined &&
-    //   !inMemoryUsers[userId]?.status !== undefined
-    // ) {
-    //   // missed Attestations
-    //   await notifyMissedAttestations(userId);
-
-    //   // notify under performance
-    //   await notifyUnderPerformance(userId);
-
-    //   // notify validators status changed
-    //   await notifyValidatorsActivityChanged(userId);
-    // }
   });
 }
 
