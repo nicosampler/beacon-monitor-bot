@@ -6,7 +6,7 @@ const ID = "cleanupCommittee";
 const logger = createLogger(ID, true);
 
 export const job = new SimpleIntervalJob(
-  { minutes: 5, runImmediately: true },
+  { seconds: 30, runImmediately: true },
   new AsyncTask(`${ID}_task`, () => cleanupCommittee(logger)),
   {
     id: ID,
