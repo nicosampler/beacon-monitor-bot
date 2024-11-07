@@ -11,52 +11,58 @@ import { getPrisma } from "@/src/lib/prisma.js";
 const prisma = getPrisma();
 
 export async function fetchValidatorsInfo(logger: CustomLogger) {
-  const highestValidatorId = await getHighestValidatorId();
-  const batchSize = 6500;
-  const slotNumber =
-    getSlotNumberFromTimestamp(Date.now()) - env.BEACON_SLOTS_PER_EPOCH;
+  try {
+    const highestValidatorId = await getHighestValidatorId();
+    const batchSize = 6500;
+    const slotNumber =
+      getSlotNumberFromTimestamp(Date.now()) - env.BEACON_SLOTS_PER_EPOCH;
 
-  // Fetch validator IDs that are in final states
-  const finalStateValidators = await prisma.validator.findMany({
-    where: {
-      status: {
-        in: [
-          VALIDATOR_STATUS.EXITED_UNSLASHED,
-          VALIDATOR_STATUS.EXITED_SLASHED,
-          VALIDATOR_STATUS.WITHDRAWAL_DONE,
-        ],
+    // Fetch validator IDs that are in final states
+    const finalStateValidators = await prisma.validator.findMany({
+      where: {
+        status: {
+          in: [
+            VALIDATOR_STATUS.EXITED_UNSLASHED,
+            VALIDATOR_STATUS.EXITED_SLASHED,
+            VALIDATOR_STATUS.WITHDRAWAL_DONE,
+          ],
+        },
       },
-    },
-    select: { id: true },
-  });
+      select: { id: true },
+    });
 
-  const finalStateValidatorIds = new Set(finalStateValidators.map((v) => v.id));
+    const finalStateValidatorIds = new Set(
+      finalStateValidators.map((v) => v.id)
+    );
 
-  // Create array of all validator IDs and filter out those in final states
-  const allValidatorIds = Array.from(
-    { length: highestValidatorId + 1 },
-    (_, i) => i
-  ).filter((id) => !finalStateValidatorIds.has(id));
+    // Create array of all validator IDs and filter out those in final states
+    const allValidatorIds = Array.from(
+      { length: highestValidatorId + 1 },
+      (_, i) => i
+    ).filter((id) => !finalStateValidatorIds.has(id));
 
-  const validatorIdBatches = chunk(allValidatorIds, batchSize);
+    const validatorIdBatches = chunk(allValidatorIds, batchSize);
 
-  for (const validatorIds of validatorIdBatches) {
-    try {
-      logger.info(
-        `Fetching validators info from ${validatorIds[0]} to ${validatorIds[validatorIds.length - 1]}`
-      );
-      const validatorsInfo = await getValidatorsInfo(slotNumber, validatorIds);
+    for (const validatorIds of validatorIdBatches) {
+      try {
+        logger.info(
+          `Fetching validators info from ${validatorIds[0]} to ${validatorIds[validatorIds.length - 1]}`
+        );
+        const validatorsInfo = await getValidatorsInfo(
+          slotNumber,
+          validatorIds
+        );
 
-      const updateData = validatorsInfo.map((validatorInfo) => ({
-        id: parseInt(validatorInfo.index),
-        withdrawalAddress:
-          validatorInfo.validator.withdrawal_credentials.startsWith("0x01")
-            ? "0x" + validatorInfo.validator.withdrawal_credentials.slice(-40)
-            : null,
-        status: validatorInfo.status,
-      }));
+        const updateData = validatorsInfo.map((validatorInfo) => ({
+          id: parseInt(validatorInfo.index),
+          withdrawalAddress:
+            validatorInfo.validator.withdrawal_credentials.startsWith("0x01")
+              ? "0x" + validatorInfo.validator.withdrawal_credentials.slice(-40)
+              : null,
+          status: validatorInfo.status,
+        }));
 
-      const updateQuery = Prisma.sql`
+        const updateQuery = Prisma.sql`
           UPDATE "Validator"
           SET 
             "withdrawalAddress" = CASE
@@ -79,9 +85,12 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
           WHERE id IN (${Prisma.join(updateData.map((u) => u.id))});
         `;
 
-      await prisma.$executeRaw(updateQuery);
-    } catch (error) {
-      logger.error(`Error fetching validators info`, error);
+        await prisma.$executeRaw(updateQuery);
+      } catch (error) {
+        logger.error(`Error fetching validators info`, error);
+      }
     }
+  } catch (error) {
+    logger.error(`Error fetching validators info`, error);
   }
 }

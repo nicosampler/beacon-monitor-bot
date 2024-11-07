@@ -128,7 +128,7 @@ export async function fetchBeaconRewards(
           });
         },
         {
-          timeout: ms("2m"),
+          timeout: ms("10m"),
         }
       );
 

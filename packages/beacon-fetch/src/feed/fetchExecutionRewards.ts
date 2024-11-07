@@ -9,48 +9,54 @@ import { Decimal } from "@prisma/client/runtime/library";
 const prisma = getPrisma();
 
 export async function fetchExecutionRewards(logger: CustomLogger) {
-  // Get the latest saved block
-  const latestReward = await prisma.executionRewards.findFirst({
-    orderBy: { timestamp: "desc" },
-  });
+  try {
+    // Get the latest saved block
+    const latestReward = await prisma.executionRewards.findFirst({
+      orderBy: { timestamp: "desc" },
+    });
 
-  let blockToQuery: number;
+    let blockToQuery: number;
 
-  if (latestReward) {
-    const now = new Date();
-    const secondsSinceLastBlock = differenceInSeconds(
-      now,
-      latestReward.timestamp
-    );
+    if (latestReward) {
+      const now = new Date();
+      const secondsSinceLastBlock = differenceInSeconds(
+        now,
+        latestReward.timestamp
+      );
 
-    // If the time since the last block is less than a slot duration, abort
-    if (secondsSinceLastBlock <= env.BEACON_SLOT_DURATION_IN_SECONDS) {
-      logger.info("Skipping, block is still in progress");
+      // If the time since the last block is less than a slot duration, abort
+      if (secondsSinceLastBlock <= env.BEACON_SLOT_DURATION_IN_SECONDS) {
+        logger.info("Skipping, block is still in progress");
+        return;
+      }
+
+      blockToQuery = latestReward.blockNumber + 1;
+    } else {
+      blockToQuery = env.EXECUTION_BLOCK_LOOKBACK;
+    }
+
+    logger.info(`Fetching block: ${blockToQuery}`);
+    let blockInfo: Blocks = undefined;
+
+    try {
+      blockInfo = await getBlock(blockToQuery);
+    } catch (error) {
+      logger.error(`Error fetching block ${blockToQuery}: ${error}`, error);
       return;
     }
 
-    blockToQuery = latestReward.blockNumber + 1;
-  } else {
-    blockToQuery = env.EXECUTION_BLOCK_LOOKBACK;
-  }
-
-  logger.info(`Fetching block: ${blockToQuery}`);
-  let blockInfo: Blocks = undefined;
-
-  try {
-    blockInfo = await getBlock(blockToQuery);
+    const minerReward = blockInfo.rewards.find(
+      (r) => r.type === "Miner Reward"
+    );
+    await prisma.executionRewards.create({
+      data: {
+        address: blockInfo.miner.hash,
+        timestamp: new Date(blockInfo.timestamp),
+        amount: minerReward ? new Decimal(minerReward.reward) : new Decimal(0),
+        blockNumber: blockInfo.height,
+      },
+    });
   } catch (error) {
-    logger.error(`Error fetching block ${blockToQuery}: ${error}`, error);
-    return;
+    logger.error(`Error saving execution rewards: ${error}`, error);
   }
-
-  const minerReward = blockInfo.rewards.find((r) => r.type === "Miner Reward");
-  await prisma.executionRewards.create({
-    data: {
-      address: blockInfo.miner.hash,
-      timestamp: new Date(blockInfo.timestamp),
-      amount: minerReward ? new Decimal(minerReward.reward) : new Decimal(0),
-      blockNumber: blockInfo.height,
-    },
-  });
 }

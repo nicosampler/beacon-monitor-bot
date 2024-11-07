@@ -15,27 +15,34 @@ export const fetchOldestAttestation = async () => {
   const headSlot = currentSlot - 1;
   const oldestLookbackSlot = getOldestLookbackSlot();
 
-  // Get the last processed slot
-  const lastProcessedSlot = await prisma.slot.findFirst({
-    where: {
-      attestationsFetched: true,
-    },
-    orderBy: { slot: "desc" },
-    select: { slot: true },
-  });
+  try {
+    // Get the last processed slot
+    const lastProcessedSlot = await prisma.slot.findFirst({
+      where: {
+        attestationsFetched: true,
+      },
+      orderBy: { slot: "desc" },
+      select: { slot: true },
+    });
 
-  const slotToFetch = lastProcessedSlot
-    ? lastProcessedSlot.slot + 1
-    : oldestLookbackSlot;
+    const slotToFetch = lastProcessedSlot
+      ? lastProcessedSlot.slot + 1
+      : oldestLookbackSlot;
 
-  const logger = createLogger(`${ID} for slot ${slotToFetch}`, false);
+    const logger = createLogger(`${ID} for slot ${slotToFetch}`, false);
 
-  if (Math.min(slotToFetch, headSlot) > headSlot) {
-    logger.info(`No new slots to fetch. Current head: ${headSlot}`);
-    return;
+    if (Math.min(slotToFetch, headSlot) > headSlot) {
+      logger.info(`No new slots to fetch. Current head: ${headSlot}`);
+      return;
+    }
+
+    return fetchAttestation(slotToFetch, logger);
+  } catch (error) {
+    createLogger("fetchAttestationTask").error(
+      `Error fetching oldest attestation: ${error}`,
+      error
+    );
   }
-
-  return fetchAttestation(slotToFetch, logger);
 };
 
 export const job = new SimpleIntervalJob(
