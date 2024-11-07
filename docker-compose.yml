@@ -14,6 +14,10 @@ services:
       - beacon_postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
+    logging:
+      options:
+        max-size: "25m"
+        max-file: "2"
 
   migrate:
     image: node:18-alpine
@@ -54,7 +58,7 @@ services:
       - app-network
     logging:
       options:
-        max-size: "50m"
+        max-size: "25m"
         max-file: "2"
 
 networks:
