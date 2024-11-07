@@ -52,6 +52,10 @@ services:
       - beacon-fetch
     networks:
       - app-network
+    logging:
+      options:
+        max-size: "50m"
+        max-file: "2"
 
 networks:
   app-network:

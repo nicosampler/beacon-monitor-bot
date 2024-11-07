@@ -3,10 +3,10 @@ import createLogger from "@/src/lib/pino.js";
 import { cleanupCommittee } from "@/src/feed/cleanupCommittee.js";
 
 const ID = "cleanupCommittee";
-const logger = createLogger(ID, true);
+const logger = createLogger(ID, false);
 
 export const job = new SimpleIntervalJob(
-  { seconds: 30, runImmediately: true },
+  { minutes: 1, runImmediately: true },
   new AsyncTask(`${ID}_task`, () => cleanupCommittee(logger)),
   {
     id: ID,

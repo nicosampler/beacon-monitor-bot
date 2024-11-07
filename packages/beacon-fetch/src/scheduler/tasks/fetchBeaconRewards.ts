@@ -37,11 +37,32 @@ async function fetchBeaconRewardsTask() {
     return;
   }
 
+  // Calculate how many epochs we can process based on distance to head
+  const epochDistance = headEpoch - epochToFetch;
+  const epochsToProcess: number[] = [];
+  let currentEpochToAdd = epochToFetch;
+
+  if (epochDistance > 0) {
+    // Process up to 5 epochs, or the actual distance if it's smaller
+    const numberOfEpochsToProcess = Math.min(epochDistance, 5);
+
+    for (
+      let i = 0;
+      i < numberOfEpochsToProcess && currentEpochToAdd <= headEpoch;
+      i++
+    ) {
+      epochsToProcess.push(currentEpochToAdd);
+      currentEpochToAdd++;
+    }
+  } else {
+    epochsToProcess.push(epochToFetch);
+  }
+
   logger.info(
-    `Fetching beacon rewards for epoch ${epochToFetch}. HeadEpoch: ${headEpoch}.`
+    `Fetching beacon rewards for epochs ${epochsToProcess.join(", ")}. HeadEpoch: ${headEpoch}.`
   );
 
-  await fetchBeaconRewards(epochToFetch, logger);
+  await fetchBeaconRewards(epochsToProcess, logger);
 }
 
 export const job = new SimpleIntervalJob(

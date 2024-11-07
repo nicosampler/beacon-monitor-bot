@@ -17,10 +17,12 @@ export async function updateUsersStatsImp(userId?: number) {
     const userId = Number(user.id);
 
     // stats notification
-    const messageIdStats = await notifyUserStatsMessage(userId);
-    if (messageIdStats && messageIdStats !== Number(user.messageId)) {
-      await updateUserMessageId_db(userId, messageIdStats);
-    }
+    try {
+      const messageIdStats = await notifyUserStatsMessage(userId);
+      if (messageIdStats && messageIdStats !== Number(user.messageId)) {
+        await updateUserMessageId_db(userId, messageIdStats);
+      }
+    } catch (error) {}
   });
 }
 

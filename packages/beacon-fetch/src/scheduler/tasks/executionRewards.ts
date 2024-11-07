@@ -6,7 +6,7 @@ const ID = "executionRewards";
 const logger = createLogger(ID, true);
 
 export const job = new SimpleIntervalJob(
-  { milliseconds: 500, runImmediately: true },
+  { seconds: 1, runImmediately: true },
   new AsyncTask(`${ID}_task`, () => fetchExecutionRewards(logger)),
   {
     id: ID,

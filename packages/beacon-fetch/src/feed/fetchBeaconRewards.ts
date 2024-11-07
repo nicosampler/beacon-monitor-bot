@@ -14,22 +14,10 @@ import { convertToUTC } from "@/src/utils/date/index.js";
 const prisma = getPrisma();
 
 export async function fetchBeaconRewards(
-  epochNumber: number,
+  epochs: number[],
   logger: CustomLogger
 ) {
-  const epochTimestamp = getTimestampFromEpochNumber(epochNumber);
-  const { date, hour } = convertToUTC(epochTimestamp);
-
   try {
-    // Create the epoch record in db if it doesn't exist
-    await prisma.epoch.upsert({
-      where: { epoch: epochNumber },
-      create: { epoch: epochNumber, rewardsFetched: false },
-      update: {}, // no update needed, just create if doesn't exist
-    });
-
-    const highestValidatorId = await getHighestValidatorId();
-
     // Get from db validator filtered by the beacon status
     const activeValidators = await prisma.validator.findMany({
       where: {
@@ -43,10 +31,24 @@ export async function fetchBeaconRewards(
       },
       select: { id: true },
     });
+
     if (!activeValidators.length) {
-      logger.info(`No active validators found for epoch ${epochNumber}`);
+      logger.info(`No active validators found for epochs ${epochs.join(", ")}`);
       return;
     }
+
+    // Create all epoch records in db if they don't exist
+    await Promise.all(
+      epochs.map((epochNumber) =>
+        prisma.epoch.upsert({
+          where: { epoch: epochNumber },
+          create: { epoch: epochNumber, rewardsFetched: false },
+          update: {}, // no update needed, just create if doesn't exist
+        })
+      )
+    );
+
+    const highestValidatorId = await getHighestValidatorId();
 
     // Get validator IDs that we will use to fetch rewards for
     const activeValidatorsIds = new Set(activeValidators.map((v) => v.id));
@@ -57,41 +59,58 @@ export async function fetchBeaconRewards(
       .filter((id) => activeValidatorsIds.has(id))
       .map((id) => id.toString());
 
-    // fetch rewards for each validator in batches
     const validatorIdBatches = chunk(allValidatorIds, 150000);
-    const rewardsPromises = validatorIdBatches.map((validatorIds) =>
-      getAttestationRewards(epochNumber, validatorIds)
-    );
-    const responses = await Promise.all(rewardsPromises);
-    if (responses.some((res) => res.status === 404)) {
-      throw new Error("404 - Aborting");
-    }
 
-    // Concatenate all rewards data
-    const rewardsData = responses.flatMap((response) =>
-      response.data.data.total_rewards.map((validatorInfo) => ({
-        validatorIndex: parseInt(validatorInfo.validator_index),
-        epoch: epochNumber,
-        head: BigInt(validatorInfo.head || "0"),
-        target: BigInt(validatorInfo.target || "0"),
-        source: BigInt(validatorInfo.source || "0"),
-        inactivity: BigInt(validatorInfo.inactivity || "0"),
-      }))
-    );
+    // Create promises for each epoch's validator batches
+    const epochPromises = epochs.map((epochNumber) => {
+      const rewardsPromises = validatorIdBatches.map((validatorIds) =>
+        getAttestationRewards(epochNumber, validatorIds)
+      );
+      return {
+        epochNumber,
+        promise: Promise.all(rewardsPromises),
+      };
+    });
 
-    // Process all database operations in a single transaction
-    await prisma.$transaction(
-      async (tx) => {
-        const rewardsDataBatches = chunk(rewardsData, 5000);
-        for (const batch of rewardsDataBatches) {
-          const values = batch
-            .map(
-              (reward) =>
-                `(${reward.validatorIndex}, ${hour}, '${date}', ${reward.head}, ${reward.target}, ${reward.source}, ${reward.inactivity})`
-            )
-            .join(",");
+    // Process epochs sequentially to maintain order
+    for (const { epochNumber, promise } of epochPromises) {
+      const responses = await promise;
 
-          await prisma.$executeRaw`
+      logger.info(`Processing epoch ${epochNumber}`);
+
+      // Check for 404 errors
+      if (responses.some((res) => res.status === 404)) {
+        throw new Error(`404 - Aborting for epoch ${epochNumber}`);
+      }
+
+      const epochTimestamp = getTimestampFromEpochNumber(epochNumber);
+      const { date, hour } = convertToUTC(epochTimestamp);
+
+      // Concatenate all rewards data for this epoch
+      const rewardsData = responses.flatMap((response) =>
+        response.data.data.total_rewards.map((validatorInfo) => ({
+          validatorIndex: parseInt(validatorInfo.validator_index),
+          epoch: epochNumber,
+          head: BigInt(validatorInfo.head || "0"),
+          target: BigInt(validatorInfo.target || "0"),
+          source: BigInt(validatorInfo.source || "0"),
+          inactivity: BigInt(validatorInfo.inactivity || "0"),
+        }))
+      );
+
+      // Process database operations for this epoch
+      await prisma.$transaction(
+        async (tx) => {
+          const rewardsDataBatches = chunk(rewardsData, 50000);
+          for (const batch of rewardsDataBatches) {
+            const values = batch
+              .map(
+                (reward) =>
+                  `(${reward.validatorIndex}, ${hour}, '${date}', ${reward.head}, ${reward.target}, ${reward.source}, ${reward.inactivity})`
+              )
+              .join(",");
+
+            await prisma.$executeRaw`
             INSERT INTO "HourlyValidatorStats" ("validatorIndex", "hour", "date", "head", "target", "source", "inactivity")
             VALUES ${Prisma.raw(values)}
             ON CONFLICT ("validatorIndex", "hour", "date") DO UPDATE SET
@@ -100,27 +119,30 @@ export async function fetchBeaconRewards(
               "source" = "HourlyValidatorStats"."source" + EXCLUDED."source",
               "inactivity" = "HourlyValidatorStats"."inactivity" + EXCLUDED."inactivity"
           `;
+          }
+
+          // Update epoch status within the same transaction
+          await tx.epoch.update({
+            where: { epoch: epochNumber },
+            data: { rewardsFetched: true },
+          });
+        },
+        {
+          timeout: ms("2m"),
         }
+      );
 
-        // Update epoch status within the same transaction
-        await tx.epoch.update({
-          where: { epoch: epochNumber },
-          data: { rewardsFetched: true },
-        });
-      },
-      {
-        timeout: ms("2m"),
-      }
-    );
-
-    logger.info(`Rewards data for epoch ${epochNumber} processed successfully`);
+      logger.info(
+        `Rewards data for epoch ${epochNumber} processed successfully`
+      );
+    }
   } catch (error) {
     if (error.message.includes("404 - Aborting")) {
-      logger.info(`404 - Aborting`);
+      logger.error(error.message, error);
       return;
     }
     logger.error(
-      `Error fetching or inserting beacon rewards for epoch ${epochNumber}`,
+      `Error fetching or inserting beacon rewards for epochs ${epochs.join(", ")}`,
       error
     );
   }

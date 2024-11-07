@@ -29,7 +29,6 @@ model Committee {
   slot_relation        Slot @relation(fields: [slot], references: [slot], onDelete: Cascade)
 
   @@id([slot, index, validatorIndex])
-  @@index([slot, attestationDelay])
 }
 
 model Validator {

@@ -31,7 +31,5 @@ export function scheduleTasks() {
   scheduler.addSimpleIntervalJob(summarizeHourlyJob);
 
   // Summarize daily attestation and rewards
-  scheduler.addSimpleIntervalJob(summarizeDailyJob);
-
-  scheduler.removeById
+  //scheduler.addSimpleIntervalJob(summarizeDailyJob);
 }

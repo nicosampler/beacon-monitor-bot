@@ -1,5 +1,5 @@
 import format from "date-fns/format";
-import { subHours } from "date-fns";
+import { getHours, subHours } from "date-fns";
 import { formatEther } from "ethers/lib/utils.js";
 import { bot } from "@/src/config/index.js";
 import { getPrisma } from "@/src/config/prisma.js";
@@ -17,10 +17,10 @@ import {
   DAYS_IN_YEAR,
   DAYS_IN_MONTH,
 } from "@/src/constants/index.js";
-import { Committee, User, Validator } from "@prisma/client";
+import { Committee, User, Validator, WithdrawalAddress } from "@prisma/client";
 
 const prisma = getPrisma();
-const tokenUnit = 32000000000;
+const tokenUnit = 32000000000; // TODO: move to env file
 const BEACON_SLOT_DURATION_IN_SECONDS = Number(
   process.env.BEACON_SLOT_DURATION_IN_SECONDS
 );
@@ -45,10 +45,10 @@ interface UserStats {
   };
   apy?: number;
   rewards: {
-    daily: { block: number; fee: number; usd: string };
-    weekly: { block: number; fee: number; usd: string };
-    monthly: { block: number; fee: number; usd: string };
-  };
+    daily: { consensus: string; execution: string; usd: string };
+    weekly: { consensus: string; execution: string; usd: string };
+    monthly: { consensus: string; execution: string; usd: string };
+  } | null;
   validatorStats: ValidatorByStatus;
 }
 
@@ -58,7 +58,7 @@ export async function notifyUserStatsMessage(
   // get user
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { validators: true },
+    include: { validators: true, withdrawalAddresses: true },
   });
 
   // get head slot and last slot processed
@@ -161,7 +161,10 @@ async function getValidatorByStatus(user: User & { validators: Validator[] }) {
 
 async function calculateUserStats(
   syncing: boolean,
-  user: User & { validators: Validator[] }
+  user: User & {
+    validators: Validator[];
+    withdrawalAddresses: WithdrawalAddress[];
+  }
 ): Promise<UserStats> {
   // get validator stats
   const validatorStats = await getValidatorByStatus(user);
@@ -170,7 +173,7 @@ async function calculateUserStats(
   // sum all validators balance in tokens and in usd.
   const balanceStats = getUserBalance(user.validators);
   // calculate rewards stats
-  const rewardsStats = calculateRewardsStats();
+  const rewardsStats = await calculateRewardsStats(user);
   // get withdrawable amount
   const withdrawable = await getWithdrawableAmountByUserId(user.id);
 
@@ -214,12 +217,12 @@ async function calculatePerformanceStats(
 }
 
 function getUserBalance(validators: Validator[]) {
-  const totalBalanceInGwei = validators.reduce(
+  const totalBalance = validators.reduce(
     (acc, validator) => acc + BigInt(validator.balance.toString()),
     BigInt(0)
   );
 
-  const total = Number(totalBalanceInGwei) / tokenUnit;
+  const total = Number(totalBalance) / tokenUnit;
 
   return {
     total,
@@ -227,11 +230,98 @@ function getUserBalance(validators: Validator[]) {
   };
 }
 
-function calculateRewardsStats() {
+async function calculateRewardsStats(user: User & { validators: Validator[] }) {
+  const rawQuery = `
+    WITH last_update AS (
+      SELECT "dailyValidatorStats"::timestamp as date
+      FROM "LastSummaryUpdate"
+      LIMIT 1
+    )
+
+    SELECT 
+      COALESCE(SUM(head), 0) as head,
+      COALESCE(SUM(target), 0) as target,
+      COALESCE(SUM(source), 0) as source,
+      COALESCE(SUM(inactivity), 0) as inactivity
+    FROM "HourlyValidatorStats" hvs
+
+    CROSS JOIN last_update lu
+
+    JOIN "_UserToValidator" uv ON uv."B" = hvs."validatorIndex"
+
+    WHERE hvs.date <= DATE(lu.date)
+      AND hvs.date >= DATE(lu.date - INTERVAL '1 day')
+      AND uv."A" = $1`;
+
+  const results = await prisma.$queryRawUnsafe<
+    {
+      head: string;
+      target: string;
+      source: string;
+      inactivity: string;
+    }[]
+  >(rawQuery, user.id);
+
+  if (!results.length) return null;
+
+  const totalDailyConsensus =
+    BigInt(results[0].head) +
+    BigInt(results[0].target) +
+    BigInt(results[0].source) +
+    BigInt(results[0].inactivity);
+
+  const totalDailyConsensusInWei =
+    (BigInt(totalDailyConsensus) * BigInt(1e18)) / BigInt(tokenUnit);
+
+  const totalDailyConsensusEth = Number(
+    formatEther(totalDailyConsensusInWei.toString())
+  );
+
+  const executionQuery = `
+    WITH last_update AS (
+      SELECT "dailyValidatorStats"::timestamp as date
+      FROM "LastSummaryUpdate"
+      LIMIT 1
+    )
+
+    SELECT COALESCE(SUM(her.amount), 0) as total
+    FROM "HourlyExecutionRewards" her
+
+    CROSS JOIN last_update lu
+
+    JOIN "_UserToWithdrawalAddress" uwa ON uwa."B" = her.address
+
+    WHERE her.date <= DATE(lu.date)
+      AND her.date >= DATE(lu.date - INTERVAL '1 day')
+      AND uwa."A" = $1`;
+
+  const executionResults = await prisma.$queryRawUnsafe<{ total: string }[]>(
+    executionQuery,
+    user.id
+  );
+  let totalDailyExecution = Number(
+    formatEther(executionResults[0].total.toString())
+  );
+  totalDailyExecution = FEE_REWARDS_IN_STABLE
+    ? totalDailyExecution
+    : totalDailyExecution * tokenPrice;
+
   return {
-    daily: { block: 0, fee: 0, usd: formatNumber(0, 2, "$") },
-    weekly: { block: 0, fee: 0, usd: formatNumber(0, 2, "$") },
-    monthly: { block: 0, fee: 0, usd: formatNumber(0, 2, "$") },
+    daily: {
+      consensus: totalDailyConsensusEth.toFixed(4),
+      execution: totalDailyExecution.toFixed(4),
+      usd: formatNumber(totalDailyConsensusEth * tokenPrice, 4, "$"),
+    },
+    weekly: {
+      consensus: "0",
+      execution: "0",
+      usd: formatNumber(0, 4, "$"),
+    },
+    monthly: {
+      consensus: "0",
+      execution: "0",
+      usd: formatNumber(0, 4, "$"),
+    },
   };
 }
 
@@ -256,11 +346,11 @@ function formatStatsMessage(
 
   // Define message sections
   const validatorStatus = status.syncing
-    ? null
+    ? `⚪️ ${validatorStats.activeIds.length + validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`
     : `🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`;
 
   const mainStats = [
-    `1h performance: ${status.syncing ? "🔜" : `${performance}%`}`,
+    `1h performance: ${status.syncing ? "(needs sync)" : `${performance}%`}`,
     `Balance: ${balance.total.toFixed(2)} ${TOKEN_SYMBOL} ($${balance.value})`,
     `APY: 🔜`,
     `Claimable: ${withdrawable.total.toFixed(2)} ${TOKEN_SYMBOL} ($${withdrawable.value})`,
@@ -270,7 +360,7 @@ function formatStatsMessage(
     `Rewards:`,
     `----------------------------`,
     `  |    ${TOKEN_SYMBOL}    ${FEE_REWARDS_SYMBOL}    Total`,
-    `d |            🔜`,
+    `d | ${stats.rewards.daily.consensus}  ${stats.rewards.daily.execution}  ${stats.rewards.daily.usd}`,
     `w |            🔜`,
     `m |            🔜`,
   ].join("\n");
@@ -282,8 +372,8 @@ function formatStatsMessage(
 
   // Combine all sections
   return `\`${[
-    syncStatus,
-    validatorStatus,
+    ...(status.syncing ? [syncStatus, "", validatorStatus] : [validatorStatus]),
+    "", // empty line
     mainStats,
     "", // empty line
     rewardsSection,
@@ -337,16 +427,17 @@ async function updateOrSendMessage(
     }
   }
 
-  return await sendMessage(chatId, message, {
-    disable_notification: true,
-    parse_mode: "MarkdownV2",
-  })
-    .then((res) => res.message_id)
-    .catch((error) => {
-      throw new AppError(
-        "Error editing message",
-        "TELEGRAM_INTERACTION_ERROR",
-        error
-      );
+  try {
+    const res = await sendMessage(chatId, message, {
+      disable_notification: true,
+      parse_mode: "MarkdownV2",
     });
+    return res.message_id;
+  } catch (error) {
+    throw new AppError(
+      "Error editing message",
+      "TELEGRAM_INTERACTION_ERROR",
+      error
+    );
+  }
 }

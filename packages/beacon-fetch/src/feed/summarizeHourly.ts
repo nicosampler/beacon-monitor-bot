@@ -157,20 +157,6 @@ export async function processExecutionRewardsBatch(
   }
 }
 
-export async function removeProcessedCommitteeRecords(
-  tx: Prisma.TransactionClient,
-  endSlot: number,
-  logger: CustomLogger
-) {
-  logger.info(`Removing processed committee records up to Slot ${endSlot}`);
-
-  await tx.committee.deleteMany({
-    where: {
-      slot: { lte: endSlot },
-    },
-  });
-}
-
 export async function removeProcessedExecutionRewards(
   tx: Prisma.TransactionClient,
   endTime: Date,
@@ -209,7 +195,8 @@ export async function summarizeAtomicTransaction(
 
       if (committeeValidators.length > 0 && executionRewards.length > 0) {
         await updateLastSummaryUpdate("hourlyValidatorStats", endTime, tx);
-        await removeProcessedCommitteeRecords(tx, endSlot, logger);
+        //await removeProcessedCommitteeRecords(tx, endSlot, logger);
+        // TODO: move cleanup to a separate task
         await removeProcessedExecutionRewards(tx, endTime, logger);
       } else {
         logger.warn(
