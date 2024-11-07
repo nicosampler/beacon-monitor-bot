@@ -11,25 +11,19 @@ import { job as fetchCommitteeJob } from "@/src/scheduler/tasks/fetchCommittee.j
 
 export function scheduleTasks() {
   // Fetch the oldest attestation
-  //scheduler.addSimpleIntervalJob(fetchCommitteeJob);
-  //scheduler.addSimpleIntervalJob(fetchOldestAttestationJob);
+  scheduler.addSimpleIntervalJob(fetchCommitteeJob);
+  scheduler.addSimpleIntervalJob(fetchOldestAttestationJob);
   scheduler.addSimpleIntervalJob(cleanupCommitteeJob);
-
   // Fetch the validators balances for updating the validator balances in the db.
-  //scheduler.addSimpleIntervalJob(validatorsBalancesJob);
-
+  scheduler.addSimpleIntervalJob(validatorsBalancesJob);
   // Check for validators info, like status, withdrawal address, etc.
-  //scheduler.addSimpleIntervalJob(fetchValidatorsInfo);
-
+  scheduler.addSimpleIntervalJob(fetchValidatorsInfo);
   // Fetch the execution rewards for the current block and store them in the db.
-  //scheduler.addSimpleIntervalJob(executionRewardsJob);
-
+  scheduler.addSimpleIntervalJob(executionRewardsJob);
   // Fetch the beacon rewards for the current epoch and store them in the db.
   scheduler.addSimpleIntervalJob(fetchBeaconRewardsJob);
-
   // Summarize hourly attestation and rewards
   scheduler.addSimpleIntervalJob(summarizeHourlyJob);
-
   // Summarize daily attestation and rewards
   //scheduler.addSimpleIntervalJob(summarizeDailyJob);
 }
