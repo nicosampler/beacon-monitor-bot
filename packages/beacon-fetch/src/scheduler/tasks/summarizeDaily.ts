@@ -2,7 +2,7 @@ import { AsyncTask, SimpleIntervalJob } from "toad-scheduler";
 import createLogger from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { getTimestampFromSlotNumber } from "@/src/beacon/utils/time.js";
-import { addDays } from "date-fns";
+import { addDays, subDays } from "date-fns";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { summarizeDaily } from "@/src/feed/summarizeDaily.js";
 import { convertToUTC } from "@/src/utils/date/index.js";
@@ -21,16 +21,25 @@ async function summarizeDailyTask() {
     const summary = await prisma.lastSummaryUpdate.findFirst();
 
     // If the last summary is not in the db, use the oldest lookback slot
-    const dayToProcess = summary?.dailyValidatorStats ?? oldestLookbackSlotDate;
+    const lastSummaryDate =
+      summary?.dailyValidatorStats ?? oldestLookbackSlotDate;
+    const nextSummaryDate = addDays(lastSummaryDate, 1);
 
-    // Make sure the hourly summary stats have been processed
-    // so we check that hourlyValidatorStats is greater than the day we want to process
-    if (summary?.hourlyValidatorStats < addDays(dayToProcess, 1)) {
-      logger.info("Skipping, still in progress.");
+    const now = new Date();
+    const oneDayBefore = subDays(now, 1);
+
+    logger.info(
+      `lastSummaryDate: ${lastSummaryDate}, nextSummaryDate: ${nextSummaryDate}, oneDayBefore: ${oneDayBefore}`
+    );
+
+    // We should only summarize data that is older than 24 hours
+    // to ensure we have all hourly data available
+    if (nextSummaryDate > oneDayBefore) {
+      logger.info("Skipping, data is too recent (less than 24 hours old)");
       return;
     }
 
-    const { date, day } = convertToUTC(dayToProcess);
+    const { date, day } = convertToUTC(lastSummaryDate);
 
     logger.info(`Summarizing daily stats for ${date}`);
 

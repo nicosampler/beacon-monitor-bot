@@ -24,6 +24,9 @@ WHERE
 ORDER BY
     indexname;
    
+-- Reindex the Committee table 
+REINDEX TABLE "Committee";
+
 -- Reindex the primary key index of the Committee table 
 REINDEX INDEX "Committee_pkey";
    

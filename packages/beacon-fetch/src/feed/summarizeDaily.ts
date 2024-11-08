@@ -17,6 +17,8 @@ export function calculateSlotRange(startTime: Date, endTime: Date) {
 }
 
 export async function hasAllHourlyStats(date: Date): Promise<boolean> {
+  // Check if we have the first hour (0) of the next day
+  // If we have hour 0 of next day, it means we have all hours from previous day
   const hasLastHour = await prisma.hourlyValidatorStats.findFirst({
     where: {
       hour: 0,
@@ -27,13 +29,13 @@ export async function hasAllHourlyStats(date: Date): Promise<boolean> {
 }
 
 export async function hasAllExecutionRewards(date: Date): Promise<boolean> {
+  // Same logic - check for hour 0 of next day
   const hasLastHour = await prisma.hourlyExecutionRewards.findFirst({
     where: {
       hour: 0,
       date: addDays(date, 1),
     },
   });
-
   return hasLastHour != null;
 }
 
@@ -187,20 +189,20 @@ export async function summarizeDaily(
   logger: CustomLogger
 ): Promise<void> {
   if (!(await hasAllHourlyStats(date))) {
-    logger.info(`No hourly stats ready, skipping`);
+    logger.info(`Missing hourly stats for ${date}, skipping`);
     return;
   }
 
   if (!(await hasAllExecutionRewards(date))) {
-    logger.info(`No execution rewards ready, skipping`);
+    logger.info(`Missing execution rewards for ${date}, skipping`);
     return;
   }
 
-  // Missed attestations
+  // Aggregate hourly stats
   const hourlyStats = await aggregateHourlyStats(date);
   const executionRewards = await aggregateExecutionRewards(date);
 
-  // update the hourly validator stats
+  // update the daily validator stats
   await summarizeAtomicTransaction(
     hourlyStats,
     executionRewards,
