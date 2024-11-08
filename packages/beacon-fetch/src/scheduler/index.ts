@@ -8,12 +8,11 @@ import { job as fetchBeaconRewardsJob } from "@/src/scheduler/tasks/fetchBeaconR
 import { job as summarizeDailyJob } from "@/src/scheduler/tasks/summarizeDaily.js";
 import { job as cleanupCommitteeJob } from "@/src/scheduler/tasks/cleanupCommittee.js";
 import { job as fetchCommitteeJob } from "@/src/scheduler/tasks/fetchCommittee.js";
-
+import { job as maintainCommitteeJob } from "@/src/scheduler/tasks/maintainCommittee.js";
 export function scheduleTasks() {
   // Fetch the oldest attestation
   scheduler.addSimpleIntervalJob(fetchCommitteeJob);
   scheduler.addSimpleIntervalJob(fetchOldestAttestationJob);
-  scheduler.addSimpleIntervalJob(cleanupCommitteeJob);
   // Fetch the validators balances for updating the validator balances in the db.
   scheduler.addSimpleIntervalJob(validatorsBalancesJob);
   // Check for validators info, like status, withdrawal address, etc.
@@ -26,4 +25,8 @@ export function scheduleTasks() {
   scheduler.addSimpleIntervalJob(summarizeHourlyJob);
   // Summarize daily attestation and rewards
   //scheduler.addSimpleIntervalJob(summarizeDailyJob);
+
+  // Maintenance tasks
+  scheduler.addSimpleIntervalJob(cleanupCommitteeJob);
+  scheduler.addSimpleIntervalJob(maintainCommitteeJob);
 }

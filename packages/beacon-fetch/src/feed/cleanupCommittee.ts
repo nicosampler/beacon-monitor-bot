@@ -19,41 +19,39 @@ export async function cleanupCommittee(logger: CustomLogger) {
     });
 
     if (maxProcessedSlot) {
-      // Most efficient version
+      // Using the existing indexes (slot_relation and attestationDelay)
+      // and leveraging the cascade delete relationship
       const result1 = await prisma.$executeRaw`
-      WITH rows_to_delete AS (
-        SELECT ctid
-        FROM (
-          SELECT ctid,
-                 row_number() OVER (ORDER BY slot) as rn
-          FROM "Committee"
-          WHERE slot <= ${maxProcessedSlot.slot}
-          AND "attestationDelay" <= ${env.BEACON_MAX_ATTESTATION_DELAY}
-        ) ranked
-        WHERE rn <= ${LIMIT}
-      )
       DELETE FROM "Committee"
-      WHERE ctid IN (SELECT ctid FROM rows_to_delete)`;
+      WHERE ctid IN (
+        SELECT ctid 
+        FROM "Committee" c
+        WHERE c.slot <= ${maxProcessedSlot.slot}
+        AND c."attestationDelay" <= ${env.BEACON_MAX_ATTESTATION_DELAY}
+        ORDER BY c.slot, c."attestationDelay"
+        LIMIT ${LIMIT}
+      )
+      RETURNING 1`;
       totalDeleted += result1;
     }
 
     // Max summarized hourly slot
-    // const lsu = await prisma.lastSummaryUpdate.findFirst();
-    // if (lsu.hourlyValidatorStats) {
-    //   const maxSlot = getSlotNumberFromTimestamp(
-    //     lsu.hourlyValidatorStats.getTime()
-    //   );
+    const lsu = await prisma.lastSummaryUpdate.findFirst();
+    if (lsu.hourlyValidatorStats) {
+      const maxSlot = getSlotNumberFromTimestamp(
+        lsu.hourlyValidatorStats.getTime()
+      );
 
-    //   const result2 = await prisma.$executeRaw`
-    //     DELETE FROM "Committee"
-    //     WHERE slot <= ${maxSlot}
-    //     AND ctid IN (
-    //       SELECT ctid FROM "Committee"
-    //       WHERE slot <= ${maxSlot}
-    //       LIMIT ${LIMIT}
-    //     )`;
-    //   totalDeleted += result2;
-    // }
+      const result2 = await prisma.$executeRaw`
+        DELETE FROM "Committee"
+        WHERE slot <= ${maxSlot}
+        AND ctid IN (
+          SELECT ctid FROM "Committee"
+          WHERE slot <= ${maxSlot}
+          LIMIT ${LIMIT}
+        )`;
+      totalDeleted += result2;
+    }
 
     logger.info(`Done! Deleted ${totalDeleted} records`);
   } catch (error) {
