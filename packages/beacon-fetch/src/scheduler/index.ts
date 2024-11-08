@@ -22,11 +22,11 @@ export function scheduleTasks() {
   // // Fetch the beacon rewards for the current epoch and store them in the db
   scheduler.addSimpleIntervalJob(fetchBeaconRewardsJob);
   // // Summarize hourly attestation and rewards
-  // scheduler.addSimpleIntervalJob(summarizeHourlyJob);
+  scheduler.addSimpleIntervalJob(summarizeHourlyJob);
   // Summarize daily attestation and rewards
   //scheduler.addSimpleIntervalJob(summarizeDailyJob);
 
   // Maintenance tasks
-  scheduler.addSimpleIntervalJob(cleanupCommitteeJob);
+  //scheduler.addSimpleIntervalJob(cleanupCommitteeJob);
   // scheduler.addSimpleIntervalJob(maintainCommitteeJob);
 }
