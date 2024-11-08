@@ -2,7 +2,7 @@ import { getPrisma } from "@/src/lib/prisma.js";
 import { CustomLogger } from "@/src/lib/pino.js";
 import { env } from "@/src/env.js";
 import { getBlock } from "@/src/blockscout/endpoints.js";
-import { differenceInSeconds } from "date-fns";
+import { addSeconds, differenceInSeconds } from "date-fns";
 import { Blocks } from "@/src/blockscout/types.js";
 import { Decimal } from "@prisma/client/runtime/library";
 
@@ -40,9 +40,32 @@ export async function fetchExecutionRewards(logger: CustomLogger) {
 
     try {
       blockInfo = await getBlock(blockToQuery);
-    } catch (error) {
-      logger.error(`Error fetching block ${blockToQuery}: ${error}`, error);
-      return;
+    } catch (error: any) {
+      if (
+        error.response.status === 404 &&
+        error.response.statusText === "Not Found"
+      ) {
+        logger.info(`Block ${blockToQuery} not found`);
+
+        await prisma.executionRewards.create({
+          data: {
+            address: "",
+            timestamp: addSeconds(
+              latestReward.timestamp,
+              env.BEACON_SLOT_DURATION_IN_SECONDS
+            ),
+            amount: new Decimal(0),
+            blockNumber: blockToQuery,
+          },
+        });
+
+        return;
+      } else {
+        logger.error(`Error fetching block ${blockToQuery}: ${error}`, {
+          message: error.message,
+        });
+        return;
+      }
     }
 
     const minerReward = blockInfo.rewards.find(
