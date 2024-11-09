@@ -9,24 +9,26 @@ import { job as summarizeDailyJob } from "@/src/scheduler/tasks/summarizeDaily.j
 import { job as cleanupCommitteeJob } from "@/src/scheduler/tasks/cleanupCommittee.js";
 import { job as fetchCommitteeJob } from "@/src/scheduler/tasks/fetchCommittee.js";
 import { job as maintainCommitteeJob } from "@/src/scheduler/tasks/maintainCommittee.js";
+import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
+
 export function scheduleTasks() {
   // Fetch the oldest attestation
-  //scheduler.addSimpleIntervalJob(fetchCommitteeJob);
-  //scheduler.addSimpleIntervalJob(fetchOldestAttestationJob);
+  scheduler.addSimpleIntervalJob(fetchCommitteeJob);
+  scheduler.addSimpleIntervalJob(fetchOldestAttestationJob);
   // // Fetch the validators balances for updating the validator balances in the db.
-  // scheduler.addSimpleIntervalJob(validatorsBalancesJob);
-  // // Check for validators info, like status, withdrawal address, etc.
-  // scheduler.addSimpleIntervalJob(fetchValidatorsInfo);
-  // // Fetch the execution rewards for the current block and store them in the db.
-  // scheduler.addSimpleIntervalJob(executionRewardsJob);
-  // // Fetch the beacon rewards for the current epoch and store them in the db
+  scheduler.addSimpleIntervalJob(validatorsBalancesJob);
+  // Check for validators info, like status, withdrawal address, etc.
+  scheduler.addSimpleIntervalJob(fetchValidatorsInfo);
+  // Fetch the execution rewards for the current block and store them in the db.
+  scheduler.addSimpleIntervalJob(executionRewardsJob);
+  // Fetch the beacon rewards for the current epoch and store them in the db
   scheduler.addSimpleIntervalJob(fetchBeaconRewardsJob);
-  // // Summarize hourly attestation and rewards
+  // Summarize hourly attestation and rewards
   scheduler.addSimpleIntervalJob(summarizeHourlyJob);
   // Summarize daily attestation and rewards
-  //scheduler.addSimpleIntervalJob(summarizeDailyJob);
+  scheduler.addSimpleIntervalJob(summarizeDailyJob);
 
   // Maintenance tasks
-  //scheduler.addSimpleIntervalJob(cleanupCommitteeJob);
-  // scheduler.addSimpleIntervalJob(maintainCommitteeJob);
+  scheduler.addSimpleIntervalJob(cleanupCommitteeJob);
+  scheduler.addSimpleIntervalJob(maintainCommitteeJob);
 }

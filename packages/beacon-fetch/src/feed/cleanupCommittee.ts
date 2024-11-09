@@ -30,8 +30,7 @@ export async function cleanupCommittee(logger: CustomLogger) {
         AND c."attestationDelay" <= ${env.BEACON_MAX_ATTESTATION_DELAY}
         ORDER BY c.slot, c."attestationDelay"
         LIMIT ${LIMIT}
-      )
-      RETURNING 1`;
+      )`;
       totalDeleted += result1;
     }
 
@@ -44,10 +43,9 @@ export async function cleanupCommittee(logger: CustomLogger) {
 
       const result2 = await prisma.$executeRaw`
         DELETE FROM "Committee"
-        WHERE slot <= ${maxSlot}
-        AND ctid IN (
+        WHERE ctid IN (
           SELECT ctid FROM "Committee"
-          WHERE slot <= ${maxSlot}
+          WHERE slot < ${maxSlot}
           LIMIT ${LIMIT}
         )`;
       totalDeleted += result2;
