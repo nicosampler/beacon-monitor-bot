@@ -26,7 +26,7 @@ export const fetchAttestation = async (
     }
 
     const fetchedAttestations = await getAttestation(slotNumber, logger);
-    //if (!fetchedAttestations) return;
+    if (!fetchedAttestations) return;
 
     // Filter out attestations that are older than the oldest lookback slot
     const filteredAttestations = fetchedAttestations.filter(

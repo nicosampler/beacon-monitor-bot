@@ -25,12 +25,16 @@ export async function getAttestations(
 ): Promise<GetAttestations["data"] | "SLOT MISSED"> {
   try {
     const res = await instance.get<GetAttestations>(
-      `${env.BEACON_API_URL}/eth/v1/beacon/blocks/${stateId}/attestations`
+      `${env.BEACON_API_URL}/eth/v1/beacon/blocks/18316116/attestations`
     );
     return res.data.data;
   } catch (error) {
+    const axiosError = error as AxiosError<{ message: string }>;
     // If the slot was skipped, the endpoint will return a 404
-    if ((error as AxiosError).response?.status === 404) {
+    if (
+      axiosError.response?.status === 404 &&
+      axiosError.response?.data.message.includes("NOT_FOUND: beacon block")
+    ) {
       return "SLOT MISSED";
     }
     throw error;
