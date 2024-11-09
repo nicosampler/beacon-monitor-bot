@@ -69,11 +69,6 @@ async function getAttestation(slot: number, logger: CustomLogger) {
     return null;
   }
 
-  // if (!fetchedAttestations.length) {
-  //   logger.warn(`No attestations found.`);
-  //   return null;
-  // }
-
   return fetchedAttestations;
 }
 type Attestation = NonNullable<
@@ -193,6 +188,4 @@ async function updateValidatorsAttestations(
       timeout: ms("3m"),
     }
   );
-
-  logger.info(`Saved.`);
 }

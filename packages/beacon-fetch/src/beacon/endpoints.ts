@@ -25,7 +25,7 @@ export async function getAttestations(
 ): Promise<GetAttestations["data"] | "SLOT MISSED"> {
   try {
     const res = await instance.get<GetAttestations>(
-      `${env.BEACON_API_URL}/eth/v1/beacon/blocks/18316116/attestations`
+      `${env.BEACON_API_URL}/eth/v1/beacon/blocks/${stateId}/attestations`
     );
     return res.data.data;
   } catch (error) {
