@@ -9,7 +9,6 @@ import { job as summarizeDailyJob } from "@/src/scheduler/tasks/summarizeDaily.j
 import { job as cleanupCommitteeJob } from "@/src/scheduler/tasks/cleanupCommittee.js";
 import { job as fetchCommitteeJob } from "@/src/scheduler/tasks/fetchCommittee.js";
 import { job as maintainCommitteeJob } from "@/src/scheduler/tasks/maintainCommittee.js";
-import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
 
 export function scheduleTasks() {
   // Fetch the oldest attestation
