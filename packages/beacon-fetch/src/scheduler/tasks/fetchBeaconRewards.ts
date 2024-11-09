@@ -15,7 +15,7 @@ const SLOTS_PER_EPOCH = env.BEACON_SLOTS_PER_EPOCH;
 async function fetchBeaconRewardsTask() {
   const now = new Date();
   const currentEpoch = getEpochNumberFromTimestamp(now.getTime());
-  const headEpoch = currentEpoch - 1; // We fetch the previous epoch
+  const headEpoch = currentEpoch - 2; // Give some buffer to avoid so many 404
   const oldestLookbackEpoch = Math.floor(
     getOldestLookbackSlot() / SLOTS_PER_EPOCH
   );
@@ -70,7 +70,7 @@ async function fetchBeaconRewardsTask() {
 }
 
 export const job = new SimpleIntervalJob(
-  { milliseconds: 500, runImmediately: true },
+  { seconds: 40, runImmediately: true },
   new AsyncTask(`${ID}_task`, fetchBeaconRewardsTask),
   {
     id: ID,

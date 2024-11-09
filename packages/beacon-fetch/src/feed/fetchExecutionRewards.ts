@@ -25,7 +25,7 @@ export async function fetchExecutionRewards(logger: CustomLogger) {
       );
 
       // If the time since the last block is less than a slot duration, abort
-      if (secondsSinceLastBlock <= env.BEACON_SLOT_DURATION_IN_SECONDS) {
+      if (secondsSinceLastBlock <= env.BEACON_SLOT_DURATION_IN_SECONDS * 2) {
         logger.info("Skipping, block is still in progress");
         return;
       }

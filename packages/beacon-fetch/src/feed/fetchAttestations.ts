@@ -25,25 +25,53 @@ export const fetchAttestation = async (
       return;
     }
 
+    logger.info(`GET`);
     const fetchedAttestations = await getAttestation(slotNumber, logger);
+    logger.info(`GET done`);
     if (!fetchedAttestations) return;
-
     // Filter out attestations that are older than the oldest lookback slot
     const filteredAttestations = fetchedAttestations.filter(
       (attestation) => +attestation.data.slot >= getOldestLookbackSlot()
     );
 
-    // Process all attestations and calculate the attestation delay
+    // Get all unique slot+index combinations from attestations
+    const slotIndexPairs = filteredAttestations.map((attestation) => ({
+      slot: +attestation.data.slot,
+      index: +attestation.data.index,
+    }));
+
+    // Fetch all validators for all attestations in a single query
+    logger.info(`Fetch many`);
+    const aggregationBitIndexByValidators = await prisma.committee.findMany({
+      where: {
+        OR: slotIndexPairs.map((pair) => ({
+          AND: [{ slot: pair.slot }, { index: pair.index }],
+        })),
+      },
+      select: {
+        slot: true,
+        index: true,
+        validatorIndex: true,
+        aggregationBitsIndex: true,
+      },
+    });
+    logger.info(`Fetch many done`);
+
+    // Process all attestations with the pre-fetched validators
+    logger.info(`process attestations`);
     const allProcessedAttestations: CommitteeUpdate[] = [];
     for (const attestation of filteredAttestations) {
-      const processedAttestations = await processAttestation(
+      const processedAttestations = processAttestation(
         slotNumber,
-        attestation
+        attestation,
+        aggregationBitIndexByValidators
       );
       allProcessedAttestations.push(...processedAttestations);
     }
+    logger.info(`process attestations done`);
 
     // Update the validators with the attestation delay in the database
+    logger.info(`Update validators`);
     await updateValidatorsAttestations(
       allProcessedAttestations,
       slotNumber,
@@ -84,50 +112,43 @@ interface CommitteeUpdate {
 }
 
 /**
- * Process an attestation.
- * @param slotNumber - The slot number to process the attestation for.
- * @param attestation - The attestation to process.
- * @param logger - The logger to use.
- * @returns Returns the validators that attested and the attestation delay.
+ * Process an attestation with pre-fetched validators
  */
-async function processAttestation(
+function processAttestation(
   slotNumber: number,
-  attestation: Attestation
-): Promise<CommitteeUpdate[]> {
+  attestation: Attestation,
+  aggregationBitIndexByValidators: Array<{
+    slot: number;
+    index: number;
+    validatorIndex: number;
+    aggregationBitsIndex: number;
+  }>
+) {
   const aggregationBits = convertBitsToString(
     convertHexStringToByteArray(attestation.aggregation_bits)
   );
 
-  // Retrieve validators indices from the committee to be able to check if they attested.
-  // Indices are the same as the position in the aggregation bits.
-  const validators = await prisma.committee.findMany({
-    where: {
-      AND: [
-        { slot: +attestation.data.slot },
-        { index: +attestation.data.index },
-      ],
-    },
-    select: {
-      validatorIndex: true,
-      aggregationBitsIndex: true,
-    },
-    // orderBy: {
-    //   aggregationBitsIndex: "asc",
-    // },
-  });
-
   const updates: CommitteeUpdate[] = [];
 
-  for (const validator of validators) {
-    const didAttest = aggregationBits[validator.aggregationBitsIndex] === "1";
-    if (didAttest) {
-      updates.push({
-        slot: +attestation.data.slot,
-        index: +attestation.data.index,
-        validatorIndex: validator.validatorIndex,
-        aggregationBitsIndex: validator.aggregationBitsIndex,
-        attestationDelay: slotNumber - Number(attestation.data.slot),
-      });
+  // Iterate through the aggregation bits
+  for (let i = 0; i < aggregationBits.length; i++) {
+    if (aggregationBits[i] === "1") {
+      const validator = aggregationBitIndexByValidators.find(
+        (v) =>
+          v.slot === +attestation.data.slot &&
+          v.index === +attestation.data.index &&
+          v.aggregationBitsIndex === i
+      );
+
+      if (validator) {
+        updates.push({
+          slot: +attestation.data.slot,
+          index: +attestation.data.index,
+          validatorIndex: validator.validatorIndex,
+          aggregationBitsIndex: validator.aggregationBitsIndex,
+          attestationDelay: slotNumber - Number(attestation.data.slot),
+        });
+      }
     }
   }
 

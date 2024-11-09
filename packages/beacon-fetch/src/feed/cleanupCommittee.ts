@@ -7,7 +7,6 @@ const prisma = getPrisma();
 
 export async function cleanupCommittee(logger: CustomLogger) {
   logger.info("Cleaning up committee...");
-  const LIMIT = 100000;
   let totalDeleted = 0;
 
   try {
@@ -19,36 +18,27 @@ export async function cleanupCommittee(logger: CustomLogger) {
     });
 
     if (maxProcessedSlot) {
-      // Using the existing indexes (slot_relation and attestationDelay)
-      // and leveraging the cascade delete relationship
+      // Delete attestations that were attested in time
       const result1 = await prisma.$executeRaw`
-      DELETE FROM "Committee"
-      WHERE ctid IN (
-        SELECT ctid 
-        FROM "Committee" c
-        WHERE c.slot <= ${maxProcessedSlot.slot}
-        AND c."attestationDelay" <= ${env.BEACON_MAX_ATTESTATION_DELAY}
-        ORDER BY c.slot, c."attestationDelay"
-        LIMIT ${LIMIT}
-      )`;
+      DELETE FROM "Committee" 
+      WHERE slot <= ${maxProcessedSlot.slot} 
+      AND "attestationDelay" <= ${env.BEACON_MAX_ATTESTATION_DELAY}`;
       totalDeleted += result1;
     }
 
-    // Max summarized hourly slot
+    // remove attestations that were summarized in the hourly summary
     const lsu = await prisma.lastSummaryUpdate.findFirst();
     if (lsu.hourlyValidatorStats) {
       const maxSlot = getSlotNumberFromTimestamp(
         lsu.hourlyValidatorStats.getTime()
       );
 
-      const result2 = await prisma.$executeRaw`
-        DELETE FROM "Committee"
-        WHERE ctid IN (
-          SELECT ctid FROM "Committee"
-          WHERE slot < ${maxSlot}
-          LIMIT ${LIMIT}
-        )`;
-      totalDeleted += result2;
+      if (maxSlot) {
+        const result2 = await prisma.$executeRaw`
+          DELETE FROM "Committee" 
+          WHERE slot < ${maxSlot}`;
+        totalDeleted += result2;
+      }
     }
 
     logger.info(`Done! Deleted ${totalDeleted} records`);
