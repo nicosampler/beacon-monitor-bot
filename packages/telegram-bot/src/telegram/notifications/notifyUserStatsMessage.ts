@@ -5,7 +5,11 @@ import { bot } from "@/src/config/index.js";
 import { getPrisma } from "@/src/config/prisma.js";
 import { tokenPrice } from "@/src/scheduler/tasks/tokenPriceTask.js";
 import { sendMessage } from "@/src/telegram/utils/messaging.js";
-import { formatNumber, VALIDATOR_STATUS } from "@/src/utils/misc.js";
+import {
+  formatNumber,
+  slotsInDay,
+  VALIDATOR_STATUS,
+} from "@/src/utils/misc.js";
 import { AppError } from "@/src/utils/errors/AppError.js";
 import { getWithdrawableAmountByUserId } from "@/src/utils/getWithdrawableAmountByUserId.js";
 import { getSlotNumberFromTimestamp } from "@/src/utils/time.js";
@@ -36,18 +40,33 @@ interface ValidatorByStatus {
 interface UserStats {
   performance: number;
   balance: {
-    total: number;
+    total: string;
     value: string;
   };
   withdrawable: {
-    total: number;
+    total: string;
     value: string;
   };
   apy?: number;
   rewards: {
-    daily: { consensus: string; execution: string; usd: string };
-    weekly: { consensus: string; execution: string; usd: string };
-    monthly: { consensus: string; execution: string; usd: string };
+    daily: {
+      performance: string;
+      consensus: string;
+      execution: string;
+      usd: string;
+    };
+    weekly: {
+      performance: string;
+      consensus: string;
+      execution: string;
+      usd: string;
+    };
+    monthly: {
+      performance: string;
+      consensus: string;
+      execution: string;
+      usd: string;
+    };
   } | null;
   validatorStats: ValidatorByStatus;
 }
@@ -175,7 +194,7 @@ async function calculateUserStats(
   // calculate rewards stats
   const rewardsStats = await calculateRewardsStats(user);
   // get withdrawable amount
-  const withdrawable = await getWithdrawableAmountByUserId(user.id);
+  const withdrawable = await getWithdrawableAmountByUserId(Number(user.id));
 
   return {
     performance,
@@ -185,8 +204,8 @@ async function calculateUserStats(
       value: balanceStats.value,
     },
     withdrawable: {
-      total: withdrawable,
-      value: (withdrawable * tokenPrice).toFixed(2),
+      total: withdrawable.toFixed(2),
+      value: (withdrawable * tokenPrice).toFixed(0),
     },
     apy: 0,
     rewards: rewardsStats,
@@ -225,13 +244,13 @@ function getUserBalance(validators: Validator[]) {
   const total = Number(totalBalance) / tokenUnit;
 
   return {
-    total,
-    value: (total * tokenPrice).toFixed(2),
+    total: total.toFixed(2),
+    value: (total * tokenPrice).toFixed(0),
   };
 }
 
 async function calculateRewardsStats(user: User & { validators: Validator[] }) {
-  const rawQuery = `
+  const validatorStatsDailyQuery = `
     WITH last_update AS (
       SELECT "dailyValidatorStats"::timestamp as date
       FROM "LastSummaryUpdate"
@@ -242,33 +261,37 @@ async function calculateRewardsStats(user: User & { validators: Validator[] }) {
       COALESCE(SUM(head), 0) as head,
       COALESCE(SUM(target), 0) as target,
       COALESCE(SUM(source), 0) as source,
-      COALESCE(SUM(inactivity), 0) as inactivity
+      COALESCE(SUM(inactivity), 0) as inactivity,
+      COALESCE(SUM("attestationsMissed"), 0) as "attestationsMissed"
     FROM "HourlyValidatorStats" hvs
 
     CROSS JOIN last_update lu
 
     JOIN "_UserToValidator" uv ON uv."B" = hvs."validatorIndex"
+    JOIN "Validator" v ON v.id = uv."B"
 
     WHERE hvs.date <= DATE(lu.date)
       AND hvs.date >= DATE(lu.date - INTERVAL '1 day')
-      AND uv."A" = $1`;
+      AND uv."A" = $1
+      AND v.status IN ('pending_queued', 'active_ongoing', 'active_exiting', 'active_slashed')`;
 
-  const results = await prisma.$queryRawUnsafe<
+  const validatorStatsDailyResults = await prisma.$queryRawUnsafe<
     {
       head: string;
       target: string;
       source: string;
       inactivity: string;
+      attestationsMissed: BigInt;
     }[]
-  >(rawQuery, user.id);
+  >(validatorStatsDailyQuery, user.id);
 
-  if (!results.length) return null;
+  if (!validatorStatsDailyResults.length) return null;
 
   const totalDailyConsensus =
-    BigInt(results[0].head) +
-    BigInt(results[0].target) +
-    BigInt(results[0].source) +
-    BigInt(results[0].inactivity);
+    BigInt(validatorStatsDailyResults[0].head) +
+    BigInt(validatorStatsDailyResults[0].target) +
+    BigInt(validatorStatsDailyResults[0].source) +
+    BigInt(validatorStatsDailyResults[0].inactivity);
 
   const totalDailyConsensusInWei =
     (BigInt(totalDailyConsensus) * BigInt(1e18)) / BigInt(tokenUnit);
@@ -277,47 +300,58 @@ async function calculateRewardsStats(user: User & { validators: Validator[] }) {
     formatEther(totalDailyConsensusInWei.toString())
   );
 
-  const executionQuery = `
+  const executionRewardsDailyQuery = `
     WITH last_update AS (
       SELECT "dailyValidatorStats"::timestamp as date
       FROM "LastSummaryUpdate"
       LIMIT 1
     )
 
-    SELECT COALESCE(SUM(her.amount), 0) as total
+    SELECT 
+      COALESCE(SUM(her.amount), 0) as total
     FROM "HourlyExecutionRewards" her
-
     CROSS JOIN last_update lu
-
-    JOIN "_UserToWithdrawalAddress" uwa ON uwa."B" = her.address
-
+    JOIN "_FeeRewardAddressToUser" fra ON fra."A" = her.address
     WHERE her.date <= DATE(lu.date)
       AND her.date >= DATE(lu.date - INTERVAL '1 day')
-      AND uwa."A" = $1`;
+      AND fra."B" = $1`;
 
   const executionResults = await prisma.$queryRawUnsafe<{ total: string }[]>(
-    executionQuery,
+    executionRewardsDailyQuery,
     user.id
   );
-  let totalDailyExecution = Number(
+
+  const totalDailyExecution = Number(
     formatEther(executionResults[0].total.toString())
   );
-  totalDailyExecution = FEE_REWARDS_IN_STABLE
-    ? totalDailyExecution
-    : totalDailyExecution * tokenPrice;
+
+  const totalUsd =
+    totalDailyConsensusEth * tokenPrice +
+    (FEE_REWARDS_IN_STABLE
+      ? totalDailyExecution
+      : totalDailyExecution * tokenPrice);
+
+  const performance =
+    100 *
+    (1 -
+      Number(validatorStatsDailyResults[0].attestationsMissed) /
+        (slotsInDay * user.validators.length));
 
   return {
     daily: {
-      consensus: totalDailyConsensusEth.toFixed(4),
-      execution: totalDailyExecution.toFixed(4),
-      usd: formatNumber(totalDailyConsensusEth * tokenPrice, 4, "$"),
+      performance: formatNumber(performance, 4),
+      consensus: totalDailyConsensusEth.toFixed(3),
+      execution: totalDailyExecution.toFixed(3),
+      usd: formatNumber(totalUsd, 3, "$"),
     },
     weekly: {
+      performance: "0",
       consensus: "0",
       execution: "0",
       usd: formatNumber(0, 4, "$"),
     },
     monthly: {
+      performance: "0",
       consensus: "0",
       execution: "0",
       usd: formatNumber(0, 4, "$"),
@@ -351,16 +385,16 @@ function formatStatsMessage(
 
   const mainStats = [
     `1h performance: ${status.syncing ? "(needs sync)" : `${performance}%`}`,
-    `Balance: ${balance.total.toFixed(2)} ${TOKEN_SYMBOL} ($${balance.value})`,
+    `Balance: ${balance.total} ${TOKEN_SYMBOL} ($${balance.value})`,
     `APY: 🔜`,
-    `Claimable: ${withdrawable.total.toFixed(2)} ${TOKEN_SYMBOL} ($${withdrawable.value})`,
+    `Claimable: ${withdrawable.total} ${TOKEN_SYMBOL} ($${withdrawable.value})`,
   ].join("\n");
 
   const rewardsSection = [
     `Rewards:`,
-    `----------------------------`,
-    `  |    ${TOKEN_SYMBOL}    ${FEE_REWARDS_SYMBOL}    Total`,
-    `d | ${stats.rewards.daily.consensus}  ${stats.rewards.daily.execution}  ${stats.rewards.daily.usd}`,
+    `------------------------------`,
+    `  |   %     ${TOKEN_SYMBOL}    ${FEE_REWARDS_SYMBOL}  Total`,
+    `d | ${stats.rewards.daily.performance}  ${stats.rewards.daily.consensus}  ${stats.rewards.daily.execution}  ${stats.rewards.daily.usd}`,
     `w |            🔜`,
     `m |            🔜`,
   ].join("\n");

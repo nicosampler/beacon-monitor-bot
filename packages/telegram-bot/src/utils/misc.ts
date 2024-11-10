@@ -61,3 +61,12 @@ export const VALIDATOR_STATUS = {
   WITHDRAWAL_POSSIBLE: "withdrawal_possible",
   WITHDRAWAL_DONE: "withdrawal_done",
 };
+
+const BEACON_SLOT_DURATION_IN_SECONDS = Number(
+  process.env.BEACON_SLOT_DURATION_IN_SECONDS
+);
+
+export const slotsIn1h = 3600 / BEACON_SLOT_DURATION_IN_SECONDS;
+export const slotsInDay = (24 * 3600) / BEACON_SLOT_DURATION_IN_SECONDS;
+export const slotsInWeek = (7 * 24 * 3600) / BEACON_SLOT_DURATION_IN_SECONDS;
+export const slotsInMonth = (30 * 24 * 3600) / BEACON_SLOT_DURATION_IN_SECONDS;

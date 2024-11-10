@@ -43,7 +43,7 @@ const fetchWithdrawableAmount = async (userId: number) => {
   }
 };
 
-export const getWithdrawableAmountByUserId = memoizee(fetchWithdrawableAmount, {
+export const getWithdrawableAmountByUserId: (userId: number) => Promise<number> = memoizee(fetchWithdrawableAmount, {
   promise: true,
   maxAge: ms("5m"),
   primitive: true,

@@ -75,7 +75,6 @@ export async function aggregateMissedAttestations(
     by: ["validatorIndex"],
     where: {
       AND: [
-        //{ validatorIndex: 171663 },
         { slot: { gte: startSlot, lte: endSlot } },
         {
           OR: [
