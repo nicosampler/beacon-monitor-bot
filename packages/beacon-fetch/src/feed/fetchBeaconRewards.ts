@@ -33,7 +33,7 @@ export async function fetchBeaconRewards(
     });
 
     if (!activeValidators.length) {
-      logger.info(`No active validators found for epochs ${epochs.join(", ")}`);
+      logger.warn(`No active validators found for epochs ${epochs.join(", ")}`);
       return;
     }
 

@@ -10,22 +10,6 @@ export async function cleanupCommittee(logger: CustomLogger) {
   let totalDeleted = 0;
 
   try {
-    // Get the max processed slot
-    const maxProcessedSlot = await prisma.slot.findFirst({
-      where: { attestationsFetched: true },
-      orderBy: { slot: "desc" },
-      select: { slot: true },
-    });
-
-    if (maxProcessedSlot) {
-      // Delete attestations that were attested in time
-      const result1 = await prisma.$executeRaw`
-      DELETE FROM "Committee" 
-      WHERE slot <= ${maxProcessedSlot.slot} 
-      AND "attestationDelay" <= ${env.BEACON_MAX_ATTESTATION_DELAY}`;
-      totalDeleted += result1;
-    }
-
     // remove attestations that were summarized in the hourly summary
     const lsu = await prisma.lastSummaryUpdate.findFirst();
     if (lsu.hourlyValidatorStats) {

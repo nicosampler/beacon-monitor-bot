@@ -45,15 +45,30 @@ async function getNextSlotsToFetch(logger: CustomLogger): Promise<number[]> {
   const headSlot = currentSlot - 1;
   const oldestLookbackSlot = getOldestLookbackSlot();
 
-  const lastProcessedSlot = await prisma.committee.findFirst({
+  const lastSlotWithAttestations = await prisma.slot.findFirst({
+    where: { attestationsFetched: true },
     orderBy: { slot: "desc" },
   });
 
-  const baseSlot = lastProcessedSlot
-    ? lastProcessedSlot.slot + 1
+  if (
+    currentSlot - lastSlotWithAttestations?.slot >
+    env.BEACON_SLOTS_PER_EPOCH * 20
+  ) {
+    logger.info(`Skipping, last slot with attestations is too back in time`);
+    return [];
+  }
+
+  const lastSlotInCommittee = await prisma.committee.findFirst({
+    orderBy: { slot: "desc" },
+  });
+
+  const baseSlot = lastSlotInCommittee
+    ? lastSlotInCommittee.slot + 1
     : oldestLookbackSlot;
 
   // Generate array of slots to fetch
+  // We fetch the first slot of each epoch
+  // This relays on the fact that the oldest lookback slot was the first slot of an epoch
   const slots: number[] = [];
   for (let i = 0; i < 10; i++) {
     const slotToFetch = baseSlot + i * env.BEACON_SLOTS_PER_EPOCH;
