@@ -1,7 +1,10 @@
 import { AsyncTask, SimpleIntervalJob } from "toad-scheduler";
 import createLogger from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
-import { getEpochNumberFromTimestamp } from "@/src/beacon/utils/time.js";
+import {
+  getEpochNumberFromTimestamp,
+  getTimestampFromSlotNumber,
+} from "@/src/beacon/utils/time.js";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { env } from "@/src/env.js";
 import { fetchBeaconRewards } from "@/src/feed/fetchBeaconRewards.js"; // Assuming this function exists
@@ -35,6 +38,20 @@ async function fetchBeaconRewardsTask() {
 
     if (epochToFetch > headEpoch) {
       logger.info(`No new epochs to fetch`);
+      return;
+    }
+
+    const lastSlotWithRewards = await prisma.slot.findFirst({
+      where: { attestationsFetched: true },
+      orderBy: { slot: "desc" },
+    });
+
+    const epochOfLastSlotWithRewards = getEpochNumberFromTimestamp(
+      getTimestampFromSlotNumber(lastSlotWithRewards?.slot)
+    );
+
+    if (epochToFetch - epochOfLastSlotWithRewards > 2) {
+      logger.info(`Skipping, last slot with rewards is too back in time.`);
       return;
     }
 

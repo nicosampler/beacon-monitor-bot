@@ -5,6 +5,7 @@ import { getBlock } from "@/src/blockscout/endpoints.js";
 import { addSeconds, differenceInSeconds } from "date-fns";
 import { Blocks } from "@/src/blockscout/types.js";
 import { Decimal } from "@prisma/client/runtime/library";
+import { getTimestampFromSlotNumber } from "@/src/beacon/utils/time.js";
 
 const prisma = getPrisma();
 
@@ -19,9 +20,8 @@ export async function fetchExecutionRewards(logger: CustomLogger) {
 
     if (latestReward) {
       const now = new Date();
-      const secondsSinceLastBlock = differenceInSeconds(
-        now,
-        latestReward.timestamp
+      const secondsSinceLastBlock = Math.abs(
+        differenceInSeconds(now, latestReward.timestamp)
       );
 
       // If the time since the last block is less than a slot duration, abort
@@ -33,6 +33,28 @@ export async function fetchExecutionRewards(logger: CustomLogger) {
       blockToQuery = latestReward.blockNumber + 1;
     } else {
       blockToQuery = env.EXECUTION_BLOCK_LOOKBACK;
+    }
+
+    const lastSlotWithAttestations = await prisma.slot.findFirst({
+      where: { attestationsFetched: true },
+      orderBy: { slot: "desc" },
+    });
+
+    const lastSlotWithAttestationsDate = new Date(
+      getTimestampFromSlotNumber(lastSlotWithAttestations?.slot)
+    );
+
+    // only fetch if the last slot with attestations is near.
+    if (
+      latestReward &&
+      latestReward.timestamp > lastSlotWithAttestationsDate &&
+      differenceInSeconds(
+        latestReward.timestamp,
+        lastSlotWithAttestationsDate
+      ) > 10
+    ) {
+      logger.info("Skipping, Slot attestation is too far in the past");
+      return;
     }
 
     logger.info(`Fetching block: ${blockToQuery}`);

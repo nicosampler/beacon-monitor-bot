@@ -50,17 +50,17 @@ async function getNextSlotsToFetch(logger: CustomLogger): Promise<number[]> {
     orderBy: { slot: "desc" },
   });
 
+  const lastSlotInCommittee = await prisma.committee.findFirst({
+    orderBy: { slot: "desc" },
+  });
+
   if (
-    currentSlot - lastSlotWithAttestations?.slot >
+    lastSlotInCommittee.slot - lastSlotWithAttestations?.slot >=
     env.BEACON_SLOTS_PER_EPOCH * 20
   ) {
     logger.info(`Skipping, last slot with attestations is too back in time`);
     return [];
   }
-
-  const lastSlotInCommittee = await prisma.committee.findFirst({
-    orderBy: { slot: "desc" },
-  });
 
   const baseSlot = lastSlotInCommittee
     ? lastSlotInCommittee.slot + 1
@@ -158,7 +158,7 @@ async function processAndSaveCommittees(
 
 // New function to handle parallel fetching
 export async function fetchNextCommittees(): Promise<void> {
-  const logger = createLogger("FetchCommittees", true);
+  const logger = createLogger("FetchCommittees", false);
 
   try {
     const slotsToFetch = await getNextSlotsToFetch(logger);
