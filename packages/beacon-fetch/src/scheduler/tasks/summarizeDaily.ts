@@ -52,7 +52,7 @@ async function summarizeDailyTask() {
 }
 
 export const job = new SimpleIntervalJob(
-  { minutes: 10, runImmediately: true },
+  { minutes: 10, runImmediately: false },
   new AsyncTask(`${ID}_task`, summarizeDailyTask),
   {
     id: ID,

@@ -141,7 +141,7 @@ async function updateAndDeleteValidatorAttestations(
   slotNumber: number,
   logger: CustomLogger
 ): Promise<void> {
-  const prismaBatchSize = 4000;
+  const prismaBatchSize = 6000;
 
   logger.info(
     `Processing ${attestations.updates.length} updates and ${attestations.deletes.length} deletes.`
@@ -178,17 +178,41 @@ async function updateAndDeleteValidatorAttestations(
       if (attestations.deletes.length > 0) {
         const deleteChunks = chunk(attestations.deletes, prismaBatchSize);
 
+        // Create temp table
+        const createTempTableQuery = Prisma.sql`
+          CREATE TEMP TABLE tmp_delete_committee(slot int, index int, aggregation_bits_index int);
+        `;
+        await tx.$executeRaw(createTempTableQuery);
+
+        // Insert data in chunks
         for (const batchDeletes of deleteChunks) {
-          await tx.committee.deleteMany({
-            where: {
-              OR: batchDeletes.map((d) => ({
-                slot: d.slot,
-                index: d.index,
-                aggregationBitsIndex: d.aggregationBitsIndex,
-              })),
-            },
-          });
+          const insertQuery = Prisma.sql`
+            INSERT INTO tmp_delete_committee (slot, index, aggregation_bits_index)
+            VALUES ${Prisma.join(
+              batchDeletes.map(
+                (d) =>
+                  Prisma.sql`(${d.slot}, ${d.index}, ${d.aggregationBitsIndex})`
+              )
+            )};
+          `;
+          await tx.$executeRaw(insertQuery);
         }
+
+        // Delete matching records
+        const deleteQuery = Prisma.sql`
+          DELETE FROM "Committee" c
+          USING tmp_delete_committee t
+          WHERE c.slot = t.slot 
+            AND c.index = t.index 
+            AND c."aggregationBitsIndex" = t.aggregation_bits_index;
+        `;
+        await tx.$executeRaw(deleteQuery);
+
+        // Drop temp table
+        const dropTableQuery = Prisma.sql`
+          DROP TABLE tmp_delete_committee;
+        `;
+        await tx.$executeRaw(dropTableQuery);
       }
 
       await tx.slot.update({
