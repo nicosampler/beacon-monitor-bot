@@ -6,7 +6,7 @@ const ID = "maintainCommitteeTable";
 const logger = createLogger(ID, false);
 
 export const job = new SimpleIntervalJob(
-  { minutes: 30, runImmediately: false },
+  { minutes: 30, runImmediately: true },
   new AsyncTask(`${ID}_task`, () => maintainCommittee(logger)),
   {
     id: ID,
