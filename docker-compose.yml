@@ -91,7 +91,7 @@ services:
     ports:
       - "9187:9187"
     volumes:
-      - ./postgres_exporter.yml:/etc/postgres_exporter.yml
+      - ./postgres_exporter.yml:/etc/postgres_exporter.yml:ro
     depends_on:
       - postgres
     networks:
