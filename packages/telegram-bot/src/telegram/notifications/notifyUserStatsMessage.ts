@@ -381,7 +381,7 @@ function formatStatsMessage(
     : `🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`;
 
   const mainStats = [
-    `1h performance: ${status.syncing ? "(needs sync)" : `${performance}%`}`,
+    `Last 24h perf.: ${status.syncing ? "(needs sync)" : `${performance}%`}`,
     `Balance: ${balance.total} ${TOKEN_SYMBOL} ($${balance.value})`,
     `APY: 🔜`,
     `Claimable: ${withdrawable.total} ${TOKEN_SYMBOL} ($${withdrawable.value})`,

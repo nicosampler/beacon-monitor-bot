@@ -1,3 +1,4 @@
+import ms from "ms";
 import { Prisma } from "@prisma/client";
 import { getValidatorsInfo } from "@/src/beacon/endpoints.js";
 import createLogger, { CustomLogger } from "@/src/lib/pino.js";
@@ -7,17 +8,19 @@ import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
 import { env } from "@/src/env.js";
 import { VALIDATOR_STATUS } from "@/src/constants/index.js";
 import { getPrisma } from "@/src/lib/prisma.js";
+import { Decimal } from "@prisma/client/runtime/library";
 
 const prisma = getPrisma();
 
 export async function fetchValidatorsInfo(logger: CustomLogger) {
+  logger.info(`Start`);
   try {
     const highestValidatorId = await getHighestValidatorId();
-    const batchSize = 6500;
-    const slotNumber =
-      getSlotNumberFromTimestamp(Date.now()) - env.BEACON_SLOTS_PER_EPOCH;
+    const apiBatchSize = 6500; // Batch size for API calls
+    const dbBatchSize = 8000; // Batch size for DB updates
 
     // Fetch validator IDs that are in final states
+    logger.info(`Fetching final state validators`);
     const finalStateValidators = await prisma.validator.findMany({
       where: {
         status: {
@@ -31,64 +34,60 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
       select: { id: true },
     });
 
+    // Create array of all validator IDs and filter out those in final states
+    // Using a map for faster access
     const finalStateValidatorIds = new Set(
       finalStateValidators.map((v) => v.id)
     );
-
-    // Create array of all validator IDs and filter out those in final states
     const allValidatorIds = Array.from(
       { length: highestValidatorId + 1 },
       (_, i) => i
     ).filter((id) => !finalStateValidatorIds.has(id));
 
-    const validatorIdBatches = chunk(allValidatorIds, batchSize);
+    // First loop: Fetch all validator info in parallel batches
+    logger.info(`Call validators info API`);
+    const apiValidatorBatches = chunk(allValidatorIds, apiBatchSize);
+    const allValidatorsInfo: Awaited<ReturnType<typeof getValidatorsInfo>> = [];
+    try {
+      const validatorPromises = apiValidatorBatches.map((validatorIds) =>
+        getValidatorsInfo("head", validatorIds)
+      );
 
-    for (const validatorIds of validatorIdBatches) {
-      try {
-        logger.info(
-          `Fetching validators info from ${validatorIds[0]} to ${validatorIds[validatorIds.length - 1]}`
-        );
-        const validatorsInfo = await getValidatorsInfo(
-          slotNumber,
-          validatorIds
-        );
+      const results = await Promise.all(validatorPromises);
+      results.forEach((batch) => allValidatorsInfo.push(...batch));
+    } catch (error) {
+      logger.error(`Error fetching validators info batch`, error);
+      return;
+    }
 
-        const updateData = validatorsInfo.map((validatorInfo) => ({
-          id: parseInt(validatorInfo.index),
-          withdrawalAddress:
-            validatorInfo.validator.withdrawal_credentials.startsWith("0x01")
-              ? "0x" + validatorInfo.validator.withdrawal_credentials.slice(-40)
-              : null,
-          status: validatorInfo.status,
-        }));
-
-        const updateQuery = Prisma.sql`
-          UPDATE "Validator"
-          SET 
-            "withdrawalAddress" = CASE
-              ${Prisma.join(
-                updateData.map(
-                  (u) =>
-                    Prisma.sql`WHEN id = ${u.id} THEN ${u.withdrawalAddress}`
+    // Database operations in transaction
+    try {
+      // Insert data in batches with upsert
+      logger.info(`Upserting validators info in DB`);
+      const insertBatches = chunk(allValidatorsInfo, dbBatchSize);
+      for (const batch of insertBatches) {
+        await prisma.$executeRaw`
+              INSERT INTO "Validator" (id, "withdrawalAddress", "status", "balance")
+              VALUES ${Prisma.join(
+                batch.map(
+                  (data) =>
+                    Prisma.sql`(${+data.index}, ${
+                      data.validator.withdrawal_credentials.startsWith("0x")
+                        ? "0x" +
+                          data.validator.withdrawal_credentials.slice(-40)
+                        : null
+                    }, ${data.status}, ${new Decimal(data.balance)})`
                 ),
-                " "
+                ", "
               )}
-            END,
-            "status" = CASE
-              ${Prisma.join(
-                updateData.map(
-                  (u) => Prisma.sql`WHEN id = ${u.id} THEN ${u.status}`
-                ),
-                " "
-              )}
-            END
-          WHERE id IN (${Prisma.join(updateData.map((u) => u.id))});
-        `;
-
-        await prisma.$executeRaw(updateQuery);
-      } catch (error) {
-        logger.error(`Error fetching validators info`, error);
+              ON CONFLICT (id) DO UPDATE SET
+                "withdrawalAddress" = EXCLUDED."withdrawalAddress",
+                "status" = EXCLUDED."status"
+            `;
       }
+      logger.info(`Done!`);
+    } catch (error) {
+      logger.error(`Transaction failed`, error);
     }
   } catch (error) {
     logger.error(`Error fetching validators info`, error);

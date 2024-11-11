@@ -1,3 +1,5 @@
+// TODO: analyze when to use each status to do filtering for the beacon API.
+// https://docs.blockdaemon.com/docs/eth-validator-statuses
 export type ValidatorStatus =
   | "pending_initialized"
   | "pending_queued"

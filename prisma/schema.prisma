@@ -41,6 +41,7 @@ model Validator {
   users             User[]  @relation("UserToValidator")
 
   @@index([withdrawalAddress])
+  @@index([status])
 }
 
 model ExecutionRewards {

@@ -8,7 +8,7 @@ export const instance = axios.create();
 // interceptor to limit requests
 instance.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    await limitRequests(() => Promise.resolve());
+    await limitRequests();
     logRequest(config);
     return config;
   }

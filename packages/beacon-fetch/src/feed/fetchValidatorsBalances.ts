@@ -5,7 +5,6 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
 import { env } from "@/src/env.js";
 import { Prisma } from "@prisma/client";
-import { getHighestValidatorId } from "@/src/feed/utils.js";
 
 const prisma = getPrisma();
 
@@ -44,62 +43,32 @@ export const fetchValidatorsBalances = async (
 
     logger.info(`Processing ${validatorBalances.length} validator balances`);
 
-    // Get the highest validator index from the database
-    const highestValidatorId = await getHighestValidatorId();
-
     const batchSize = 5000;
-    let updateCount = 0;
-    let insertCount = 0;
+    let processedCount = 0;
 
-    // Process updates
-    const updateBatch = validatorBalances.filter(
-      (v) => parseInt(v.index) <= highestValidatorId
-    );
-    for (let i = 0; i < updateBatch.length; i += batchSize) {
-      const batch = updateBatch.slice(i, i + batchSize);
-      const updateQuery = Prisma.sql`
-        UPDATE "Validator"
-        SET "balance" = CASE
-          ${Prisma.join(
-            batch.map(
-              (v) =>
-                Prisma.sql`WHEN "id" = ${parseInt(v.index)} THEN ${new Decimal(v.balance)}`
-            ),
-            " "
-          )}
-        END
-        WHERE "id" IN (${Prisma.join(batch.map((v) => parseInt(v.index)))});
-      `;
-
-      const result = await prisma.$executeRaw(updateQuery);
-      updateCount += result;
-    }
-
-    // Process inserts
-    const insertBatch = validatorBalances.filter(
-      (v) => parseInt(v.index) > highestValidatorId
-    );
-    for (let i = 0; i < insertBatch.length; i += batchSize) {
-      const batch = insertBatch.slice(i, i + batchSize);
-      const insertQuery = Prisma.sql`
+    // Process all validators in batches
+    for (let i = 0; i < validatorBalances.length; i += batchSize) {
+      const batch = validatorBalances.slice(i, i + batchSize);
+      const upsertQuery = Prisma.sql`
         INSERT INTO "Validator" ("id", "balance")
         VALUES ${Prisma.join(
           batch.map(
             (v) => Prisma.sql`(${parseInt(v.index)}, ${new Decimal(v.balance)})`
           )
         )}
-        ON CONFLICT ("id") DO NOTHING;
+        ON CONFLICT ("id") DO UPDATE
+        SET "balance" = EXCLUDED.balance;
       `;
 
-      const result = await prisma.$executeRaw(insertQuery);
-      insertCount += result;
+      const result = await prisma.$executeRaw(upsertQuery);
+      processedCount += result;
     }
 
     logValidatorBalances(
       logger,
       validatorBalances.length,
-      updateCount,
-      insertCount
+      processedCount,
+      validatorBalances.length - processedCount
     );
   } catch (error) {
     logger.error(
