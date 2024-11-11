@@ -388,10 +388,10 @@ function formatStatsMessage(
   ].join("\n");
 
   const rewardsSection = [
-    `Rewards:`,
+    `Stats:`,
     `------------------------------`,
-    `  |   %     ${TOKEN_SYMBOL}    ${FEE_REWARDS_SYMBOL}  Total`,
-    `d | ${stats.rewards.daily.performance}  ${stats.rewards.daily.consensus}  ${stats.rewards.daily.execution}  ${stats.rewards.daily.usd}`,
+    `  | perf.%   ${TOKEN_SYMBOL}    ${FEE_REWARDS_SYMBOL}  Total`,
+    `d | ${stats.rewards.daily.performance}   ${stats.rewards.daily.consensus}  ${stats.rewards.daily.execution}  ${stats.rewards.daily.usd}`,
     `w |            🔜`,
     `m |            🔜`,
   ].join("\n");
