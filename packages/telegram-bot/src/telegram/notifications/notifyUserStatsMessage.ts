@@ -38,7 +38,7 @@ interface ValidatorByStatus {
 }
 
 interface UserStats {
-  performance: number;
+  performance: string;
   balance: {
     total: string;
     value: string;
@@ -116,7 +116,7 @@ export async function notifyUserStatsMessage(
 function calculateValidatorStats(
   validators: Validator[],
   missedAttestations: Committee[],
-  amountOfMissedAttestationsToBeInactive: number
+  attestationThreshold: number
 ): ValidatorByStatus {
   // Filter validators that are "active" for the beacon chain
   const beaconActiveValidators = validators.filter(
@@ -126,10 +126,7 @@ function calculateValidatorStats(
   );
 
   // A validator is inactive if it appears in all of the last amountOfMissedAttestationsToBeInactive entries
-  const lastEntries = missedAttestations.slice(
-    0,
-    amountOfMissedAttestationsToBeInactive
-  );
+  const lastEntries = missedAttestations.slice(0, attestationThreshold);
   const inactiveIds = beaconActiveValidators
     .map((v) => v.id)
     .filter((validatorId) =>
@@ -216,7 +213,7 @@ async function calculatePerformanceStats(
   syncing: boolean,
   user: User & { validators: Validator[] }
 ) {
-  if (syncing) return 0;
+  if (syncing) return "0";
 
   const activeValidators = user.validators.filter(
     (v) =>
@@ -227,12 +224,12 @@ async function calculatePerformanceStats(
   const missedAttestations = await getMissedAttestations(activeValidators);
 
   const expectedAttestations = slotsIn1h * activeValidators.length;
-  if (expectedAttestations === 0) return 0;
+  if (expectedAttestations === 0) return "0";
   return (
     ((expectedAttestations - missedAttestations.length) /
       expectedAttestations) *
     100
-  );
+  ).toFixed(2);
 }
 
 function getUserBalance(validators: Validator[]) {
