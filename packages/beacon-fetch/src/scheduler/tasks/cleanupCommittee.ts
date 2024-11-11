@@ -7,7 +7,7 @@ const logger = createLogger(ID, false);
 
 // TODO: Make it part of the summarizeHourly task
 export const job = new SimpleIntervalJob(
-  { minutes: 10, runImmediately: true },
+  { hours: 1, runImmediately: true },
   new AsyncTask(`${ID}_task`, () => cleanupCommittee(logger)),
   {
     id: ID,

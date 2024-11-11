@@ -56,7 +56,7 @@ async function summarizeHourlyTask() {
 }
 
 export const job = new SimpleIntervalJob(
-  { minutes: 10, runImmediately: false },
+  { minutes: 10, runImmediately: true },
   new AsyncTask(`${ID}_task`, summarizeHourlyTask),
   {
     id: ID,

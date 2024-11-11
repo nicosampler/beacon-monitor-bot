@@ -46,7 +46,7 @@ export const fetchOldestAttestation = async () => {
 };
 
 export const job = new SimpleIntervalJob(
-  { milliseconds: 500, runImmediately: true },
+  { seconds: 2.5, runImmediately: true },
   new AsyncTask(`${ID}_task`, fetchOldestAttestation),
   {
     id: ID,

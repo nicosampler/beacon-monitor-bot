@@ -4,7 +4,7 @@ import { fetchNextCommittees } from "@/src/feed/fetchCommittee.js";
 const ID = "FetchCommittee";
 
 export const job = new SimpleIntervalJob(
-  { seconds: 5, runImmediately: true },
+  { seconds: 40, runImmediately: true },
   new AsyncTask(`${ID}_task`, fetchNextCommittees),
   {
     id: ID,
