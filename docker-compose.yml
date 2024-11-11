@@ -91,7 +91,9 @@ services:
     ports:
       - "9187:9187"
     volumes:
-      - ./postgres_exporter.yml:/etc/postgres_exporter.yml:ro
+    - ./postgres_exporter.yml:/config/postgres_exporter.yml
+    command:
+      - "--config.file=/config/postgres_exporter.yml"
     depends_on:
       - postgres
     networks:
