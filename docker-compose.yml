@@ -87,7 +87,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATA_SOURCE_NAME=${DATABASE_URL}
+      - DATA_SOURCE_NAME=${DATABASE_URL}&sslmode=disable
     ports:
       - "9187:9187"
     depends_on:
