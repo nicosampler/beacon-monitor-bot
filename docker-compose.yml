@@ -7,7 +7,7 @@ services:
     env_file:
       - .env
     environment:
-      - POSTGRES_INITDB_ARGS=--max_wal_size=4GB
+      - POSTGRES_INITDB_ARGS=--max_wal_size=8GB
     ports:
       - "5432:5432"
     volumes:
@@ -60,6 +60,40 @@ services:
       options:
         max-size: "25m"
         max-file: "2"
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - app-network
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter
+    container_name: postgres-exporter
+    env_file:
+      - .env
+    environment:
+      - DATA_SOURCE_NAME=${DATABASE_URL}
+    ports:
+      - "9187:9187"
+    depends_on:
+      - postgres
+    networks:
+      - app-network
 
 networks:
   app-network:
