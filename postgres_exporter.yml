@@ -1,0 +1,4 @@
+disable_default_metrics: false
+queries:
+  - query: "SELECT * FROM pg_stat_bgwriter"
+    disable: true
