@@ -3,13 +3,13 @@ version: '3.8'
 services:
   postgres_new:
     image: postgres:16
-    container_name: db
+    container_name: db_new
     env_file:
       - .env
     environment:
       - POSTGRES_INITDB_ARGS=--max_wal_size=8GB
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - beacon_postgres_data_new:/var/lib/postgresql/data
     networks:
@@ -37,81 +37,81 @@ services:
         max-size: "25m"
         max-file: "2"
 
-  migrate:
-    image: node:18-alpine
-    working_dir: /app
-    volumes:
-      - .:/app
-    env_file:
-      - .env
-    depends_on:
-      - postgres
-    command: >
-      sh -c "npx prisma db push"
-    networks:
-      - app-network
+  # migrate:
+  #   image: node:18-alpine
+  #   working_dir: /app
+  #   volumes:
+  #     - .:/app
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - postgres
+  #   command: >
+  #     sh -c "npx prisma db push"
+  #   networks:
+  #     - app-network
 
-  beacon-fetch:
-    container_name: fetch
-    env_file:
-      - .env
-    build:
-      context: .
-      dockerfile: packages/beacon-fetch/Dockerfile
-    depends_on:
-      - migrate
-    networks:
-      - app-network
+  # beacon-fetch:
+  #   container_name: fetch
+  #   env_file:
+  #     - .env
+  #   build:
+  #     context: .
+  #     dockerfile: packages/beacon-fetch/Dockerfile
+  #   depends_on:
+  #     - migrate
+  #   networks:
+  #     - app-network
 
-  bot:
-    container_name: bot
-    env_file:
-      - .env
-    build:
-      context: .
-      dockerfile: packages/telegram-bot/Dockerfile
-    depends_on:
-      - beacon-fetch
-    networks:
-      - app-network
-    logging:
-      options:
-        max-size: "25m"
-        max-file: "2"
+  # bot:
+  #   container_name: bot
+  #   env_file:
+  #     - .env
+  #   build:
+  #     context: .
+  #     dockerfile: packages/telegram-bot/Dockerfile
+  #   depends_on:
+  #     - beacon-fetch
+  #   networks:
+  #     - app-network
+  #   logging:
+  #     options:
+  #       max-size: "25m"
+  #       max-file: "2"
 
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
-    networks:
-      - app-network
+  # prometheus:
+  #   image: prom/prometheus
+  #   container_name: prometheus
+  #   volumes:
+  #     - ./prometheus.yml:/etc/prometheus/prometheus.yml
+  #   ports:
+  #     - "9090:9090"
+  #   networks:
+  #     - app-network
 
-  grafana:
-    image: grafana/grafana
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    depends_on:
-      - prometheus
-    networks:
-      - app-network
+  # grafana:
+  #   image: grafana/grafana
+  #   container_name: grafana
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - prometheus
+  #   networks:
+  #     - app-network
 
-  postgres-exporter:
-    image: quay.io/prometheuscommunity/postgres-exporter
-    container_name: postgres-exporter
-    env_file:
-      - .env
-    environment:
-      - DATA_SOURCE_NAME=${DATA_SOURCE_NAME}
-    ports:
-      - "9187:9187"
-    depends_on:
-      - postgres
-    networks:
-      - app-network
+  # postgres-exporter:
+  #   image: quay.io/prometheuscommunity/postgres-exporter
+  #   container_name: postgres-exporter
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - DATA_SOURCE_NAME=${DATA_SOURCE_NAME}
+  #   ports:
+  #     - "9187:9187"
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - app-network
 
 networks:
   app-network:
