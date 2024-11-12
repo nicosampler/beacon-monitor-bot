@@ -90,10 +90,6 @@ services:
       - DATA_SOURCE_NAME=${DATA_SOURCE_NAME}
     ports:
       - "9187:9187"
-    volumes:
-    - ./postgres_exporter.yml:/config/postgres_exporter.yml
-    command:
-      - "--config.file=/config/postgres_exporter.yml"
     depends_on:
       - postgres
     networks:
