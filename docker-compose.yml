@@ -1,8 +1,26 @@
 version: '3.8'
 
 services:
-  postgres:
+  postgres_new:
     image: postgres:16
+    container_name: db
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_INITDB_ARGS=--max_wal_size=8GB
+    ports:
+      - "5432:5432"
+    volumes:
+      - beacon_postgres_data_new:/var/lib/postgresql/data
+    networks:
+      - app-network
+    logging:
+      options:
+        max-size: "25m"
+        max-file: "2"
+
+  postgres:
+    image: postgres:17
     container_name: db
     env_file:
       - .env
@@ -101,3 +119,4 @@ networks:
 
 volumes:
   beacon_postgres_data:
+  beacon_postgres_data_new:
