@@ -55,7 +55,7 @@ async function getNextSlotsToFetch(logger: CustomLogger): Promise<number[]> {
   });
 
   if (
-    lastSlotInCommittee.slot - lastSlotWithAttestations?.slot >=
+    lastSlotInCommittee?.slot - lastSlotWithAttestations?.slot >=
     env.BEACON_SLOTS_PER_EPOCH * 20
   ) {
     logger.info(`Skipping, last slot with attestations is too back in time`);
