@@ -8,7 +8,6 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
-      - POSTGRES_INITDB_ARGS=--max_wal_size=8GB
     ports:
       - "5433:5432"
     volumes:
