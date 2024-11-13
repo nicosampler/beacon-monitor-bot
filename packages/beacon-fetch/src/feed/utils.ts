@@ -9,6 +9,17 @@ export const db_getLastSlot = async () =>
     .findFirst({ orderBy: { slot: "desc" }, select: { slot: true } })
     .then((d) => d?.slot);
 
+export const db_getLastSlotWithAttestations = async () =>
+  await prisma.slot.findFirst({
+    where: { attestationsFetched: true },
+    orderBy: { slot: "desc" },
+  });
+
+export const db_getLastSlotInCommittee = async () =>
+  await prisma.committee.findFirst({
+    orderBy: { slot: "desc" },
+  });
+
 export const db_getSlotsByRange = async (start: number, end: number) => {
   return prisma.slot.findMany({
     where: { slot: { gte: start, lte: end } },

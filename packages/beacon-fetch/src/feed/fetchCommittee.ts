@@ -7,6 +7,24 @@ import createLogger, { CustomLogger } from "@/src/lib/pino.js";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
 import { env } from "@/src/env.js";
+import {
+  db_getLastSlotInCommittee,
+  db_getLastSlotWithAttestations,
+} from "@/src/feed/utils.js";
+import { Prisma } from "@prisma/client";
+
+type Committee = {
+  slot: string;
+  index: string;
+  validators: string[];
+};
+
+type CommitteeUpsert = {
+  slot: number;
+  index: number;
+  aggregationBitsIndex: number;
+  validatorIndex: number;
+};
 
 const prisma = getPrisma();
 
@@ -45,18 +63,19 @@ async function getNextSlotsToFetch(logger: CustomLogger): Promise<number[]> {
   const headSlot = currentSlot - 1;
   const oldestLookbackSlot = getOldestLookbackSlot();
 
-  const lastSlotWithAttestations = await prisma.slot.findFirst({
-    where: { attestationsFetched: true },
-    orderBy: { slot: "desc" },
-  });
+  const lastSlotWithAttestations = await db_getLastSlotWithAttestations();
+  const lastSlotInCommittee = await db_getLastSlotInCommittee();
 
-  const lastSlotInCommittee = await prisma.committee.findFirst({
-    orderBy: { slot: "desc" },
-  });
+  // only fetch up to one epoch ahead
+  if (lastSlotInCommittee?.slot + env.BEACON_SLOTS_PER_EPOCH > headSlot) {
+    logger.info(`Skipping, head slot is too far in the future`);
+    return [];
+  }
 
+  // if slot with attestations is too far in the past, skip
   if (
     lastSlotInCommittee?.slot - lastSlotWithAttestations?.slot >=
-    env.BEACON_SLOTS_PER_EPOCH * 20
+    env.BEACON_SLOTS_PER_EPOCH * 25
   ) {
     logger.info(`Skipping, last slot with attestations is too back in time`);
     return [];
@@ -68,9 +87,10 @@ async function getNextSlotsToFetch(logger: CustomLogger): Promise<number[]> {
 
   // Generate array of slots to fetch
   // We fetch the first slot of each epoch
-  // This relays on the fact that the oldest lookback slot was the first slot of an epoch
+  // This relays on the fact that oldestLookbackSlot was the first slot of an epoch
   const slots: number[] = [];
-  for (let i = 0; i < 10; i++) {
+  const maxSlotsToFetch = 5;
+  for (let i = 0; i < maxSlotsToFetch; i++) {
     const slotToFetch = baseSlot + i * env.BEACON_SLOTS_PER_EPOCH;
     if (slotToFetch <= headSlot) {
       slots.push(slotToFetch);
@@ -83,77 +103,114 @@ async function getNextSlotsToFetch(logger: CustomLogger): Promise<number[]> {
   return slots;
 }
 
-// New function to handle database operations for a single slot
+// Helper function to prepare upsert data
+function prepareUpsertData(committees: Committee[]) {
+  const uniqueSlots = Array.from(new Set(committees.map((c) => +c.slot)));
+
+  const slotUpserts = uniqueSlots
+    .filter((slot) => slot >= getOldestLookbackSlot())
+    .map((slot) => ({
+      slot,
+      attestationsFetched: false,
+    }));
+
+  const committeeUpserts = committees.flatMap((committee) =>
+    committee.validators
+      .map((validatorIndex, index) => ({
+        slot: +committee.slot,
+        index: +committee.index, // index within the slot
+        aggregationBitsIndex: index, // position in the validators array (indexof)
+        validatorIndex: +validatorIndex,
+      }))
+      .filter((committee) => +committee.slot >= getOldestLookbackSlot())
+  );
+
+  return {
+    uniqueSlots,
+    slotUpserts,
+    committeeUpserts,
+  };
+}
+
+// Helper function to execute the transaction
+async function executeEpochTransaction(
+  tx: Prisma.TransactionClient,
+  uniqueSlots: number[],
+  committeeUpserts: CommitteeUpsert[]
+) {
+  // Replace slot upserts with raw query
+  await tx.$executeRaw`
+    INSERT INTO "Slot" (slot, "attestationsFetched")
+    SELECT unnest(${uniqueSlots}::integer[]), false
+    ON CONFLICT (slot) DO NOTHING
+  `;
+
+  // Committee creations
+  const batchSize = 5000;
+  const batches = chunk(committeeUpserts, batchSize);
+  for (const batch of batches) {
+    await tx.committee.createMany({
+      data: batch,
+      skipDuplicates: true,
+    });
+  }
+}
+
 async function processAndSaveCommittees(
   logger: CustomLogger,
-  committees: Array<{ slot: string; index: string; validators: string[] }>
+  fetchedCommittees: Array<{ slot: number; committees: Committee[] }>
 ): Promise<void> {
-  try {
-    // Get unique slots from the committees
-    const uniqueSlotsInCommittees = Array.from(
-      new Set(committees.map((c) => +c.slot))
-    );
+  for (const { slot, committees } of fetchedCommittees) {
+    const preparedData = prepareUpsertData(committees);
 
-    // Prepare slots upsert
-    const slotUpserts = uniqueSlotsInCommittees
-      .filter((slot) => slot >= getOldestLookbackSlot())
-      .map((slot) => ({
-        slot,
-        attestationsFetched: false,
-      }));
+    logCommitteeInfo(logger, committees, preparedData.slotUpserts);
 
-    // Updated committee upsert
-    const committeeUpserts = committees.flatMap((committee) =>
-      committee.validators
-        .map((validatorIndex, index) => ({
-          slot: +committee.slot,
-          index: +committee.index,
-          aggregationBitsIndex: index,
-          validatorIndex: +validatorIndex,
-        }))
-        .filter((committee) => +committee.slot >= getOldestLookbackSlot())
-    );
-
-    if (!slotUpserts.length && !committeeUpserts.length) {
-      logger.info(`Nothing to save for slot ${committees[0].slot}`);
-      return;
-    }
-
-    logCommitteeInfo(logger, committees, slotUpserts);
-
-    // Save to database in transaction
     await prisma.$transaction(
-      async (tx) => {
-        // Slot upserts
-        const slotPromises = uniqueSlotsInCommittees.map((slot) =>
-          tx.slot.upsert({
-            where: { slot },
-            update: {}, // No update needed if it exists
-            create: { slot, attestationsFetched: false },
-          })
-        );
-        await Promise.all(slotPromises);
-
-        // Committee creations
-        const batchSize = 5000;
-        const batches = chunk(committeeUpserts, batchSize);
-        for (const batch of batches) {
-          await tx.committee.createMany({
-            data: batch,
-            skipDuplicates: true,
-          });
-        }
-      },
+      async (tx) =>
+        await executeEpochTransaction(
+          tx,
+          preparedData.uniqueSlots,
+          preparedData.committeeUpserts
+        ),
       {
         timeout: ms("1m"),
       }
     );
 
-    logger.info(`Successfully processed slot ${committees[0].slot}`);
-  } catch (error) {
-    logger.error(`Failed to process slot ${committees[0].slot}`, error);
-    throw error;
+    logger.info(`Successfully processed committees for slot ${slot}`);
   }
+}
+
+// New helper function
+async function fetchCommitteesForSlots(
+  logger: CustomLogger,
+  slotsToFetch: number[]
+) {
+  logger.info(`Fetching committees for slots: ${slotsToFetch.join(", ")}`);
+
+  const fetchPromises = slotsToFetch.map(async (slot) => {
+    try {
+      const committees = await getCommittees(slot);
+      return { slot, success: true, committees };
+    } catch (error) {
+      return { slot, success: false, error };
+    }
+  });
+
+  const results = await Promise.all(fetchPromises);
+
+  // Only keep sequential successful results
+  const validResults: { slot: number; committees: Committee[] }[] = [];
+  for (const result of results) {
+    if (!result.success) break;
+    validResults.push({ slot: result.slot, committees: result.committees });
+  }
+
+  if (validResults.length === 0) {
+    logger.error("No results from committee fetch", {});
+  }
+
+  return validResults;
 }
 
 // New function to handle parallel fetching
@@ -163,44 +220,22 @@ export async function fetchNextCommittees(): Promise<void> {
   try {
     const slotsToFetch = await getNextSlotsToFetch(logger);
     if (slotsToFetch.length === 0) {
-      logger.info("No slots to fetch");
       return;
     }
 
-    // First, fetch all committees in parallel
-    logger.info(`Fetching committees for slots: ${slotsToFetch.join(", ")}`);
-    const fetchPromises = slotsToFetch.map(async (slot) => {
-      try {
-        const committees = await getCommittees(slot);
-        return { slot, success: true, committees };
-      } catch (error) {
-        return { slot, success: false, error };
-      }
-    });
-
-    const results = await Promise.all(fetchPromises);
-
-    // Only keep sequential successful results
-    const validResults = [];
-    for (const result of results) {
-      if (!result.success) break;
-      validResults.push(result);
-    }
-
-    if (validResults.length === 0) {
-      logger.error("All committee fetches failed", {});
-      return;
-    }
-
-    logger.info(`Saving committees...`);
-    // Process each successful result sequentially
-    for (const result of validResults) {
-      try {
-        await processAndSaveCommittees(logger, result.committees);
-      } catch (error) {
-        logger.error(`Error saving committees for slot ${result.slot}`, error);
-        // Stop processing remaining slots if one fails
-        break;
+    const committees = await fetchCommitteesForSlots(logger, slotsToFetch);
+    if (committees.length > 0) {
+      logger.info(`Saving committees...`);
+      for (const result of committees) {
+        try {
+          await processAndSaveCommittees(logger, committees);
+        } catch (error) {
+          logger.error(
+            `Error saving committees for slot ${result.slot}`,
+            error
+          );
+          break;
+        }
       }
     }
 

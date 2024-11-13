@@ -46,7 +46,7 @@ export const fetchOldestAttestation = async () => {
 };
 
 export const job = new SimpleIntervalJob(
-  { seconds: 2.5, runImmediately: true },
+  { seconds: 1, runImmediately: true },
   new AsyncTask(`${ID}_task`, () => {
     const logger = createLogger(ID);
     return fetchOldestAttestation().catch((e) => logger.error("TASK-CATCH", e));
