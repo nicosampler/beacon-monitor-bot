@@ -1,5 +1,4 @@
 import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
-import { env } from "@/src/env.js";
 import { CustomLogger } from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 

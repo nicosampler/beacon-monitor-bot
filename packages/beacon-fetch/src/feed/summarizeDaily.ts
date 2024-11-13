@@ -79,7 +79,7 @@ export async function processExecutionRewardsBatch(
   hour: number,
   date: string
 ) {
-  const batches = chunk(executionRewards, 10000);
+  const batches = chunk(executionRewards, 5000);
 
   for (const batch of batches) {
     const values = batch

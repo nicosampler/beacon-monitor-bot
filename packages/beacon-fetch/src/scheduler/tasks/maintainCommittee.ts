@@ -7,7 +7,9 @@ const logger = createLogger(ID, false);
 
 export const job = new SimpleIntervalJob(
   { minutes: 30, runImmediately: true },
-  new AsyncTask(`${ID}_task`, () => maintainCommittee(logger)),
+  new AsyncTask(`${ID}_task`, () =>
+    maintainCommittee(logger).catch((e) => logger.error("TASK-CATCH", e))
+  ),
   {
     id: ID,
     preventOverrun: true,

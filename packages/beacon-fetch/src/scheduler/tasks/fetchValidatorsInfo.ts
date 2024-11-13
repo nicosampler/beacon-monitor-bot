@@ -7,7 +7,9 @@ const logger = createLogger(ID, false);
 
 export const job = new SimpleIntervalJob(
   { hours: 1, runImmediately: true },
-  new AsyncTask(`${ID}_task`, () => fetchValidatorsInfo(logger)),
+  new AsyncTask(`${ID}_task`, () =>
+    fetchValidatorsInfo(logger).catch((e) => logger.error("TASK-CATCH", e))
+  ),
   {
     id: ID,
     preventOverrun: true,

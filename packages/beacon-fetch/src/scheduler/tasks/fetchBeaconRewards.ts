@@ -88,7 +88,9 @@ async function fetchBeaconRewardsTask() {
 
 export const job = new SimpleIntervalJob(
   { seconds: 80, runImmediately: true },
-  new AsyncTask(`${ID}_task`, fetchBeaconRewardsTask),
+  new AsyncTask(`${ID}_task`, () =>
+    fetchBeaconRewardsTask().catch((e) => logger.error("TASK-CATCH", e))
+  ),
   {
     id: ID,
     preventOverrun: true,

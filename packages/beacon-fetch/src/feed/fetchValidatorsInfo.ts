@@ -17,7 +17,7 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
   try {
     const highestValidatorId = await getHighestValidatorId();
     const apiBatchSize = 6500; // Batch size for API calls
-    const dbBatchSize = 8000; // Batch size for DB updates
+    const dbBatchSize = 5000; // Batch size for DB updates
 
     // Fetch validator IDs that are in final states
     logger.info(`Fetching final state validators`);

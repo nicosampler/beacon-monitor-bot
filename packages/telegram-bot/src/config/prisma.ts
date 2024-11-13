@@ -5,7 +5,7 @@ let prisma: PrismaClient | undefined = undefined;
 export const getPrisma = () => {
   if (prisma) return prisma;
   prisma = new PrismaClient({
-    datasourceUrl: `${process.env.DATABASE_URL}&pool_min=2&pool_max=4`,
+    datasourceUrl: `${process.env.DATABASE_URL}&pool_timeout=5000`,
     log: [
       {
         emit: "event",

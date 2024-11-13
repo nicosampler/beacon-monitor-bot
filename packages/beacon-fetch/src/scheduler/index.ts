@@ -12,21 +12,21 @@ import { job as maintainCommitteeJob } from "@/src/scheduler/tasks/maintainCommi
 
 export function scheduleTasks() {
   // Fetch the oldest attestation
-  scheduler.addSimpleIntervalJob(fetchCommitteeJob);
-  scheduler.addSimpleIntervalJob(fetchOldestAttestationJob);
-  // Fetch the validators balances for updating the validator balances in the db.
-  scheduler.addSimpleIntervalJob(validatorsBalancesJob);
-  // Check for validators info, like status, withdrawal address, etc.
-  scheduler.addSimpleIntervalJob(fetchValidatorsInfo);
-  // Fetch the execution rewards for the current block and store them in the db.
-  scheduler.addSimpleIntervalJob(executionRewardsJob);
+  // scheduler.addSimpleIntervalJob(fetchCommitteeJob);
+  // scheduler.addSimpleIntervalJob(fetchOldestAttestationJob);
+  // // Fetch the validators balances for updating the validator balances in the db.
+  // scheduler.addSimpleIntervalJob(validatorsBalancesJob);
+  // // Check for validators info, like status, withdrawal address, etc.
+  // scheduler.addSimpleIntervalJob(fetchValidatorsInfo);
+  // // Fetch the execution rewards for the current block and store them in the db.
+  // scheduler.addSimpleIntervalJob(executionRewardsJob);
   // Fetch the beacon rewards for the current epoch and store them in the db
   scheduler.addSimpleIntervalJob(fetchBeaconRewardsJob);
-  // Summarize hourly attestation and rewards
-  scheduler.addSimpleIntervalJob(summarizeHourlyJob);
-  // Summarize daily attestation and rewards
-  scheduler.addSimpleIntervalJob(summarizeDailyJob);
-  // Maintenance tasks
-  scheduler.addSimpleIntervalJob(cleanupCommitteeJob);
-  scheduler.addSimpleIntervalJob(maintainCommitteeJob);
+  // // Summarize hourly attestation and rewards
+  // scheduler.addSimpleIntervalJob(summarizeHourlyJob);
+  // // Summarize daily attestation and rewards
+  // scheduler.addSimpleIntervalJob(summarizeDailyJob);
+  // // Maintenance tasks
+  // scheduler.addSimpleIntervalJob(cleanupCommitteeJob);
+  // scheduler.addSimpleIntervalJob(maintainCommitteeJob);
 }

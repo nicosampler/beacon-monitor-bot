@@ -1,5 +1,6 @@
 import { getPrisma } from "@/src/lib/prisma.js";
 import { Prisma, LastSummaryUpdate, PrismaClient } from "@prisma/client";
+import { VALIDATOR_STATUS } from "@/src/constants/index.js";
 
 const prisma = getPrisma();
 
@@ -106,4 +107,61 @@ export async function getHighestValidatorId(): Promise<number> {
     select: { id: true },
   });
   return highestValidator?.id ?? -1;
+}
+
+// Cache configuration
+let validatorsCache: number[] | null = null;
+
+async function fetchValidatorsBatch(
+  skip: number,
+  take: number
+): Promise<number[]> {
+  // Fetch validators with pagination
+  const validators = await prisma.validator.findMany({
+    where: {
+      status: {
+        in: [
+          VALIDATOR_STATUS.ACTIVE_ONGOING,
+          VALIDATOR_STATUS.ACTIVE_EXITING,
+          VALIDATOR_STATUS.PENDING_QUEUED,
+        ],
+      },
+    },
+    select: { id: true },
+    skip,
+    take,
+  });
+
+  return validators.map((v) => v.id);
+}
+
+// TODO: move to a different file.
+export async function getActiveValidators(): Promise<number[]> {
+  if (validatorsCache) {
+    return validatorsCache;
+  }
+
+  const batchSize = 25000;
+  let allValidators: number[] = [];
+  let currentBatch = 0;
+
+  while (true) {
+    const validators = await fetchValidatorsBatch(
+      currentBatch * batchSize,
+      batchSize
+    );
+
+    if (validators.length < batchSize) break;
+
+    allValidators = [...allValidators, ...validators];
+    currentBatch++;
+  }
+
+  validatorsCache = allValidators;
+  return validatorsCache;
+}
+
+// Method to manually invalidate cache if needed
+export function invalidateValidatorsCache(): void {
+  validatorsCache = null;
 }

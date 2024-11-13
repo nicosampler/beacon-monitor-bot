@@ -10,7 +10,7 @@ function getRateLimiter(): RateLimiterMemory {
     instance = new RateLimiterMemory({
       points: env.BEACON_API_REQUEST_PER_SECOND,
       duration: 1, // Per second
-      keyPrefix: "per-second",
+      keyPrefix: "",
     });
   }
   return instance;
@@ -21,7 +21,7 @@ export async function limitRequests<T>(): Promise<T> {
   const limiter = getRateLimiter();
   try {
     // Consume a point from rate limiter
-    await limiter.consume("per-second-key", 1);
+    await limiter.consume("");
   } catch (err: any) {
     if (err.msBeforeNext) {
       // Delay the request if it exceeds the limit

@@ -57,7 +57,9 @@ async function summarizeHourlyTask() {
 
 export const job = new SimpleIntervalJob(
   { minutes: 10, runImmediately: true },
-  new AsyncTask(`${ID}_task`, summarizeHourlyTask),
+  new AsyncTask(`${ID}_task`, () =>
+    summarizeHourlyTask().catch((e) => logger.error("TASK-CATCH", e))
+  ),
   {
     id: ID,
     preventOverrun: true,

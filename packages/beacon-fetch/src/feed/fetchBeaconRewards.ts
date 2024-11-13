@@ -3,9 +3,11 @@ import { Prisma } from "@prisma/client";
 
 import { getAttestationRewards } from "@/src/beacon/endpoints.js";
 import { CustomLogger } from "@/src/lib/pino.js";
-import { getHighestValidatorId } from "@/src/feed/utils.js";
+import {
+  getActiveValidators,
+  getHighestValidatorId,
+} from "@/src/feed/utils.js";
 import chunk from "lodash/chunk.js";
-import { VALIDATOR_STATUS } from "@/src/constants/index.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 
 import { getTimestampFromEpochNumber } from "@/src/beacon/utils/time.js";
@@ -18,19 +20,7 @@ export async function fetchBeaconRewards(
   logger: CustomLogger
 ) {
   try {
-    // Get from db validator filtered by the beacon status
-    const activeValidators = await prisma.validator.findMany({
-      where: {
-        status: {
-          in: [
-            VALIDATOR_STATUS.ACTIVE_ONGOING,
-            VALIDATOR_STATUS.ACTIVE_EXITING,
-            VALIDATOR_STATUS.PENDING_QUEUED,
-          ],
-        },
-      },
-      select: { id: true },
-    });
+    const activeValidators = await getActiveValidators();
 
     if (!activeValidators.length) {
       logger.warn(`No active validators found for epochs ${epochs.join(", ")}`);
@@ -51,7 +41,7 @@ export async function fetchBeaconRewards(
     const highestValidatorId = await getHighestValidatorId();
 
     // Get validator IDs that we will use to fetch rewards for
-    const activeValidatorsIds = new Set(activeValidators.map((v) => v.id));
+    const activeValidatorsIds = new Set(activeValidators.map((v) => v));
     const allValidatorIds = Array.from(
       { length: highestValidatorId + 1 },
       (_, i) => i

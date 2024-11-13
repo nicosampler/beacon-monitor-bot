@@ -10,11 +10,20 @@ services:
       - "5432:5432"
     volumes:
       - beacon_postgres_data:/var/lib/postgresql/data
+    command:
+      - -c
+      - checkpoint_timeout=2min
+      - -c
+      - checkpoint_completion_target=0.5
+      - -c
+      - max_wal_size=2GB
+      - -c
+      - shared_buffers=4GB
     networks:
       - app-network
     logging:
       options:
-        max-size: "25m"
+        max-size: "10m"
         max-file: "2"
 
   migrate:
