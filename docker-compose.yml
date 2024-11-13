@@ -16,7 +16,7 @@ services:
       - -c
       - checkpoint_completion_target=0.5
       - -c
-      - max_wal_size=2GB
+      - max_wal_size=3GB
       - -c
       - shared_buffers=2GB
       - -c
