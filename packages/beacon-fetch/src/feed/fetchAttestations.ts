@@ -187,17 +187,18 @@ async function updateAndDeleteValidatorAttestations(
 
     // Create temp table
     await pRetry(async () => {
-      const createTempTableQuery = Prisma.sql`
-        CREATE TEMP TABLE tmp_delete_committee(slot int, index int, aggregation_bits_index int);
-      `;
-      await prisma.$executeRaw(createTempTableQuery);
+      await prisma.$executeRaw(
+        Prisma.sql`CREATE TABLE IF NOT EXISTS tmp_delete_committee(slot int, index int, aggregation_bits_index int);`
+      );
+      await prisma.$executeRaw(
+        Prisma.sql`TRUNCATE TABLE tmp_delete_committee;`
+      );
     }, retryOptions);
 
-    try {
-      // Insert data in chunks
-      for (const batchDeletes of deleteChunks) {
-        await pRetry(async () => {
-          const insertQuery = Prisma.sql`
+    // Insert data in chunks
+    for (const batchDeletes of deleteChunks) {
+      await pRetry(async () => {
+        const insertQuery = Prisma.sql`
             INSERT INTO tmp_delete_committee (slot, index, aggregation_bits_index)
             VALUES ${Prisma.join(
               batchDeletes.map(
@@ -206,29 +207,21 @@ async function updateAndDeleteValidatorAttestations(
               )
             )};
           `;
-          await prisma.$executeRaw(insertQuery);
-        }, retryOptions);
-      }
+        await prisma.$executeRaw(insertQuery);
+      }, retryOptions);
+    }
 
-      // Delete matching records using TRUNCATE
-      await pRetry(async () => {
-        const deleteQuery = Prisma.sql`
+    // Delete matching records
+    await pRetry(async () => {
+      const deleteQuery = Prisma.sql`
           DELETE FROM "Committee" c
           USING tmp_delete_committee t
           WHERE c.slot = t.slot 
             AND c.index = t.index 
             AND c."aggregationBitsIndex" = t.aggregation_bits_index;
         `;
-        await prisma.$executeRaw(deleteQuery);
-      }, retryOptions);
-    } finally {
-      // Drop temp table with retry
-      await pRetry(async () => {
-        await prisma.$executeRaw(
-          Prisma.sql`DROP TABLE IF EXISTS tmp_delete_committee;`
-        );
-      }, retryOptions);
-    }
+      await prisma.$executeRaw(deleteQuery);
+    }, retryOptions);
   }
 
   // Update slot
