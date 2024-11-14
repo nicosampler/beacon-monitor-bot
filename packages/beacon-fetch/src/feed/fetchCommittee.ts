@@ -58,14 +58,13 @@ function logCommitteeInfo(
 // Add new function to calculate next slots to fetch
 async function getNextSlotsToFetch(logger: CustomLogger): Promise<number[]> {
   const now = new Date();
-  const currentSlot = getSlotNumberFromTimestamp(now.getTime());
-  const headSlot = currentSlot - 1;
+  const headSlot = getSlotNumberFromTimestamp(now.getTime());
   const oldestLookbackSlot = getOldestLookbackSlot();
 
   const lastSlotInCommittee = await db_getLastSlotInCommittee();
 
   // only fetch up to one epoch ahead
-  if (lastSlotInCommittee?.slot + env.BEACON_SLOTS_PER_EPOCH > headSlot) {
+  if (lastSlotInCommittee?.slot > env.BEACON_SLOTS_PER_EPOCH + headSlot) {
     logger.info(`Skipping, head slot is too far in the future`);
     return [];
   }
@@ -141,7 +140,7 @@ async function executeEpochTransaction(
   const retryOptions = {
     retries: 5,
     factor: 2,
-    minTimeout: 500,
+    minTimeout: 1000,
     onFailedAttempt: (error) => {
       logger.warn(`Attempt failed: ${error.message}. Retrying...`);
     },

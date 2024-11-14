@@ -148,7 +148,7 @@ async function updateAndDeleteValidatorAttestations(
   const retryOptions = {
     retries: 5,
     factor: 2,
-    minTimeout: 500,
+    minTimeout: 1000,
     onFailedAttempt: (error) => {
       logger.warn(`Attempt failed: ${error.message}. Retrying...`);
     },
