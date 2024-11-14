@@ -1,5 +1,5 @@
 import format from "date-fns/format";
-import { getHours, subHours } from "date-fns";
+import { subHours } from "date-fns";
 import { formatEther } from "ethers/lib/utils.js";
 import { bot } from "@/src/config/index.js";
 import { getPrisma } from "@/src/config/prisma.js";
@@ -54,19 +54,19 @@ interface UserStats {
       consensus: string;
       execution: string;
       usd: string;
-    };
+    } | null;
     weekly: {
       performance: string;
       consensus: string;
       execution: string;
       usd: string;
-    };
+    } | null;
     monthly: {
       performance: string;
       consensus: string;
       execution: string;
       usd: string;
-    };
+    } | null;
   } | null;
   validatorStats: ValidatorByStatus;
 }
@@ -248,12 +248,6 @@ function getUserBalance(validators: Validator[]) {
 
 async function calculateRewardsStats(user: User & { validators: Validator[] }) {
   const validatorStatsDailyQuery = `
-    WITH last_update AS (
-      SELECT "dailyValidatorStats"::timestamp as date
-      FROM "LastSummaryUpdate"
-      LIMIT 1
-    )
-
     SELECT 
       COALESCE(SUM(head), 0) as head,
       COALESCE(SUM(target), 0) as target,
@@ -262,15 +256,12 @@ async function calculateRewardsStats(user: User & { validators: Validator[] }) {
       COALESCE(SUM("attestationsMissed"), 0) as "attestationsMissed"
     FROM "HourlyValidatorStats" hvs
 
-    CROSS JOIN last_update lu
-
     JOIN "_UserToValidator" uv ON uv."B" = hvs."validatorIndex"
     JOIN "Validator" v ON v.id = uv."B"
 
-    WHERE hvs.date <= DATE(lu.date)
-      AND hvs.date >= DATE(lu.date - INTERVAL '1 day')
+    WHERE hvs.date >= NOW() - INTERVAL '24 hours'
       AND uv."A" = $1
-      AND v.status IN ('pending_queued', 'active_ongoing', 'active_exiting', 'active_slashed')`;
+      AND v.status IN ('active_ongoing', 'active_exiting')`;
 
   const validatorStatsDailyResults = await prisma.$queryRawUnsafe<
     {
@@ -337,22 +328,24 @@ async function calculateRewardsStats(user: User & { validators: Validator[] }) {
   return {
     daily: {
       performance: formatNumber(performance, 4),
-      consensus: totalDailyConsensusEth.toFixed(3),
-      execution: totalDailyExecution.toFixed(3),
-      usd: formatNumber(totalUsd, 3, "$"),
+      consensus: totalDailyConsensusEth.toFixed(2),
+      execution: totalDailyExecution.toFixed(2),
+      usd: formatNumber(totalUsd, 2, "$"),
     },
-    weekly: {
-      performance: "0",
-      consensus: "0",
-      execution: "0",
-      usd: formatNumber(0, 4, "$"),
-    },
-    monthly: {
-      performance: "0",
-      consensus: "0",
-      execution: "0",
-      usd: formatNumber(0, 4, "$"),
-    },
+    weekly: null,
+    // {
+    //   performance: "0",
+    //   consensus: "0",
+    //   execution: "0",
+    //   usd: formatNumber(0, 4, "$"),
+    // },
+    monthly: null,
+    // {
+    //   performance: "0",
+    //   consensus: "0",
+    //   execution: "0",
+    //   usd: formatNumber(0, 4, "$"),
+    // },
   };
 }
 
@@ -381,19 +374,19 @@ function formatStatsMessage(
     : `🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`;
 
   const mainStats = [
-    `Last 24h perf.: ${status.syncing ? "(needs sync)" : `${performance}%`}`,
-    `Balance: ${balance.total} ${TOKEN_SYMBOL} ($${balance.value})`,
+    `Last 1h perf.: ${status.syncing ? "(needs sync)" : `${performance}%`}`,
+    `Bal: ${balance.total} ${TOKEN_SYMBOL} $${balance.value}`,
     `APY: 🔜`,
-    `Claimable: ${withdrawable.total} ${TOKEN_SYMBOL} ($${withdrawable.value})`,
+    `Claimable: ${withdrawable.total} ${TOKEN_SYMBOL} $${withdrawable.value}`,
   ].join("\n");
 
   const rewardsSection = [
     `Stats:`,
-    `------------------------------`,
-    `  | perf.%   ${TOKEN_SYMBOL}    ${FEE_REWARDS_SYMBOL}  Total`,
-    `d | ${stats.rewards.daily.performance}   ${stats.rewards.daily.consensus}  ${stats.rewards.daily.execution}  ${stats.rewards.daily.usd}`,
-    `w |            🔜`,
-    `m |            🔜`,
+    `---------------------------`,
+    `   perf%   ${TOKEN_SYMBOL}  ${FEE_REWARDS_SYMBOL}  Total`,
+    `d: ${stats.rewards.daily.performance}  ${stats.rewards.daily.consensus}  ${stats.rewards.daily.execution}  ${stats.rewards.daily.usd}`,
+    `w:            🔜`,
+    `m:            🔜`,
   ].join("\n");
 
   const footer = [

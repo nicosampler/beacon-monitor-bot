@@ -33,6 +33,7 @@ export function getUsers_db() {
       select: {
         id: true,
         messageId: true,
+        username: true,
       },
     })
     .catch((error) => {
