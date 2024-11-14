@@ -48,6 +48,7 @@ services:
 
   beacon-fetch:
     container_name: fetch
+    restart: on-failure
     env_file:
       - .env
     build:
@@ -60,6 +61,7 @@ services:
 
   bot:
     container_name: bot
+    restart: on-failure
     env_file:
       - .env
     build:
