@@ -289,19 +289,11 @@ async function calculateRewardsStats(user: User & { validators: Validator[] }) {
   );
 
   const executionRewardsDailyQuery = `
-    WITH last_update AS (
-      SELECT "dailyValidatorStats"::timestamp as date
-      FROM "LastSummaryUpdate"
-      LIMIT 1
-    )
-
     SELECT 
       COALESCE(SUM(her.amount), 0) as total
     FROM "HourlyExecutionRewards" her
-    CROSS JOIN last_update lu
     JOIN "_FeeRewardAddressToUser" fra ON fra."A" = her.address
-    WHERE her.date <= DATE(lu.date)
-      AND her.date >= DATE(lu.date - INTERVAL '1 day')
+    WHERE her.date >= NOW() - INTERVAL '24 hours'
       AND fra."B" = $1`;
 
   const executionResults = await prisma.$queryRawUnsafe<{ total: string }[]>(
