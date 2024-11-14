@@ -1,5 +1,5 @@
 import chunk from "lodash/chunk.js";
-import ms from "ms";
+import pRetry from "p-retry";
 
 import { getCommittees } from "@/src/beacon/endpoints.js";
 import { getPrisma } from "@/src/lib/prisma.js";
@@ -11,7 +11,6 @@ import {
   db_getLastSlotInCommittee,
   db_getLastSlotWithAttestations,
 } from "@/src/feed/utils.js";
-import { Prisma } from "@prisma/client";
 
 type Committee = {
   slot: string;
@@ -63,7 +62,6 @@ async function getNextSlotsToFetch(logger: CustomLogger): Promise<number[]> {
   const headSlot = currentSlot - 1;
   const oldestLookbackSlot = getOldestLookbackSlot();
 
-  const lastSlotWithAttestations = await db_getLastSlotWithAttestations();
   const lastSlotInCommittee = await db_getLastSlotInCommittee();
 
   // only fetch up to one epoch ahead
@@ -72,7 +70,8 @@ async function getNextSlotsToFetch(logger: CustomLogger): Promise<number[]> {
     return [];
   }
 
-  // if slot with attestations is too far in the past, skip
+  // skip fetching more committees if the last slot with attestations processed is too far in the past
+  const lastSlotWithAttestations = await db_getLastSlotWithAttestations();
   if (
     lastSlotInCommittee?.slot - lastSlotWithAttestations?.slot >=
     env.BEACON_SLOTS_PER_EPOCH * 25
@@ -134,51 +133,59 @@ function prepareUpsertData(committees: Committee[]) {
 
 // Helper function to execute the transaction
 async function executeEpochTransaction(
-  tx: Prisma.TransactionClient,
   uniqueSlots: number[],
-  committeeUpserts: CommitteeUpsert[]
+  committeeUpserts: CommitteeUpsert[],
+  logger: CustomLogger
 ) {
-  // Replace slot upserts with raw query
-  await tx.$executeRaw`
-    INSERT INTO "Slot" (slot, "attestationsFetched")
-    SELECT unnest(${uniqueSlots}::integer[]), false
-    ON CONFLICT (slot) DO NOTHING
-  `;
+  // Retry configuration
+  const retryOptions = {
+    retries: 5,
+    factor: 2,
+    minTimeout: 500,
+    onFailedAttempt: (error) => {
+      logger.warn(`Attempt failed: ${error.message}. Retrying...`);
+    },
+  };
 
-  // Committee creations
+  // First transaction: Insert slots
+  await pRetry(async () => {
+    await prisma.$executeRaw`
+          INSERT INTO "Slot" (slot, "attestationsFetched")
+          SELECT unnest(${uniqueSlots}::integer[]), false
+          ON CONFLICT (slot) DO NOTHING
+        `;
+  }, retryOptions);
+
+  // Second transaction: Insert committees in batches
   const batchSize = 5000;
   const batches = chunk(committeeUpserts, batchSize);
   for (const batch of batches) {
-    await tx.committee.createMany({
-      data: batch,
-      skipDuplicates: true,
-    });
+    await pRetry(async () => {
+      await prisma.committee.createMany({
+        data: batch,
+        skipDuplicates: true,
+      });
+    }, retryOptions);
   }
 }
 
 async function processAndSaveCommittees(
   logger: CustomLogger,
-  fetchedCommittees: Array<{ slot: number; committees: Committee[] }>
+  committees: Committee[]
 ): Promise<void> {
-  for (const { slot, committees } of fetchedCommittees) {
-    const preparedData = prepareUpsertData(committees);
+  const preparedData = prepareUpsertData(committees);
 
-    logCommitteeInfo(logger, committees, preparedData.slotUpserts);
+  logCommitteeInfo(logger, committees, preparedData.slotUpserts);
 
-    await prisma.$transaction(
-      async (tx) =>
-        await executeEpochTransaction(
-          tx,
-          preparedData.uniqueSlots,
-          preparedData.committeeUpserts
-        ),
-      {
-        timeout: ms("1m"),
-      }
-    );
+  await executeEpochTransaction(
+    preparedData.uniqueSlots,
+    preparedData.committeeUpserts,
+    logger
+  );
 
-    logger.info(`Successfully processed committees for slot ${slot}`);
-  }
+  logger.info(
+    `Successfully processed committees for slot ${committees[0]?.slot}`
+  );
 }
 
 // New helper function
@@ -223,15 +230,18 @@ export async function fetchNextCommittees(): Promise<void> {
       return;
     }
 
+    // send all the API request in parallel
     const committees = await fetchCommitteesForSlots(logger, slotsToFetch);
+    // process and save the committees sequentially
+    // if there is an error, the loop will break
     if (committees.length > 0) {
       logger.info(`Saving committees...`);
       for (const result of committees) {
         try {
-          await processAndSaveCommittees(logger, committees);
+          await processAndSaveCommittees(logger, result.committees);
         } catch (error) {
           logger.error(
-            `Error saving committees for slot ${result.slot}`,
+            `Error saving slots/committees (fully or partially) for slot ${result.slot}`,
             error
           );
           break;
