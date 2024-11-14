@@ -288,11 +288,13 @@ async function calculateRewardsStats(user: User & { validators: Validator[] }) {
     formatEther(totalDailyConsensusInWei.toString())
   );
 
+  // TODO: update to lowercase
+  // TODO:make it lowercase when the user enters the address
   const executionRewardsDailyQuery = `
     SELECT 
       COALESCE(SUM(her.amount), 0) as total
     FROM "HourlyExecutionRewards" her
-    JOIN "_FeeRewardAddressToUser" fra ON fra."A" = her.address
+    JOIN "_FeeRewardAddressToUser" fra ON fra."A" ilike her.address
     WHERE her.date >= NOW() - INTERVAL '24 hours'
       AND fra."B" = $1`;
 
