@@ -12,19 +12,13 @@ services:
       - beacon_postgres_data:/var/lib/postgresql/data
     command:
       - -c
-      - checkpoint_timeout=2min
+      - checkpoint_timeout=4min
       - -c
-      - checkpoint_completion_target=0.5
+      - checkpoint_completion_target=0.95
       - -c
-      - max_wal_size=3GB
+      - max_wal_size=5GB
       - -c
-      - shared_buffers=2GB
-      - -c
-      - work_mem=8MB
-      - -c
-      - maintenance_work_mem=64MB
-      - -c
-      - effective_cache_size=2GB
+      - shared_buffers=1GB
     networks:
       - app-network
     logging:

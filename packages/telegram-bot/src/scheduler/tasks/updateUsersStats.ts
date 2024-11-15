@@ -13,14 +13,20 @@ import { handleError } from "@/src/utils/errors/handleError.js";
 import { AsyncTask } from "toad-scheduler";
 
 export async function updateUsersStatsImp(userId?: number) {
-  const users = userId ? [await getUserFull_db(userId)] : await getUsers_db();
+  const users = (
+    userId ? [await getUserFull_db(userId)] : await getUsers_db()
+  ).filter((user) => user.username == "nfd_87");
+
+  // Create chunks of 5 users
 
   // Create chunks of 5 users
   const userChunks = chunk(users, 5);
 
   // Process each chunk sequentially
   for (const userChunk of userChunks) {
-    console.log(`Users: ${userChunk.map((u) => u.username).join(", ")}`);
+    console.log(
+      `${new Date()} Users: ${userChunk.map((u) => u.username).join(", ")}`
+    );
     // Process users in current chunk
     const promises = userChunk.map(async (user) => {
       const userId = Number(user.id);
@@ -33,6 +39,7 @@ export async function updateUsersStatsImp(userId?: number) {
     });
 
     await Promise.all(promises);
+    console.log(`${new Date()} Done`);
   }
 }
 

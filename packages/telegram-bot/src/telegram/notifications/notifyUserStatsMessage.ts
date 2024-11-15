@@ -324,7 +324,7 @@ async function calculateRewardsStats(user: User & { validators: Validator[] }) {
       performance: formatNumber(performance, 4),
       consensus: totalDailyConsensusEth.toFixed(2),
       execution: totalDailyExecution.toFixed(2),
-      usd: formatNumber(totalUsd, 2, "$"),
+      usd: formatNumber(totalUsd, 3, "$"),
     },
     weekly: null,
     // {
@@ -359,7 +359,7 @@ function formatStatsMessage(
   const { performance, balance, withdrawable, validatorStats } = stats;
 
   const syncStatus = status.syncing
-    ? `⚠️ Syncing: ${status.lastSlotProcessed}/${status.headSlot} ⚠️`
+    ? `⚠️ ${status.headSlot - status.lastSlotProcessed} slots behind ⚠️`
     : null;
 
   // Define message sections
