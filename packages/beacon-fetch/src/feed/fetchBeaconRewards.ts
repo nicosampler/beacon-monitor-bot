@@ -62,7 +62,7 @@ export async function fetchBeaconRewards(
       };
     });
 
-    // Process epochs sequentially to maintain order
+    // Process epochs sequentially
     for (const { epochNumber, promise } of epochPromises) {
       const responses = await promise;
 

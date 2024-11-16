@@ -18,8 +18,6 @@ export async function updateUsersStatsImp(userId?: number) {
   ).filter((user) => user.username == "nfd_87");
 
   // Create chunks of 5 users
-
-  // Create chunks of 5 users
   const userChunks = chunk(users, 5);
 
   // Process each chunk sequentially

@@ -259,8 +259,11 @@ async function calculateRewardsStats(user: User & { validators: Validator[] }) {
     JOIN "_UserToValidator" uv ON uv."B" = hvs."validatorIndex"
     JOIN "Validator" v ON v.id = uv."B"
 
-    WHERE hvs.date >= NOW() - INTERVAL '24 hours'
-      AND uv."A" = $1
+    WHERE uv."A" = $1
+      AND (
+        hvs.date = CURRENT_DATE AND hvs.hour <= EXTRACT(HOUR FROM NOW()) 
+        OR hvs.date = CURRENT_DATE - INTERVAL '1 day' AND hvs.hour > EXTRACT(HOUR FROM NOW()) 
+      )
       AND v.status IN ('active_ongoing', 'active_exiting')`;
 
   const validatorStatsDailyResults = await prisma.$queryRawUnsafe<
@@ -295,8 +298,8 @@ async function calculateRewardsStats(user: User & { validators: Validator[] }) {
       COALESCE(SUM(her.amount), 0) as total
     FROM "HourlyExecutionRewards" her
     JOIN "_FeeRewardAddressToUser" fra ON fra."A" ilike her.address
-    WHERE her.date >= NOW() - INTERVAL '24 hours'
-      AND fra."B" = $1`;
+    WHERE fra."B" = $1
+      AND her.date >= NOW() - INTERVAL '24 hours'`;
 
   const executionResults = await prisma.$queryRawUnsafe<{ total: string }[]>(
     executionRewardsDailyQuery,
@@ -368,7 +371,7 @@ function formatStatsMessage(
     : `🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`;
 
   const mainStats = [
-    `Last 1h perf.: ${status.syncing ? "(needs sync)" : `${performance}%`}`,
+    `Last 1h perf: ${status.syncing ? "(needs sync)" : `${performance}%`}`,
     `Bal: ${balance.total} ${TOKEN_SYMBOL} $${balance.value}`,
     `APY: 🔜`,
     `Claimable: ${withdrawable.total} ${TOKEN_SYMBOL} $${withdrawable.value}`,
