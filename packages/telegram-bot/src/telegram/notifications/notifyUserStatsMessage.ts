@@ -72,15 +72,11 @@ interface UserStats {
 }
 
 export async function notifyUserStatsMessage(
-  userId: number
+  user: User & {
+    validators: Validator[];
+    withdrawalAddresses: WithdrawalAddress[];
+  }
 ): Promise<number | undefined> {
-  // get user
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: { validators: true, withdrawalAddresses: true },
-  });
-
-  // get head slot and last slot processed
   const headSlot = getSlotNumberFromTimestamp(new Date().getTime()) - 1;
   const lastSlotProcessed = await prisma.slot.findFirst({
     where: { attestationsFetched: true },
@@ -182,16 +178,19 @@ async function calculateUserStats(
     withdrawalAddresses: WithdrawalAddress[];
   }
 ): Promise<UserStats> {
-  // get validator stats
-  const validatorStats = await getValidatorByStatus(user);
-  // calculate performance stats
-  const performance = await calculatePerformanceStats(syncing, user);
-  // sum all validators balance in tokens and in usd.
-  const balanceStats = getUserBalance(user.validators);
-  // calculate rewards stats
-  const rewardsStats = await calculateRewardsStats(user);
-  // get withdrawable amount
-  const withdrawable = await getWithdrawableAmountByUserId(Number(user.id));
+  const [
+    validatorStats,
+    performance,
+    balanceStats,
+    rewardsStats,
+    withdrawable,
+  ] = await Promise.all([
+    getValidatorByStatus(user),
+    calculatePerformanceStats(syncing, user),
+    getUserBalance(user.validators),
+    calculateRewardsStats(user),
+    getWithdrawableAmountByUserId(Number(user.id)),
+  ]);
 
   return {
     performance,
@@ -409,11 +408,11 @@ async function getMissedAttestations(activeValidators: Validator[]) {
 
   return await prisma.committee.findMany({
     where: {
-      validatorIndex: {
-        in: activeValidators.map((v) => v.id),
-      },
       slot: {
         gte: fromSlot,
+      },
+      validatorIndex: {
+        in: activeValidators.map((v) => v.id),
       },
       OR: [
         { attestationDelay: null },

@@ -41,6 +41,12 @@ export function getUsers_db() {
     });
 }
 
+export function getFullUsers_db() {
+  return prisma.user.findMany({
+    include: { validators: true, withdrawalAddresses: true },
+  });
+}
+
 export function countUsers_db() {
   return prisma.user.count().catch((error) => {
     throw new AppError("Error counting users", "BD_ERROR", error);

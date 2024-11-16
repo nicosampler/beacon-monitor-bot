@@ -1,8 +1,8 @@
 import chunk from "lodash/chunk.js";
 
 import {
+  getFullUsers_db,
   getUserFull_db,
-  getUsers_db,
   updateUserMessageId_db,
 } from "@/src/prisma/users.js";
 import { notifyMissedAttestations } from "@/src/telegram/notifications/notifyMissedAttestations.js";
@@ -13,31 +13,24 @@ import { handleError } from "@/src/utils/errors/handleError.js";
 import { AsyncTask } from "toad-scheduler";
 
 export async function updateUsersStatsImp(userId?: number) {
-  const users = (
-    userId ? [await getUserFull_db(userId)] : await getUsers_db()
-  ).filter((user) => user.username == "nfd_87");
+  const users = userId
+    ? [await getUserFull_db(userId)]
+    : await getFullUsers_db();
 
-  // Create chunks of 5 users
-  const userChunks = chunk(users, 5);
+  for (const user of users) {
+    console.log("Notifying stats for: ", user.username);
+    try {
+      const messageIdStats = await notifyUserStatsMessage(user);
 
-  // Process each chunk sequentially
-  for (const userChunk of userChunks) {
-    console.log(
-      `${new Date()} Users: ${userChunk.map((u) => u.username).join(", ")}`
-    );
-    // Process users in current chunk
-    const promises = userChunk.map(async (user) => {
-      const userId = Number(user.id);
-      try {
-        const messageIdStats = await notifyUserStatsMessage(userId);
-        if (messageIdStats && messageIdStats !== Number(user.messageId)) {
-          await updateUserMessageId_db(userId, messageIdStats);
-        }
-      } catch (error) {}
-    });
-
-    await Promise.all(promises);
-    console.log(`${new Date()} Done`);
+      if (messageIdStats && messageIdStats !== Number(user.messageId)) {
+        await updateUserMessageId_db(userId, messageIdStats);
+      }
+    } catch (error: any) {
+      console.error(
+        `Error processing user ${user.username}:`,
+        error.description || error?.message
+      );
+    }
   }
 }
 
