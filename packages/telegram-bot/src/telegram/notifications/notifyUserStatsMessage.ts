@@ -121,8 +121,8 @@ function calculateValidatorStats(
   // Filter validators that are "active" for the beacon chain
   const beaconActiveValidators = validators.filter(
     (v) =>
-      v.status === VALIDATOR_STATUS.ACTIVE_ONGOING ||
-      v.status === VALIDATOR_STATUS.ACTIVE_EXITING
+      v.status === VALIDATOR_STATUS.active_ongoing ||
+      v.status === VALIDATOR_STATUS.active_exiting
   );
 
   // A validator is inactive if it appears in all of the last amountOfMissedAttestationsToBeInactive entries
@@ -144,15 +144,15 @@ function calculateValidatorStats(
     slashedIds: validators
       .filter(
         (v) =>
-          v.status === VALIDATOR_STATUS.ACTIVE_SLASHED ||
-          v.status === VALIDATOR_STATUS.EXITED_SLASHED
+          v.status === VALIDATOR_STATUS.active_slashed ||
+          v.status === VALIDATOR_STATUS.exited_slashed
       )
       .map((v) => v.id),
     exitedIds: validators
       .filter(
         (v) =>
-          v.status === VALIDATOR_STATUS.EXITED_UNSLASHED ||
-          v.status === VALIDATOR_STATUS.WITHDRAWAL_DONE
+          v.status === VALIDATOR_STATUS.exited_unslashed ||
+          v.status === VALIDATOR_STATUS.withdrawal_done
       )
       .map((v) => v.id),
   };
@@ -161,9 +161,9 @@ function calculateValidatorStats(
 async function getValidatorByStatus(user: User & { validators: Validator[] }) {
   const activeValidators = user.validators.filter(
     (v) =>
-      v.status === VALIDATOR_STATUS.ACTIVE_ONGOING ||
-      v.status === VALIDATOR_STATUS.ACTIVE_EXITING ||
-      v.status === VALIDATOR_STATUS.PENDING_QUEUED
+      v.status === VALIDATOR_STATUS.active_ongoing ||
+      v.status === VALIDATOR_STATUS.active_exiting ||
+      v.status === VALIDATOR_STATUS.pending_queued
   );
   const missedAttestations = await getMissedAttestations(activeValidators);
   const validatorStats = calculateValidatorStats(
@@ -217,8 +217,8 @@ async function calculatePerformanceStats(
 
   const activeValidators = user.validators.filter(
     (v) =>
-      v.status === VALIDATOR_STATUS.ACTIVE_ONGOING ||
-      v.status === VALIDATOR_STATUS.ACTIVE_EXITING
+      v.status === VALIDATOR_STATUS.active_ongoing ||
+      v.status === VALIDATOR_STATUS.active_exiting
   );
 
   const missedAttestations = await getMissedAttestations(activeValidators);
@@ -264,7 +264,7 @@ async function calculateRewardsStats(user: User & { validators: Validator[] }) {
         hvs.date = CURRENT_DATE AND hvs.hour <= EXTRACT(HOUR FROM NOW()) 
         OR hvs.date = CURRENT_DATE - INTERVAL '1 day' AND hvs.hour > EXTRACT(HOUR FROM NOW()) 
       )
-      AND v.status IN ('active_ongoing', 'active_exiting')`;
+      AND v.status IN (2, 3)`;
 
   const validatorStatsDailyResults = await prisma.$queryRawUnsafe<
     {

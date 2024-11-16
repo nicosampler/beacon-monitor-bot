@@ -132,9 +132,9 @@ async function fetchValidatorsBatch(
     where: {
       status: {
         in: [
-          VALIDATOR_STATUS.ACTIVE_ONGOING,
-          VALIDATOR_STATUS.ACTIVE_EXITING,
-          VALIDATOR_STATUS.PENDING_QUEUED,
+          VALIDATOR_STATUS.active_ongoing,
+          VALIDATOR_STATUS.active_exiting,
+          VALIDATOR_STATUS.pending_queued,
         ],
       },
     },

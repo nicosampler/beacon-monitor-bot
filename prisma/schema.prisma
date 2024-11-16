@@ -35,7 +35,7 @@ model Committee {
 
 model Validator {
   id                Int     @id
-  status            String?
+  status            Int?
   balance           Decimal @db.Decimal(78, 0)
   withdrawalAddress String?
   users             User[]  @relation("UserToValidator")

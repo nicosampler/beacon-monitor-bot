@@ -1,11 +1,8 @@
-import ms from "ms";
 import { Prisma } from "@prisma/client";
 import { getValidatorsInfo } from "@/src/beacon/endpoints.js";
-import createLogger, { CustomLogger } from "@/src/lib/pino.js";
+import { CustomLogger } from "@/src/lib/pino.js";
 import { getHighestValidatorId } from "@/src/feed/utils.js";
 import chunk from "lodash/chunk.js";
-import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
-import { env } from "@/src/env.js";
 import { VALIDATOR_STATUS } from "@/src/constants/index.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { Decimal } from "@prisma/client/runtime/library";
@@ -25,9 +22,9 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
       where: {
         status: {
           in: [
-            VALIDATOR_STATUS.EXITED_UNSLASHED,
-            VALIDATOR_STATUS.EXITED_SLASHED,
-            VALIDATOR_STATUS.WITHDRAWAL_DONE,
+            VALIDATOR_STATUS.exited_unslashed,
+            VALIDATOR_STATUS.exited_slashed,
+            VALIDATOR_STATUS.withdrawal_done,
           ],
         },
       },
