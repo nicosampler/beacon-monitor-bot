@@ -5,6 +5,7 @@ import { getPrisma } from "@/src/lib/prisma.js";
 import { fetchAttestation } from "@/src/feed/fetchAttestations.js";
 import createLogger from "@/src/lib/pino.js";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
+import { env } from "@/src/env.js";
 
 const ID = "FetchAttestation";
 const prisma = getPrisma();
@@ -12,7 +13,7 @@ const prisma = getPrisma();
 export const fetchOldestAttestation = async () => {
   const now = new Date();
   const currentSlot = getSlotNumberFromTimestamp(now.getTime());
-  const headSlot = currentSlot - 1;
+  const maxSlotToFetch = currentSlot - env.BEACON_DELAY_TO_HEAD;
   const oldestLookbackSlot = getOldestLookbackSlot();
 
   try {
@@ -31,8 +32,10 @@ export const fetchOldestAttestation = async () => {
 
     const logger = createLogger(`${ID} for slot ${slotToFetch}`, false);
 
-    if (Math.min(slotToFetch, headSlot) > headSlot) {
-      logger.info(`No new slots to fetch. Current head: ${headSlot}`);
+    if (slotToFetch > maxSlotToFetch) {
+      logger.info(
+        `Skipping, slot to fetch ${slotToFetch} is greater than max slot to fetch ${maxSlotToFetch}`
+      );
       return;
     }
 

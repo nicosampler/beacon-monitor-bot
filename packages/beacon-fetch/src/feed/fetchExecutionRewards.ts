@@ -5,7 +5,6 @@ import { getBlock } from "@/src/blockscout/endpoints.js";
 import { addSeconds, differenceInSeconds } from "date-fns";
 import { Blocks } from "@/src/blockscout/types.js";
 import { Decimal } from "@prisma/client/runtime/library";
-import { getTimestampFromSlotNumber } from "@/src/beacon/utils/time.js";
 
 const prisma = getPrisma();
 
@@ -26,8 +25,11 @@ export async function fetchExecutionRewards(logger: CustomLogger) {
 
       // If the time since the last block is less than a slot duration * 5, abort
       // we use 5 to give time to the api to index the block
-      if (secondsSinceLastBlock <= env.BEACON_SLOT_DURATION_IN_SECONDS * 5) {
-        logger.info("Skipping, block is still in progress");
+      if (
+        secondsSinceLastBlock <=
+        env.BEACON_SLOT_DURATION_IN_SECONDS * env.BEACON_DELAY_TO_HEAD
+      ) {
+        logger.info(`Skipping, too close to the head.`);
         return;
       }
 

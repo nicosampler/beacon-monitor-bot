@@ -6,7 +6,10 @@ import { getPrisma } from "@/src/config/prisma.js";
 import { tokenPrice } from "@/src/scheduler/tasks/tokenPriceTask.js";
 import { sendMessage } from "@/src/telegram/utils/messaging.js";
 import {
+  epochsIn1h,
   formatNumber,
+  getEpochFromSlot,
+  slotsIn1h,
   slotsInDay,
   VALIDATOR_STATUS,
 } from "@/src/utils/misc.js";
@@ -31,10 +34,6 @@ import {
 
 const prisma = getPrisma();
 const tokenUnit = 32000000000; // TODO: move to env file
-const BEACON_SLOT_DURATION_IN_SECONDS = Number(
-  process.env.BEACON_SLOT_DURATION_IN_SECONDS
-);
-const slotsIn1h = 3600 / BEACON_SLOT_DURATION_IN_SECONDS;
 
 interface ValidatorByStatus {
   activeIds: number[];
@@ -83,29 +82,27 @@ export async function notifyUserStatsMessage(
     withdrawalAddresses: WithdrawalAddress[];
   }
 ): Promise<number | undefined> {
-  const headSlot = getSlotNumberFromTimestamp(new Date().getTime()) - 1;
+  const headSlot = getSlotNumberFromTimestamp(new Date().getTime());
+  const maxSlotToCheck = headSlot - Number(process.env.BEACON_DELAY_TO_HEAD);
   const lastSlotProcessed = await prisma.slot.findFirst({
     where: { attestationsFetched: true },
     orderBy: { slot: "desc" },
   });
-  if (!lastSlotProcessed) return;
 
   // check if bot is syncing
   let syncing = false;
-  if (
-    headSlot - lastSlotProcessed?.slot >
-    Number(process.env.BEACON_MAX_ATTESTATION_DELAY)
-  ) {
+  // TODO: make this time based (diff 1m)
+  if (lastSlotProcessed.slot < maxSlotToCheck * 2) {
     syncing = true;
   }
 
   // calculate user stats
-  const stats = await calculateUserStats(syncing, user);
+  const stats = await getUserAllStats(syncing, lastSlotProcessed.slot, user);
 
   // send message to the user
   const message = formatStatsMessage(stats, {
     syncing,
-    headSlot,
+    maxSlotToCheck: lastSlotProcessed.slot,
     lastSlotProcessed: lastSlotProcessed.slot,
   });
   return await updateOrSendMessage(
@@ -115,27 +112,42 @@ export async function notifyUserStatsMessage(
   );
 }
 
-function calculateValidatorStats(
-  validators: Validator[],
-  missedAttestations: Committee[],
-  attestationThreshold: number
+function calculateValidatorStatuses(
+  user: User & { validators: Validator[] },
+  userMissedAttestations: Committee[],
+  lastSlotProcessed: number
 ): ValidatorByStatus {
-  // Filter validators that are "active" for the beacon chain
-  const beaconActiveValidators = validators.filter(
+  const maxSafeSlotToCheck =
+    lastSlotProcessed - Number(process.env.BEACON_MAX_ATTESTATION_DELAY);
+  const currentEpoch = getEpochFromSlot(maxSafeSlotToCheck);
+
+  // filter active validators
+  const beaconActiveValidators = user.validators.filter(
     (v) =>
       v.status === VALIDATOR_STATUS.active_ongoing ||
       v.status === VALIDATOR_STATUS.active_exiting
   );
 
-  // A validator is inactive if it appears in all of the last amountOfMissedAttestationsToBeInactive entries
-  const lastEntries = missedAttestations.slice(0, attestationThreshold);
-  const inactiveIds = beaconActiveValidators
-    .map((v) => v.id)
-    .filter((validatorId) =>
-      lastEntries.every((entry) => entry.validatorIndex === validatorId)
+  const inactiveIds: number[] = [];
+  for (const validator of beaconActiveValidators) {
+    // filter missed attestations for this validator
+    const recentMissed = userMissedAttestations
+      .filter((entry) => entry.validatorIndex === validator.id)
+      .filter((entry) => entry.slot <= maxSafeSlotToCheck)
+      .slice(0, user.attestationThreshold)
+      .map((entry) => getEpochFromSlot(entry.slot));
+
+    // check if the epochs are consecutive
+    const missedConsecutiveEpochs = recentMissed.every(
+      (epoch, index) => epoch === currentEpoch - index
     );
 
-  // Active validators are those that are beacon active but not inactive
+    if (missedConsecutiveEpochs) {
+      inactiveIds.push(validator.id);
+    }
+  }
+
+  // active validators: are active in beacon but not inactive
   const activeIds = beaconActiveValidators
     .filter((v) => !inactiveIds.includes(v.id))
     .map((v) => v.id);
@@ -143,14 +155,14 @@ function calculateValidatorStats(
   return {
     activeIds,
     inactiveIds,
-    slashedIds: validators
+    slashedIds: user.validators
       .filter(
         (v) =>
           v.status === VALIDATOR_STATUS.active_slashed ||
           v.status === VALIDATOR_STATUS.exited_slashed
       )
       .map((v) => v.id),
-    exitedIds: validators
+    exitedIds: user.validators
       .filter(
         (v) =>
           v.status === VALIDATOR_STATUS.exited_unslashed ||
@@ -160,21 +172,9 @@ function calculateValidatorStats(
   };
 }
 
-async function getValidatorByStatus(
-  user: User & { validators: Validator[] },
-  missedAttestations: Committee[]
-) {
-  const validatorStats = calculateValidatorStats(
-    user.validators,
-    missedAttestations,
-    user.attestationThreshold
-  );
-
-  return validatorStats;
-}
-
-async function calculateUserStats(
+async function getUserAllStats(
   syncing: boolean,
+  lastSlotProcessed: number,
   user: User & {
     validators: Validator[];
     withdrawalAddresses: WithdrawalAddress[];
@@ -188,20 +188,19 @@ async function calculateUserStats(
 
   const missedAttestations = await getMissedAttestations(
     activeValidators,
-    user.id
+    lastSlotProcessed
   );
 
   const [
-    validatorStats,
+    validatorStatuses,
     performance,
     balanceStats,
     rewardsStats,
     withdrawable,
   ] = await Promise.all([
-    getValidatorByStatus(user, missedAttestations),
+    calculateValidatorStatuses(user, missedAttestations, lastSlotProcessed),
     calculatePerformanceStats(
       syncing,
-      user,
       missedAttestations,
       activeValidators.length
     ),
@@ -212,7 +211,7 @@ async function calculateUserStats(
 
   return {
     performance,
-    validatorStats,
+    validatorStats: validatorStatuses,
     balance: {
       total: balanceStats.total,
       value: balanceStats.value,
@@ -228,19 +227,21 @@ async function calculateUserStats(
 
 async function calculatePerformanceStats(
   syncing: boolean,
-  user: User & { validators: Validator[] },
   missedAttestations: Committee[],
   activeValidators: number
 ) {
   if (syncing) return "0";
 
-  const expectedAttestations = slotsIn1h * activeValidators;
+  const expectedAttestations = epochsIn1h * activeValidators;
   if (expectedAttestations === 0) return "0";
-  return (
+
+  const performancePercentage = (
     ((expectedAttestations - missedAttestations.length) /
       expectedAttestations) *
     100
   ).toFixed(2);
+
+  return performancePercentage;
 }
 
 function getUserBalance(validators: Validator[]) {
@@ -368,12 +369,16 @@ function calculateAPY(totalBalance: number, monthlyRewards: number): number {
 
 function formatStatsMessage(
   stats: UserStats,
-  status: { syncing: boolean; headSlot: number; lastSlotProcessed: number }
+  status: {
+    syncing: boolean;
+    maxSlotToCheck: number;
+    lastSlotProcessed: number;
+  }
 ): string {
   const { performance, balance, withdrawable, validatorStats } = stats;
 
   const syncStatus = status.syncing
-    ? `⚠️ ${status.headSlot - status.lastSlotProcessed} slots behind ⚠️`
+    ? `⚠️ ${status.maxSlotToCheck - status.lastSlotProcessed} slots behind ⚠️`
     : null;
 
   // Define message sections
@@ -416,15 +421,13 @@ function formatStatsMessage(
 
 async function getMissedAttestations(
   activeValidators: Validator[],
-  userId: bigint
+  lastSlotProcessed: number
 ): Promise<Committee[]> {
-  const oneHourBefore = subHours(new Date(), 1);
-  const fromSlot = getSlotNumberFromTimestamp(oneHourBefore.getTime());
-
-  return await prisma.committee.findMany({
+  return prisma.committee.findMany({
     where: {
       slot: {
-        gte: fromSlot,
+        lte: lastSlotProcessed,
+        gte: lastSlotProcessed - slotsIn1h,
       },
       validatorIndex: {
         in: activeValidators.map((v) => v.id),

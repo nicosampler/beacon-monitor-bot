@@ -70,3 +70,20 @@ export const slotsIn1h = 3600 / BEACON_SLOT_DURATION_IN_SECONDS;
 export const slotsInDay = (24 * 3600) / BEACON_SLOT_DURATION_IN_SECONDS;
 export const slotsInWeek = (7 * 24 * 3600) / BEACON_SLOT_DURATION_IN_SECONDS;
 export const slotsInMonth = (30 * 24 * 3600) / BEACON_SLOT_DURATION_IN_SECONDS;
+
+export const epochsIn1h = Math.floor(
+  slotsIn1h / Number(process.env.BEACON_SLOTS_PER_EPOCH)
+);
+export const epochsInDay = Math.floor(
+  slotsInDay / Number(process.env.BEACON_SLOTS_PER_EPOCH)
+);
+export const epochsInWeek = Math.floor(
+  slotsInWeek / Number(process.env.BEACON_SLOTS_PER_EPOCH)
+);
+export const epochsInMonth = Math.floor(
+  slotsInMonth / Number(process.env.BEACON_SLOTS_PER_EPOCH)
+);
+
+export const getEpochFromSlot = (slot: number) => {
+  return Math.floor(slot / Number(process.env.BEACON_SLOTS_PER_EPOCH));
+};
