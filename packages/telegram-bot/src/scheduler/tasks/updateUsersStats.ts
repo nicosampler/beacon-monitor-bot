@@ -17,10 +17,7 @@ export async function updateUsersStatsImp(userId?: number) {
     ? [await getUserFull_db(userId)]
     : await getFullUsers_db();
 
-  const userChunks = chunk(
-    users.filter((user) => user.username == "nfd_87"),
-    5
-  );
+  const userChunks = chunk(users, 5);
 
   for (const currentChunk of userChunks) {
     await Promise.all(
