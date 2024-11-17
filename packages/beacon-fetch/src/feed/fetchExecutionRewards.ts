@@ -24,8 +24,9 @@ export async function fetchExecutionRewards(logger: CustomLogger) {
         differenceInSeconds(now, latestReward.timestamp)
       );
 
-      // If the time since the last block is less than a slot duration, abort
-      if (secondsSinceLastBlock <= env.BEACON_SLOT_DURATION_IN_SECONDS * 2) {
+      // If the time since the last block is less than a slot duration * 5, abort
+      // we use 5 to give time to the api to index the block
+      if (secondsSinceLastBlock <= env.BEACON_SLOT_DURATION_IN_SECONDS * 5) {
         logger.info("Skipping, block is still in progress");
         return;
       }
@@ -35,27 +36,27 @@ export async function fetchExecutionRewards(logger: CustomLogger) {
       blockToQuery = env.EXECUTION_BLOCK_LOOKBACK;
     }
 
-    const lastSlotWithAttestations = await prisma.slot.findFirst({
-      where: { attestationsFetched: true },
-      orderBy: { slot: "desc" },
-    });
+    // const lastSlotWithAttestations = await prisma.slot.findFirst({
+    //   where: { attestationsFetched: true },
+    //   orderBy: { slot: "desc" },
+    // });
 
-    const lastSlotWithAttestationsDate = new Date(
-      getTimestampFromSlotNumber(lastSlotWithAttestations?.slot)
-    );
+    // const lastSlotWithAttestationsDate = new Date(
+    //   getTimestampFromSlotNumber(lastSlotWithAttestations?.slot)
+    // );
 
     // only fetch if the last slot with attestations is near.
-    if (
-      latestReward &&
-      latestReward.timestamp > lastSlotWithAttestationsDate &&
-      differenceInSeconds(
-        latestReward.timestamp,
-        lastSlotWithAttestationsDate
-      ) > 10
-    ) {
-      logger.info("Skipping, Slot attestation is too far in the past");
-      return;
-    }
+    // if (
+    //   latestReward &&
+    //   latestReward.timestamp > lastSlotWithAttestationsDate &&
+    //   differenceInSeconds(
+    //     latestReward.timestamp,
+    //     lastSlotWithAttestationsDate
+    //   ) > 10
+    // ) {
+    //   logger.info("Skipping, Slot attestation is too far in the past");
+    //   return;
+    // }
 
     logger.info(`Fetching block: ${blockToQuery}`);
     let blockInfo: Blocks = undefined;

@@ -73,7 +73,9 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
                         ? "0x" +
                           data.validator.withdrawal_credentials.slice(-40)
                         : null
-                    }, ${data.status}, ${new Decimal(data.balance)})`
+                    }, ${VALIDATOR_STATUS[data.status]}, ${new Decimal(
+                      data.balance
+                    )})`
                 ),
                 ", "
               )}
