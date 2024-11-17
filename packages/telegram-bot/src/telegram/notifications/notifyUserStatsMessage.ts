@@ -82,8 +82,8 @@ export async function notifyUserStatsMessage(
     withdrawalAddresses: WithdrawalAddress[];
   }
 ): Promise<number | undefined> {
-  const headSlot = getSlotNumberFromTimestamp(new Date().getTime());
-  const maxSlotToCheck = headSlot - Number(process.env.BEACON_DELAY_TO_HEAD);
+  const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+  const headSlot = currentSlot - Number(process.env.BEACON_DELAY_TO_HEAD);
   const lastSlotProcessed = await prisma.slot.findFirst({
     where: { attestationsFetched: true },
     orderBy: { slot: "desc" },
@@ -91,8 +91,10 @@ export async function notifyUserStatsMessage(
 
   // check if bot is syncing
   let syncing = false;
-  // TODO: make this time based (diff 1m)
-  if (lastSlotProcessed.slot < maxSlotToCheck * 2) {
+  if (
+    headSlot - lastSlotProcessed.slot >
+    Number(process.env.BEACON_DELAY_TO_HEAD) * 2
+  ) {
     syncing = true;
   }
 
@@ -102,7 +104,7 @@ export async function notifyUserStatsMessage(
   // send message to the user
   const message = formatStatsMessage(stats, {
     syncing,
-    maxSlotToCheck: lastSlotProcessed.slot,
+    headSlot,
     lastSlotProcessed: lastSlotProcessed.slot,
   });
   return await updateOrSendMessage(
@@ -139,7 +141,7 @@ function calculateValidatorStatuses(
 
     // check if the epochs are consecutive
     const missedConsecutiveEpochs = recentMissed.every(
-      (epoch, index) => epoch === currentEpoch - index
+      (epoch, index) => epoch === recentMissed[0] - index
     );
 
     if (missedConsecutiveEpochs) {
@@ -371,14 +373,14 @@ function formatStatsMessage(
   stats: UserStats,
   status: {
     syncing: boolean;
-    maxSlotToCheck: number;
+    headSlot: number;
     lastSlotProcessed: number;
   }
 ): string {
   const { performance, balance, withdrawable, validatorStats } = stats;
 
   const syncStatus = status.syncing
-    ? `⚠️ ${status.maxSlotToCheck - status.lastSlotProcessed} slots behind ⚠️`
+    ? `⚠️ ${status.headSlot - status.lastSlotProcessed} slots behind ⚠️`
     : null;
 
   // Define message sections

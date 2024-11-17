@@ -75,18 +75,8 @@ export function getUserWithWithdrawalAddresses_db(userId: number) {
 export async function deleteUser_db(userId: number) {
   try {
     const deleteUser = prisma.user.delete({ where: { id: userId } });
-    const deleteWithdrawalAddress = prisma.withdrawalAddress.deleteMany({
-      where: { users: { none: {} } },
-    });
-    const deleteValidators = prisma.validator.deleteMany({
-      where: { users: { none: {} } },
-    });
 
-    const res = await prisma.$transaction([
-      deleteUser,
-      deleteWithdrawalAddress,
-      deleteValidators,
-    ]);
+    const res = await prisma.$transaction([deleteUser]);
 
     return res;
   } catch (error) {
