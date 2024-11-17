@@ -17,20 +17,25 @@ export async function updateUsersStatsImp(userId?: number) {
     ? [await getUserFull_db(userId)]
     : await getFullUsers_db();
 
-  for (const user of users) {
-    console.log("Notifying stats for: ", user.username);
-    try {
-      const messageIdStats = await notifyUserStatsMessage(user);
+  const userChunks = chunk(users, 5);
+  for (const currentChunk of userChunks) {
+    await Promise.all(
+      currentChunk.map(async (user) => {
+        console.log(`${new Date()} - Notifying stats for: ${user.username}`);
+        try {
+          const messageIdStats = await notifyUserStatsMessage(user);
 
-      if (messageIdStats && messageIdStats !== Number(user.messageId)) {
-        await updateUserMessageId_db(userId, messageIdStats);
-      }
-    } catch (error: any) {
-      console.error(
-        `Error processing user ${user.username}:`,
-        error.description || error?.message
-      );
-    }
+          if (messageIdStats && messageIdStats !== Number(user.messageId)) {
+            await updateUserMessageId_db(Number(user.id), messageIdStats);
+          }
+        } catch (error: any) {
+          console.error(
+            `Error processing user ${user.username}:`,
+            error.description || error?.message
+          );
+        }
+      })
+    );
   }
 }
 

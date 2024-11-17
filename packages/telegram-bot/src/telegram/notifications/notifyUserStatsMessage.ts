@@ -21,7 +21,13 @@ import {
   DAYS_IN_YEAR,
   DAYS_IN_MONTH,
 } from "@/src/constants/index.js";
-import { Committee, User, Validator, WithdrawalAddress } from "@prisma/client";
+import {
+  Committee,
+  Prisma,
+  User,
+  Validator,
+  WithdrawalAddress,
+} from "@prisma/client";
 
 const prisma = getPrisma();
 const tokenUnit = 32000000000; // TODO: move to env file
@@ -154,14 +160,10 @@ function calculateValidatorStats(
   };
 }
 
-async function getValidatorByStatus(user: User & { validators: Validator[] }) {
-  const activeValidators = user.validators.filter(
-    (v) =>
-      v.status === VALIDATOR_STATUS.active_ongoing ||
-      v.status === VALIDATOR_STATUS.active_exiting ||
-      v.status === VALIDATOR_STATUS.pending_queued
-  );
-  const missedAttestations = await getMissedAttestations(activeValidators);
+async function getValidatorByStatus(
+  user: User & { validators: Validator[] },
+  missedAttestations: Committee[]
+) {
   const validatorStats = calculateValidatorStats(
     user.validators,
     missedAttestations,
@@ -178,6 +180,17 @@ async function calculateUserStats(
     withdrawalAddresses: WithdrawalAddress[];
   }
 ): Promise<UserStats> {
+  const activeValidators = user.validators.filter(
+    (v) =>
+      v.status === VALIDATOR_STATUS.active_ongoing ||
+      v.status === VALIDATOR_STATUS.active_exiting
+  );
+
+  const missedAttestations = await getMissedAttestations(
+    activeValidators,
+    user.id
+  );
+
   const [
     validatorStats,
     performance,
@@ -185,8 +198,13 @@ async function calculateUserStats(
     rewardsStats,
     withdrawable,
   ] = await Promise.all([
-    getValidatorByStatus(user),
-    calculatePerformanceStats(syncing, user),
+    getValidatorByStatus(user, missedAttestations),
+    calculatePerformanceStats(
+      syncing,
+      user,
+      missedAttestations,
+      activeValidators.length
+    ),
     getUserBalance(user.validators),
     calculateRewardsStats(user),
     getWithdrawableAmountByUserId(Number(user.id)),
@@ -210,19 +228,13 @@ async function calculateUserStats(
 
 async function calculatePerformanceStats(
   syncing: boolean,
-  user: User & { validators: Validator[] }
+  user: User & { validators: Validator[] },
+  missedAttestations: Committee[],
+  activeValidators: number
 ) {
   if (syncing) return "0";
 
-  const activeValidators = user.validators.filter(
-    (v) =>
-      v.status === VALIDATOR_STATUS.active_ongoing ||
-      v.status === VALIDATOR_STATUS.active_exiting
-  );
-
-  const missedAttestations = await getMissedAttestations(activeValidators);
-
-  const expectedAttestations = slotsIn1h * activeValidators.length;
+  const expectedAttestations = slotsIn1h * activeValidators;
   if (expectedAttestations === 0) return "0";
   return (
     ((expectedAttestations - missedAttestations.length) /
@@ -402,7 +414,10 @@ function formatStatsMessage(
   ].join("\n")}\``;
 }
 
-async function getMissedAttestations(activeValidators: Validator[]) {
+async function getMissedAttestations(
+  activeValidators: Validator[],
+  userId: bigint
+): Promise<Committee[]> {
   const oneHourBefore = subHours(new Date(), 1);
   const fromSlot = getSlotNumberFromTimestamp(oneHourBefore.getTime());
 
