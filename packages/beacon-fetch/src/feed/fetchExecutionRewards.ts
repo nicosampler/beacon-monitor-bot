@@ -24,10 +24,9 @@ export async function fetchExecutionRewards(logger: CustomLogger) {
       );
 
       // If the time since the last block is less than a slot duration * 5, abort
-      // we use 5 to give time to the api to index the block
       if (
         secondsSinceLastBlock <=
-        env.BEACON_SLOT_DURATION_IN_SECONDS * env.BEACON_SLOTS_PER_EPOCH
+        env.BEACON_SLOT_DURATION_IN_SECONDS * env.BEACON_DELAY_SLOTS_TO_HEAD
       ) {
         logger.info(`Skipping, too close to the head.`);
         return;

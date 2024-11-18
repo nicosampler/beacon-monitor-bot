@@ -83,17 +83,17 @@ export async function notifyUserStatsMessage(
   }
 ): Promise<number | undefined> {
   const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
-  const headSlot = currentSlot - Number(process.env.BEACON_DELAY_TO_HEAD);
+  const headSlot = currentSlot - Number(process.env.BEACON_DELAY_SLOTS_TO_HEAD);
   const lastSlotProcessed = await prisma.slot.findFirst({
     where: { attestationsFetched: true },
     orderBy: { slot: "desc" },
   });
 
-  // check if bot is syncing
+  // Bot is syncing if the last slot processed is one slot behind the max slot to query
   let syncing = false;
   if (
     headSlot - lastSlotProcessed.slot >
-    Number(process.env.BEACON_DELAY_TO_HEAD) * 2
+    Number(process.env.BEACON_SLOTS_PER_EPOCH)
   ) {
     syncing = true;
   }
@@ -119,10 +119,6 @@ function calculateValidatorStatuses(
   userMissedAttestations: Committee[],
   lastSlotProcessed: number
 ): ValidatorByStatus {
-  const maxSafeSlotToCheck =
-    lastSlotProcessed - Number(process.env.BEACON_MAX_ATTESTATION_DELAY);
-  //const currentEpoch = getEpochFromSlot(maxSafeSlotToCheck);
-
   // filter active validators
   const beaconActiveValidators = user.validators.filter(
     (v) =>
@@ -130,14 +126,24 @@ function calculateValidatorStatuses(
       v.status === VALIDATOR_STATUS.active_exiting
   );
 
+  const lastEpochProcessed = getEpochFromSlot(lastSlotProcessed);
+
   const inactiveIds: number[] = [];
   for (const validator of beaconActiveValidators) {
     // filter missed attestations for this validator
     const recentMissed = userMissedAttestations
       .filter((entry) => entry.validatorIndex === validator.id)
-      .filter((entry) => entry.slot <= maxSafeSlotToCheck)
       .slice(0, user.attestationThreshold)
       .map((entry) => getEpochFromSlot(entry.slot));
+
+    // Skip if not enough missed attestations
+    // or if the last epoch processed is not in the recent missed
+    if (
+      recentMissed.length < user.attestationThreshold ||
+      !recentMissed.includes(lastEpochProcessed)
+    ) {
+      continue;
+    }
 
     // check if the epochs are consecutive
     const missedConsecutiveEpochs = recentMissed.every(
@@ -149,7 +155,6 @@ function calculateValidatorStatuses(
     }
   }
 
-  // active validators: are active in beacon but not inactive
   const activeIds = beaconActiveValidators
     .filter((v) => !inactiveIds.includes(v.id))
     .map((v) => v.id);

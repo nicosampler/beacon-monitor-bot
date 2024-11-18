@@ -14,7 +14,7 @@ const prisma = getPrisma();
 export const fetchOldestAttestation = async () => {
   const now = new Date();
   const currentSlot = getSlotNumberFromTimestamp(now.getTime());
-  const maxSlotToFetch = currentSlot - env.BEACON_SLOTS_PER_EPOCH;
+  const maxSlotToFetch = currentSlot - env.BEACON_DELAY_SLOTS_TO_HEAD;
   const oldestLookbackSlot = getOldestLookbackSlot();
 
   try {

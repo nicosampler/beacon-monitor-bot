@@ -1,18 +1,7 @@
 import { env } from "@/src/env.js";
 
-let oldestLookbackSlot: number | null = null;
-
 export function getOldestLookbackSlot() {
-  if (oldestLookbackSlot !== null) {
-    return oldestLookbackSlot;
-  }
-
-  oldestLookbackSlot =
-    env.BEACON_LOOKBACK_SLOT === 0
-      ? Math.max(0, getCurrentSlot() - env.BEACON_SLOTS_PER_EPOCH * 2)
-      : env.BEACON_LOOKBACK_SLOT;
-
-  return oldestLookbackSlot;
+  return env.BEACON_LOOKBACK_SLOT;
 }
 
 function getCurrentSlot() {

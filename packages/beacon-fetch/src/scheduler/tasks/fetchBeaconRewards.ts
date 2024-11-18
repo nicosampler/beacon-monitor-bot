@@ -13,14 +13,19 @@ const prisma = getPrisma();
 const ID = "fetchBeaconRewards";
 const logger = createLogger(ID, false);
 
-const SLOTS_PER_EPOCH = env.BEACON_SLOTS_PER_EPOCH;
-
+/* 
+  This task fetches the beacon rewards 
+  Rewards are distributed at the end of each epoch for all the validators.
+  It fetches rewards for multiple epochs in parallel, but saves them sequentially.
+  It skips fetching if the last slot with rewards is too far back in time.
+  It also skips fetching if the last slot with rewards is from the current epoch.
+ */
 async function fetchBeaconRewardsTask() {
   const now = new Date();
   const currentEpoch = getEpochNumberFromTimestamp(now.getTime());
   const headEpoch = currentEpoch - 2; // Give some buffer to avoid so many 404
   const oldestLookbackEpoch = Math.floor(
-    getOldestLookbackSlot() / SLOTS_PER_EPOCH
+    getOldestLookbackSlot() / env.BEACON_SLOTS_PER_EPOCH
   );
 
   try {

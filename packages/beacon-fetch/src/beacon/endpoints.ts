@@ -23,23 +23,33 @@ export async function getCommittees(
 export async function getAttestations(
   stateId: string | number
 ): Promise<GetAttestations["data"] | "SLOT MISSED"> {
-  try {
-    // Retry the API call up to 3 times
-    const res = await instance.get<GetAttestations>(
-      `${env.BEACON_API_URL}/eth/v1/beacon/blocks/${stateId}/attestations`
-    );
-    return res.data.data;
-  } catch (error) {
-    const axiosError = error as AxiosError<{ message: string }>;
-    // If the slot was skipped, the endpoint will return a 404
-    if (
-      axiosError.response?.status === 404 &&
-      axiosError.response?.data.message.includes("NOT_FOUND: beacon block")
-    ) {
-      return "SLOT MISSED";
+  // Try primary and backup URLs in sequence
+  for (const url of [env.BEACON_API_URL, env.BEACON_API_BKP_URL]) {
+    try {
+      const res = await instance.get<GetAttestations>(
+        `${url}/eth/v1/beacon/blocks/${stateId}/attestations`
+      );
+      return res.data.data;
+    } catch (error) {
+      // Check if this is the last URL to try
+      if (url === env.BEACON_API_BKP_URL) {
+        // Handle 404 case for missed slots
+        if (isSlotMissedError(error)) {
+          return "SLOT MISSED";
+        }
+        throw error;
+      }
     }
-    throw error;
   }
+}
+
+// Helper function to check for missed slot errors
+function isSlotMissedError(error: unknown): boolean {
+  const axiosError = error as AxiosError<{ message: string }>;
+  return (
+    axiosError.response?.status === 404 &&
+    axiosError.response?.data.message.includes("NOT_FOUND: beacon block")
+  );
 }
 
 export async function getValidatorsBalances(
