@@ -27,7 +27,7 @@ export async function fetchExecutionRewards(logger: CustomLogger) {
       // we use 5 to give time to the api to index the block
       if (
         secondsSinceLastBlock <=
-        env.BEACON_SLOT_DURATION_IN_SECONDS * env.BEACON_DELAY_TO_HEAD
+        env.BEACON_SLOT_DURATION_IN_SECONDS * env.BEACON_SLOTS_PER_EPOCH
       ) {
         logger.info(`Skipping, too close to the head.`);
         return;

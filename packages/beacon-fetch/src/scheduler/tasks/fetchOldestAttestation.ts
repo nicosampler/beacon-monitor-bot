@@ -6,6 +6,7 @@ import { fetchAttestation } from "@/src/feed/fetchAttestations.js";
 import createLogger from "@/src/lib/pino.js";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { env } from "@/src/env.js";
+import { db_existCommitteeForSlot } from "@/src/feed/utils.js";
 
 const ID = "FetchAttestation";
 const prisma = getPrisma();
@@ -13,7 +14,7 @@ const prisma = getPrisma();
 export const fetchOldestAttestation = async () => {
   const now = new Date();
   const currentSlot = getSlotNumberFromTimestamp(now.getTime());
-  const maxSlotToFetch = currentSlot - env.BEACON_DELAY_TO_HEAD;
+  const maxSlotToFetch = currentSlot - env.BEACON_SLOTS_PER_EPOCH;
   const oldestLookbackSlot = getOldestLookbackSlot();
 
   try {
@@ -39,13 +40,14 @@ export const fetchOldestAttestation = async () => {
       return;
     }
 
+    const existCommittee = await db_existCommitteeForSlot(slotToFetch);
+    if (!existCommittee) {
+      logger.info(`Skipping, no committee found for slot ${slotToFetch}.`);
+      return;
+    }
+
     return fetchAttestation(slotToFetch, logger);
-  } catch (error) {
-    createLogger("fetchAttestationTask").error(
-      `Error fetching oldest attestation: ${error}`,
-      error
-    );
-  }
+  } catch (error) {}
 };
 
 export const job = new SimpleIntervalJob(

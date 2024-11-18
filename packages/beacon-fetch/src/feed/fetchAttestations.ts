@@ -20,12 +20,6 @@ export const fetchAttestation = async (
   logger: CustomLogger
 ) => {
   try {
-    const existCommittee = await db_existCommitteeForSlot(slotNumber);
-    if (!existCommittee) {
-      logger.info(`Skipping, no committee found for slot ${slotNumber}.`);
-      return;
-    }
-
     logger.info(`start.`);
 
     // Fetch the attestations from the API for the slot.
@@ -65,7 +59,7 @@ export const fetchAttestation = async (
 };
 
 async function getAttestation(slot: number, logger: CustomLogger) {
-  let fetchedAttestations = await getAttestations(slot + 1);
+  const fetchedAttestations = await getAttestations(slot + 1);
 
   if (fetchedAttestations === "SLOT MISSED") {
     await prisma.slot.update({

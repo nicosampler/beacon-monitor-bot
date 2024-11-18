@@ -17,7 +17,6 @@ export const env = createEnv({
     BEACON_SLOTS_PER_EPOCH: z.number().int().positive(),
     BEACON_LOOKBACK_SLOT: z.number().int().min(0),
     BEACON_MAX_ATTESTATION_DELAY: z.number().int().min(2),
-    BEACON_DELAY_TO_HEAD: z.number().int().min(1),
     // Beacon API
     BEACON_API_URL: z.string().url(),
     BEACON_API_KEY: z.string().optional(),
@@ -42,7 +41,6 @@ export const env = createEnv({
       _env.BEACON_SLOT_DURATION_IN_SECONDS
     ),
     BEACON_SLOTS_PER_EPOCH: Number(_env.BEACON_SLOTS_PER_EPOCH),
-    BEACON_DELAY_TO_HEAD: Number(_env.BEACON_DELAY_TO_HEAD),
     BEACON_LOOKBACK_SLOT: Number(_env.BEACON_LOOKBACK_SLOT),
     BEACON_MAX_ATTESTATION_DELAY: Number(_env.BEACON_MAX_ATTESTATION_DELAY),
     // Beacon-node API
