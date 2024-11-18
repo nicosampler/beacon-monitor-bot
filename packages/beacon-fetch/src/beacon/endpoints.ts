@@ -9,6 +9,7 @@ import {
 } from "@/src/beacon/types.js";
 import { env } from "@/src/env.js";
 import { AxiosError } from "axios";
+import pRetry from 'p-retry';
 
 export async function getCommittees(
   stateId: string | number
@@ -24,8 +25,16 @@ export async function getAttestations(
   stateId: string | number
 ): Promise<GetAttestations["data"] | "SLOT MISSED"> {
   try {
-    const res = await instance.get<GetAttestations>(
-      `${env.BEACON_API_URL}/eth/v1/beacon/blocks/${stateId}/attestations`
+    // Retry the API call up to 3 times
+    const res = await pRetry(
+      () => instance.get<GetAttestations>(
+        `${env.BEACON_API_URL}/eth/v1/beacon/blocks/${stateId}/attestations`
+      ),
+      {
+        retries: 3,
+        minTimeout: 1000,
+        factor: 1
+      }
     );
     return res.data.data;
   } catch (error) {

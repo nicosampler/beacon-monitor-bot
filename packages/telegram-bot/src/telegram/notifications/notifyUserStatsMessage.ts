@@ -121,7 +121,7 @@ function calculateValidatorStatuses(
 ): ValidatorByStatus {
   const maxSafeSlotToCheck =
     lastSlotProcessed - Number(process.env.BEACON_MAX_ATTESTATION_DELAY);
-  const currentEpoch = getEpochFromSlot(maxSafeSlotToCheck);
+  //const currentEpoch = getEpochFromSlot(maxSafeSlotToCheck);
 
   // filter active validators
   const beaconActiveValidators = user.validators.filter(
