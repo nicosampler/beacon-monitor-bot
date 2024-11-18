@@ -11,16 +11,14 @@ import { notifyUserStatsMessage } from "@/src/telegram/notifications/notifyUserS
 import { notifyValidatorsActivityChanged } from "@/src/telegram/notifications/notifyValidatorsActivityChanged.js";
 import { handleError } from "@/src/utils/errors/handleError.js";
 import { AsyncTask } from "toad-scheduler";
+import { getEpochSlots } from "@/src/utils/misc.js";
 
 export async function updateUsersStatsImp(userId?: number) {
   const users = userId
     ? [await getUserFull_db(userId)]
     : await getFullUsers_db();
 
-  const userChunks = chunk(
-    users.filter((u) => u.username == "nfd_87"),
-    5
-  );
+  const userChunks = chunk(users, 5);
 
   for (const currentChunk of userChunks) {
     await Promise.all(

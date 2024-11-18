@@ -87,3 +87,12 @@ export const epochsInMonth = Math.floor(
 export const getEpochFromSlot = (slot: number) => {
   return Math.floor(slot / Number(process.env.BEACON_SLOTS_PER_EPOCH));
 };
+
+// Get start and end slots for a given epoch
+export const getEpochSlots = (epoch: number) => {
+  const slotsPerEpoch = Number(process.env.BEACON_SLOTS_PER_EPOCH);
+  return {
+    startSlot: epoch * slotsPerEpoch,
+    endSlot: (epoch + 1) * slotsPerEpoch - 1,
+  };
+};

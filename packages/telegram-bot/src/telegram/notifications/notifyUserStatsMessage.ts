@@ -7,8 +7,10 @@ import { tokenPrice } from "@/src/scheduler/tasks/tokenPriceTask.js";
 import { sendMessage } from "@/src/telegram/utils/messaging.js";
 import {
   epochsIn1h,
+  epochsInDay,
   formatNumber,
   getEpochFromSlot,
+  getEpochSlots,
   slotsIn1h,
   slotsInDay,
   VALIDATOR_STATUS,
@@ -88,24 +90,23 @@ export async function notifyUserStatsMessage(
     where: { attestationsFetched: true },
     orderBy: { slot: "desc" },
   });
+  const maxSlotToQuery =
+    getEpochSlots(getEpochFromSlot(lastSlotProcessed.slot)).startSlot - 1;
 
   // Bot is syncing if the last slot processed is one slot behind the max slot to query
   let syncing = false;
-  if (
-    headSlot - lastSlotProcessed.slot >
-    Number(process.env.BEACON_SLOTS_PER_EPOCH)
-  ) {
+  if (headSlot - maxSlotToQuery > Number(process.env.BEACON_SLOTS_PER_EPOCH)) {
     syncing = true;
   }
 
   // calculate user stats
-  const stats = await getUserAllStats(syncing, lastSlotProcessed.slot, user);
+  const stats = await getUserAllStats(syncing, maxSlotToQuery, user);
 
   // send message to the user
   const message = formatStatsMessage(stats, {
     syncing,
     headSlot,
-    lastSlotProcessed: lastSlotProcessed.slot,
+    maxSlotToQuery,
   });
   return await updateOrSendMessage(
     Number(user.chatId),
@@ -117,7 +118,7 @@ export async function notifyUserStatsMessage(
 function calculateValidatorStatuses(
   user: User & { validators: Validator[] },
   userMissedAttestations: Committee[],
-  lastSlotProcessed: number
+  maxSlotToQuery: number
 ): ValidatorByStatus {
   // filter active validators
   const beaconActiveValidators = user.validators.filter(
@@ -126,7 +127,7 @@ function calculateValidatorStatuses(
       v.status === VALIDATOR_STATUS.active_exiting
   );
 
-  const lastEpochProcessed = getEpochFromSlot(lastSlotProcessed);
+  const lastEpoch = getEpochFromSlot(maxSlotToQuery);
 
   const inactiveIds: number[] = [];
   for (const validator of beaconActiveValidators) {
@@ -137,10 +138,10 @@ function calculateValidatorStatuses(
       .map((entry) => getEpochFromSlot(entry.slot));
 
     // Skip if not enough missed attestations
-    // or if the last epoch processed is not in the recent missed
+    // or if the last epoch is not in the recent missed
     if (
       recentMissed.length < user.attestationThreshold ||
-      !recentMissed.includes(lastEpochProcessed)
+      !recentMissed.includes(lastEpoch)
     ) {
       continue;
     }
@@ -181,7 +182,7 @@ function calculateValidatorStatuses(
 
 async function getUserAllStats(
   syncing: boolean,
-  lastSlotProcessed: number,
+  maxSlotToQuery: number,
   user: User & {
     validators: Validator[];
     withdrawalAddresses: WithdrawalAddress[];
@@ -195,7 +196,7 @@ async function getUserAllStats(
 
   const missedAttestations = await getMissedAttestations(
     activeValidators,
-    lastSlotProcessed
+    maxSlotToQuery
   );
 
   const [
@@ -205,14 +206,14 @@ async function getUserAllStats(
     rewardsStats,
     withdrawable,
   ] = await Promise.all([
-    calculateValidatorStatuses(user, missedAttestations, lastSlotProcessed),
+    calculateValidatorStatuses(user, missedAttestations, maxSlotToQuery),
     calculatePerformanceStats(
       syncing,
       missedAttestations,
       activeValidators.length
     ),
     getUserBalance(user.validators),
-    calculateRewardsStats(user),
+    calculateTableStats(user),
     getWithdrawableAmountByUserId(Number(user.id)),
   ]);
 
@@ -265,7 +266,7 @@ function getUserBalance(validators: Validator[]) {
   };
 }
 
-async function calculateRewardsStats(user: User & { validators: Validator[] }) {
+async function calculateTableStats(user: User & { validators: Validator[] }) {
   const validatorStatsDailyQuery = `
     SELECT 
       COALESCE(SUM(head), 0) as head,
@@ -339,7 +340,7 @@ async function calculateRewardsStats(user: User & { validators: Validator[] }) {
     100 *
     (1 -
       Number(validatorStatsDailyResults[0].attestationsMissed) /
-        (slotsInDay * user.validators.length));
+        (epochsInDay * user.validators.length));
 
   return {
     daily: {
@@ -379,13 +380,13 @@ function formatStatsMessage(
   status: {
     syncing: boolean;
     headSlot: number;
-    lastSlotProcessed: number;
+    maxSlotToQuery: number;
   }
 ): string {
   const { performance, balance, withdrawable, validatorStats } = stats;
 
   const syncStatus = status.syncing
-    ? `⚠️ ${status.headSlot - status.lastSlotProcessed} slots behind ⚠️`
+    ? `⚠️ ${status.headSlot - status.maxSlotToQuery} slots behind ⚠️`
     : null;
 
   // Define message sections
