@@ -33,19 +33,19 @@ export const fetchAttestation = async (
     );
 
     // Process all attestations. Separates them by updates and deletes depending on the attestation delay env.BEACON_MAX_ATTESTATION_DELAY.
-    const allProcessedAttestations: CommitteeUpdate[] = [];
-    const allDeleteAttestations: CommitteeUpdate[] = [];
+    const allUpdates: CommitteeUpdate[] = [];
+    const allDeletes: CommitteeUpdate[] = [];
     for (const attestation of filteredAttestations) {
       const processedAttestations = processAttestation(slotNumber, attestation);
-      allProcessedAttestations.push(...processedAttestations.updates);
-      allDeleteAttestations.push(...processedAttestations.deletes);
+      allUpdates.push(...processedAttestations.updates);
+      allDeletes.push(...processedAttestations.deletes);
     }
 
     // Update or delete the validators from the committee table.
     await updateAndDeleteValidatorAttestations(
       {
-        updates: allProcessedAttestations,
-        deletes: allDeleteAttestations,
+        updates: allUpdates,
+        deletes: allDeletes,
       },
       slotNumber,
       logger
@@ -183,9 +183,6 @@ async function updateAndDeleteValidatorAttestations(
     await pRetry(async () => {
       await prisma.$executeRaw(
         Prisma.sql`CREATE TABLE IF NOT EXISTS tmp_delete_committee(slot int, index int, aggregation_bits_index int);`
-      );
-      await prisma.$executeRaw(
-        Prisma.sql`TRUNCATE TABLE tmp_delete_committee;`
       );
     }, retryOptions);
 
