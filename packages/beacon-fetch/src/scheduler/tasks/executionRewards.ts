@@ -3,7 +3,7 @@ import { fetchExecutionRewards } from "@/src/feed/fetchExecutionRewards.js";
 import createLogger from "@/src/lib/pino.js";
 
 const ID = "fetchExecutionRewards";
-const logger = createLogger(ID, false);
+const logger = createLogger(ID, true);
 
 export const job = new SimpleIntervalJob(
   { seconds: 1, runImmediately: true },

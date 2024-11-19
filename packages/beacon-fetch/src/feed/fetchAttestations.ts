@@ -16,13 +16,15 @@ import { env } from "@/src/env.js";
 const prisma = getPrisma();
 
 export const fetchAttestation = async (
-  slotNumber: number,
+  _slotNumber: number,
   logger: CustomLogger
 ) => {
   try {
     logger.info(`start.`);
 
-    // Fetch the attestations from the API for the slot.
+    const slotNumber = 18596099;
+
+    // Fetch the slot's attestations from the API.
     // If the slot is missed, updates the db and returns [].
     const fetchedAttestations = await getAttestation(slotNumber, logger);
     if (!fetchedAttestations) return;
@@ -222,4 +224,7 @@ async function updateAndDeleteValidatorAttestations(
       data: { attestationsFetched: true },
     });
   }, retryOptions);
+
+  // Truncate temp table
+  await prisma.$executeRaw(Prisma.sql`TRUNCATE TABLE tmp_delete_committee;`);
 }
