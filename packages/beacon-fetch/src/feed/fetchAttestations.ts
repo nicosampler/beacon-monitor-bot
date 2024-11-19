@@ -16,13 +16,11 @@ import { env } from "@/src/env.js";
 const prisma = getPrisma();
 
 export const fetchAttestation = async (
-  _slotNumber: number,
+  slotNumber: number,
   logger: CustomLogger
 ) => {
   try {
     logger.info(`start.`);
-
-    const slotNumber = 18596099;
 
     // Fetch the slot's attestations from the API.
     // If the slot is missed, updates the db and returns [].
