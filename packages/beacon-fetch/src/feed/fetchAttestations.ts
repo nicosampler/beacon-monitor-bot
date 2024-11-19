@@ -226,5 +226,7 @@ async function updateAndDeleteValidatorAttestations(
   }, retryOptions);
 
   // Truncate temp table
-  await prisma.$executeRaw(Prisma.sql`TRUNCATE TABLE tmp_delete_committee;`);
+  await pRetry(async () => {
+    await prisma.$executeRaw(Prisma.sql`TRUNCATE TABLE tmp_delete_committee;`);
+  }, retryOptions);
 }
