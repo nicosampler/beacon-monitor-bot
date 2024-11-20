@@ -10,6 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - beacon_postgres_data:/var/lib/postgresql/data
+    shm_size: 1g
     command:
       - -c
       - checkpoint_timeout=4min
