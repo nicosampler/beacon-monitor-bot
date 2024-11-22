@@ -9,6 +9,7 @@ import {
 } from "@/src/beacon/types.js";
 import { env } from "@/src/env.js";
 import { AxiosError } from "axios";
+import pRetry from "p-retry";
 
 export async function getCommittees(
   stateId: string | number
@@ -23,24 +24,34 @@ export async function getCommittees(
 export async function getAttestations(
   stateId: string | number
 ): Promise<GetAttestations["data"] | "SLOT MISSED"> {
+  let lastError: unknown;
+
   // Try primary and backup URLs in sequence
   for (const url of [env.BEACON_API_URL, env.BEACON_API_BKP_URL]) {
     try {
-      const res = await instance.get<GetAttestations>(
-        `${url}/eth/v1/beacon/blocks/${stateId}/attestations`
-      );
-      return res.data.data;
-    } catch (error) {
-      // Check if this is the last URL to try
-      if (url === env.BEACON_API_BKP_URL) {
-        // Handle 404 case for missed slots
-        if (isSlotMissedError(error)) {
-          return "SLOT MISSED";
+      const result = await pRetry(
+        async () => {
+          const res = await instance.get<GetAttestations>(
+            `${url}/eth/v1/beacon/blocks/${stateId}/attestations`
+          );
+          return res.data.data;
+        },
+        {
+          retries: 3,
+          minTimeout: 1000,
         }
-        throw error;
-      }
+      );
+      return result;
+    } catch (error) {
+      lastError = error;
     }
   }
+
+  // Only check for missed slot after all retries on both URLs have failed
+  if (isSlotMissedError(lastError)) {
+    return "SLOT MISSED";
+  }
+  throw lastError;
 }
 
 // Helper function to check for missed slot errors
