@@ -13,20 +13,6 @@ export function getUser_db(userId: number) {
     });
 }
 
-export function getUserFull_db(userId: number) {
-  return prisma.user
-    .findUnique({
-      where: { id: userId },
-      include: {
-        withdrawalAddresses: true,
-        validators: true,
-      },
-    })
-    .catch((error) => {
-      throw new AppError("Error getting user", "BD_ERROR", error);
-    });
-}
-
 export function getUsers_db() {
   return prisma.user
     .findMany({
@@ -41,9 +27,34 @@ export function getUsers_db() {
     });
 }
 
-export function getFullUsers_db() {
+export function getAllUserIds_db(userId?: number) {
   return prisma.user.findMany({
-    include: { validators: true, withdrawalAddresses: true },
+    where: userId ? { id: userId } : undefined,
+    select: {
+      id: true,
+      userId: true,
+      username: true,
+      messageId: true,
+    },
+  });
+}
+
+export function getFullUsers_db(userId?: number) {
+  return prisma.user.findMany({
+    where: userId ? { id: userId } : undefined,
+    select: {
+      id: true,
+      userId: true,
+      chatId: true,
+      messageId: true,
+      username: true,
+      attestationsNotif: true,
+      attestationThreshold: true,
+      performanceNotif: true,
+      performanceThreshold: true,
+      validators: true,
+      withdrawalAddresses: true,
+    },
   });
 }
 

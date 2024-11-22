@@ -1,8 +1,8 @@
 import chunk from "lodash/chunk.js";
 
 import {
+  getAllUserIds_db,
   getFullUsers_db,
-  getUserFull_db,
   updateUserMessageId_db,
 } from "@/src/prisma/users.js";
 import { notifyMissedAttestations } from "@/src/telegram/notifications/notifyMissedAttestations.js";
@@ -14,9 +14,7 @@ import { AsyncTask } from "toad-scheduler";
 import { getEpochSlots } from "@/src/utils/misc.js";
 
 export async function updateUsersStatsImp(userId?: number) {
-  const users = userId
-    ? [await getUserFull_db(userId)]
-    : await getFullUsers_db();
+  const users = await getAllUserIds_db(userId);
 
   const userChunks = chunk(users, 5);
 
@@ -25,7 +23,7 @@ export async function updateUsersStatsImp(userId?: number) {
       currentChunk.map(async (user) => {
         console.log(`${new Date()} - Notifying stats for: ${user.username}`);
         try {
-          const messageIdStats = await notifyUserStatsMessage(user);
+          const messageIdStats = await notifyUserStatsMessage(user.userId);
 
           if (messageIdStats && messageIdStats !== Number(user.messageId)) {
             await updateUserMessageId_db(Number(user.id), messageIdStats);

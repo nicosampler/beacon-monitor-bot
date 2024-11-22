@@ -33,6 +33,7 @@ import {
   Validator,
   WithdrawalAddress,
 } from "@prisma/client";
+import { getFullUsers_db } from "@/src/prisma/users.js";
 
 const prisma = getPrisma();
 const tokenUnit = 32000000000; // TODO: move to env file
@@ -79,10 +80,7 @@ interface UserStats {
 }
 
 export async function notifyUserStatsMessage(
-  user: User & {
-    validators: Validator[];
-    withdrawalAddresses: WithdrawalAddress[];
-  }
+  userId: bigint
 ): Promise<number | undefined> {
   const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
   const headSlot = currentSlot - Number(process.env.BEACON_DELAY_SLOTS_TO_HEAD);
@@ -90,8 +88,14 @@ export async function notifyUserStatsMessage(
     where: { attestationsFetched: true },
     orderBy: { slot: "desc" },
   });
+  const epochFromLastSlotProcessed = getEpochFromSlot(lastSlotProcessed.slot);
   const maxSlotToQuery =
-    getEpochSlots(getEpochFromSlot(lastSlotProcessed.slot)).startSlot - 1;
+    getEpochSlots(epochFromLastSlotProcessed).startSlot - 1;
+
+  const user = await prisma.user.findUnique({
+    where: { userId },
+    include: { validators: true, withdrawalAddresses: true },
+  });
 
   // Bot is syncing if the last slot processed is one slot behind the max slot to query
   let syncing = false;
@@ -194,6 +198,8 @@ async function getUserAllStats(
       v.status === VALIDATOR_STATUS.active_exiting
   );
 
+  console.log("activeValidators: ", activeValidators.length);
+
   const missedAttestations = await getMissedAttestations(
     activeValidators,
     maxSlotToQuery
@@ -207,8 +213,8 @@ async function getUserAllStats(
     withdrawable,
   ] = await Promise.all([
     calculateValidatorStatuses(user, missedAttestations, maxSlotToQuery),
-    calculatePerformanceStats(
-      syncing,
+    calculate1hPerformanceStats(
+      false, //syncing,
       missedAttestations,
       activeValidators.length
     ),
@@ -233,14 +239,14 @@ async function getUserAllStats(
   };
 }
 
-async function calculatePerformanceStats(
+async function calculate1hPerformanceStats(
   syncing: boolean,
   missedAttestations: Committee[],
-  activeValidators: number
+  userActiveValidators: number
 ) {
   if (syncing) return "0";
 
-  const expectedAttestations = epochsIn1h * activeValidators;
+  const expectedAttestations = epochsIn1h * userActiveValidators;
   if (expectedAttestations === 0) return "0";
 
   const performancePercentage = (
@@ -429,13 +435,13 @@ function formatStatsMessage(
 
 async function getMissedAttestations(
   activeValidators: Validator[],
-  lastSlotProcessed: number
+  maxSlotToQuery: number
 ): Promise<Committee[]> {
   return prisma.committee.findMany({
     where: {
       slot: {
-        lte: lastSlotProcessed,
-        gte: lastSlotProcessed - slotsIn1h,
+        lte: maxSlotToQuery,
+        gte: maxSlotToQuery - slotsIn1h,
       },
       validatorIndex: {
         in: activeValidators.map((v) => v.id),

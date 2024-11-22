@@ -46,7 +46,7 @@ export const fetchOldestAttestation = async () => {
       return;
     }
 
-    return fetchAttestation(slotToFetch, logger);
+    await fetchAttestation(slotToFetch, logger);
   } catch (error) {}
 };
 

@@ -1,6 +1,5 @@
 import ms from "ms";
 import chunk from "lodash/chunk.js";
-import pRetry from "p-retry";
 
 import { getAttestations } from "@/src/beacon/endpoints.js";
 import {
@@ -140,15 +139,13 @@ async function updateAndDeleteValidatorAttestations(
     `Processing ${attestations.updates.length} updates and ${attestations.deletes.length} deletes.`
   );
 
-  await pRetry(
-    async () => {
-      await prisma.$transaction(
-        async (tx) => {
-          // Process updates
-          if (attestations.updates.length > 0) {
-            const updateChunks = chunk(attestations.updates, prismaBatchSize);
-            for (const batchUpdates of updateChunks) {
-              const updateQuery = Prisma.sql`
+  await prisma.$transaction(
+    async (tx) => {
+      // Process updates
+      if (attestations.updates.length > 0) {
+        const updateChunks = chunk(attestations.updates, prismaBatchSize);
+        for (const batchUpdates of updateChunks) {
+          const updateQuery = Prisma.sql`
             UPDATE "Committee" c
             SET "attestationDelay" = v.delay
             FROM (VALUES
@@ -164,21 +161,21 @@ async function updateAndDeleteValidatorAttestations(
               AND c."aggregationBitsIndex" = v.aggregationBitsIndex;
           `;
 
-              await tx.$executeRaw(updateQuery);
-            }
-          }
+          await tx.$executeRaw(updateQuery);
+        }
+      }
 
-          // Process deletes
-          if (attestations.deletes.length > 0) {
-            // Create temp table
-            await tx.$executeRaw(
-              Prisma.sql`CREATE TABLE IF NOT EXISTS tmp_delete_committee(slot int, index int, aggregation_bits_index int);`
-            );
+      // Process deletes
+      if (attestations.deletes.length > 0) {
+        // Create temp table
+        await tx.$executeRaw(
+          Prisma.sql`CREATE TABLE IF NOT EXISTS tmp_delete_committee(slot int, index int, aggregation_bits_index int);`
+        );
 
-            // Insert data in chunks
-            const deleteChunks = chunk(attestations.deletes, prismaBatchSize);
-            for (const batchDeletes of deleteChunks) {
-              const insertQuery = Prisma.sql`
+        // Insert data in chunks
+        const deleteChunks = chunk(attestations.deletes, prismaBatchSize);
+        for (const batchDeletes of deleteChunks) {
+          const insertQuery = Prisma.sql`
             INSERT INTO tmp_delete_committee (slot, index, aggregation_bits_index)
             VALUES ${Prisma.join(
               batchDeletes.map(
@@ -187,39 +184,28 @@ async function updateAndDeleteValidatorAttestations(
               )
             )};
           `;
-              await tx.$executeRaw(insertQuery);
-            }
+          await tx.$executeRaw(insertQuery);
+        }
 
-            // Delete matching records
-            const deleteQuery = Prisma.sql`
+        // Delete matching records
+        const deleteQuery = Prisma.sql`
           DELETE FROM "Committee" c
           USING tmp_delete_committee t
           WHERE c.slot = t.slot 
             AND c.index = t.index 
             AND c."aggregationBitsIndex" = t.aggregation_bits_index;
         `;
-            await tx.$executeRaw(deleteQuery);
+        await tx.$executeRaw(deleteQuery);
+        // Truncate temp table
+        await tx.$executeRaw(Prisma.sql`TRUNCATE TABLE tmp_delete_committee;`);
+      }
 
-            // Truncate temp table
-            await tx.$executeRaw(
-              Prisma.sql`TRUNCATE TABLE tmp_delete_committee;`
-            );
-          }
-
-          // Update slot
-          await tx.slot.update({
-            where: { slot: slotNumber },
-            data: { attestationsFetched: true },
-          });
-        },
-        {
-          timeout: ms("1m"),
-        }
-      );
+      // Update slot
+      await tx.slot.update({
+        where: { slot: slotNumber },
+        data: { attestationsFetched: true },
+      });
     },
-    {
-      retries: 2,
-      factor: 2,
-    }
+    { timeout: ms("1m") }
   );
 }

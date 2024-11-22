@@ -7,7 +7,7 @@ import { MyContext } from "@/src/config/session.js";
 import { handleError } from "@/src/utils/errors/handleError.js";
 import { AppError } from "@/src/utils/errors/AppError.js";
 import { editMessage } from "@/src/telegram/utils/messaging.js";
-import { getUserFull_db, upsertUser_db } from "@/src/prisma/users.js";
+import { getFullUsers_db, upsertUser_db } from "@/src/prisma/users.js";
 import { dashboard } from "@/src/telegram/commands/dashboard.js";
 import { getDataFromContext } from "@/src/telegram/utils/getUserIdFromCtx.js";
 import { getPrisma } from "@/src/config/prisma.js";
@@ -85,7 +85,7 @@ export async function loadValidators(
     let tmpReply = await ctx.reply(`🔄 Loading validators...!`);
 
     // recover user data from the database
-    const userDB = await getUserFull_db(userId);
+    const userDB = await getFullUsers_db(userId);
 
     // check if the user has already reached the maximum number of validators allowed
     // const currentUserValidators = userDB?.validators ?? [];
