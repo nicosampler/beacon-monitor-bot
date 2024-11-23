@@ -195,7 +195,9 @@ async function updateAndDeleteValidatorAttestations(
             AND c.index = t.index 
             AND c."aggregationBitsIndex" = t.aggregation_bits_index;
         `;
-        await tx.$executeRaw(deleteQuery);
+        const deletedCount = await tx.$executeRaw(deleteQuery);
+        logger.info(`Deleted ${deletedCount} records from Committee table`);
+
         // Truncate temp table
         await tx.$executeRaw(Prisma.sql`TRUNCATE TABLE tmp_delete_committee;`);
       }
