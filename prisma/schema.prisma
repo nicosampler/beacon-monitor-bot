@@ -33,6 +33,14 @@ model Committee {
   @@index([slot, attestationDelay])
 }
 
+model tmp_delete_committee {
+  slot                   Int
+  index                  Int
+  aggregation_bits_index Int
+
+  @@id([slot, index, aggregation_bits_index])
+}
+
 model Validator {
   id                Int     @id
   status            Int?

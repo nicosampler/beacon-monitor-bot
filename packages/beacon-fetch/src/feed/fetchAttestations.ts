@@ -35,17 +35,22 @@ export const fetchAttestation = async (
     // Process all attestations. Separates them by updates and deletes depending on the attestation delay env.BEACON_MAX_ATTESTATION_DELAY.
     const allUpdates: CommitteeUpdate[] = [];
     const allDeletes: CommitteeUpdate[] = [];
+
     for (const attestation of filteredAttestations) {
       const processedAttestations = processAttestation(slotNumber, attestation);
       allUpdates.push(...processedAttestations.updates);
       allDeletes.push(...processedAttestations.deletes);
     }
 
-    // Update or delete the validators from the committee table.
+    // Deduplicate and prioritize deletes over updates
+    const { updates: uniqueUpdates, deletes: uniqueDeletes } =
+      deduplicateAttestations(allUpdates, allDeletes);
+
+    // Update or delete the validators from the committee table
     await updateAndDeleteValidatorAttestations(
       {
-        updates: allUpdates,
-        deletes: allDeletes,
+        updates: uniqueUpdates,
+        deletes: uniqueDeletes,
       },
       slotNumber,
       logger
@@ -57,6 +62,51 @@ export const fetchAttestation = async (
     throw error;
   }
 };
+
+function deduplicateAttestations(
+  allUpdates: CommitteeUpdate[],
+  allDeletes: CommitteeUpdate[]
+): AttestationResult {
+  // Helper function to check if entry exists
+  const entryExists = (arr: CommitteeUpdate[], value: CommitteeUpdate) => {
+    return arr.some(
+      (entry) =>
+        entry.slot === value.slot &&
+        entry.index === value.index &&
+        entry.aggregationBitsIndex === value.aggregationBitsIndex
+    );
+  };
+
+  // Remove duplicates from deletes first (keeping first occurrence)
+  const uniqueDeletes = allDeletes.filter(
+    (del, index) =>
+      allDeletes.findIndex(
+        (d) =>
+          d.slot === del.slot &&
+          d.index === del.index &&
+          d.aggregationBitsIndex === del.aggregationBitsIndex
+      ) === index
+  );
+
+  // Filter updates: remove duplicates and any that exist in deletes
+  const uniqueUpdates = allUpdates.filter(
+    (update, index) =>
+      // Keep only first occurrence of each update
+      allUpdates.findIndex(
+        (u) =>
+          u.slot === update.slot &&
+          u.index === update.index &&
+          u.aggregationBitsIndex === update.aggregationBitsIndex
+      ) === index &&
+      // Remove if exists in deletes (deletes take precedence)
+      !entryExists(uniqueDeletes, update)
+  );
+
+  return {
+    updates: uniqueUpdates,
+    deletes: uniqueDeletes,
+  };
+}
 
 async function getAttestation(slot: number, logger: CustomLogger) {
   const fetchedAttestations = await getAttestations(slot + 1);
@@ -100,7 +150,6 @@ function processAttestation(
   const updates: CommitteeUpdate[] = [];
   const deletes: CommitteeUpdate[] = [];
 
-  // Iterate through the aggregation bits
   for (let i = 0; i < aggregationBits.length; i++) {
     if (aggregationBits[i] === "1") {
       const attestationDelay = slotNumber - Number(attestation.data.slot);
@@ -167,11 +216,6 @@ async function updateAndDeleteValidatorAttestations(
 
       // Process deletes
       if (attestations.deletes.length > 0) {
-        // Create temp table
-        await tx.$executeRaw(
-          Prisma.sql`CREATE TABLE IF NOT EXISTS tmp_delete_committee(slot int, index int, aggregation_bits_index int);`
-        );
-
         // Insert data in chunks
         const deleteChunks = chunk(attestations.deletes, prismaBatchSize);
         for (const batchDeletes of deleteChunks) {
@@ -187,6 +231,13 @@ async function updateAndDeleteValidatorAttestations(
           await tx.$executeRaw(insertQuery);
         }
 
+        const countQuery = await tx.$queryRaw<[{ count: bigint }]>`
+          SELECT COUNT(*) as count FROM tmp_delete_committee;
+        `;
+        logger.info(
+          `Inserted ${countQuery[0].count.toString()} records into tmp_delete_committee table`
+        );
+
         // Delete matching records
         const deleteQuery = Prisma.sql`
           DELETE FROM "Committee" c
@@ -196,7 +247,13 @@ async function updateAndDeleteValidatorAttestations(
             AND c."aggregationBitsIndex" = t.aggregation_bits_index;
         `;
         const deletedCount = await tx.$executeRaw(deleteQuery);
-        logger.info(`Deleted ${deletedCount} records from Committee table`);
+        logger.info(
+          `Deleted ${deletedCount} records from Committee table. ${
+            deletedCount < Number(countQuery[0].count)
+              ? `${Number(countQuery[0].count) - deletedCount} were not found`
+              : ""
+          }`
+        );
 
         // Truncate temp table
         await tx.$executeRaw(Prisma.sql`TRUNCATE TABLE tmp_delete_committee;`);
