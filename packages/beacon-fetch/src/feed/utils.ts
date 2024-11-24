@@ -13,6 +13,7 @@ export const db_getLastSlotWithAttestations = async () =>
   await prisma.slot.findFirst({
     where: { attestationsFetched: true },
     orderBy: { slot: "desc" },
+    select: { slot: true },
   });
 
 export const db_getLastSlotInCommittee = async () =>
@@ -33,11 +34,9 @@ export const db_getSlotByNumber = async (slot: number) =>
   });
 
 export const db_existCommitteeForSlot = async (slot: number) => {
-  // Use findFirst instead of count
   const res = await prisma.committee.findFirst({
     where: { slot },
   });
-  // Return true if a committee is found, false otherwise
   return res !== null;
 };
 

@@ -6,7 +6,10 @@ import { fetchAttestation } from "@/src/feed/fetchAttestations.js";
 import createLogger from "@/src/lib/pino.js";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { env } from "@/src/env.js";
-import { db_existCommitteeForSlot } from "@/src/feed/utils.js";
+import {
+  db_existCommitteeForSlot,
+  db_getLastSlotWithAttestations,
+} from "@/src/feed/utils.js";
 
 const ID = "FetchAttestation";
 const prisma = getPrisma();
@@ -19,13 +22,7 @@ export const fetchOldestAttestation = async () => {
 
   try {
     // Get the last processed slot
-    const lastProcessedSlot = await prisma.slot.findFirst({
-      where: {
-        attestationsFetched: true,
-      },
-      orderBy: { slot: "desc" },
-      select: { slot: true },
-    });
+    const lastProcessedSlot = await db_getLastSlotWithAttestations();
 
     const slotToFetch = lastProcessedSlot
       ? lastProcessedSlot.slot + 1
