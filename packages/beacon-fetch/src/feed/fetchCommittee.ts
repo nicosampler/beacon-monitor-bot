@@ -194,12 +194,16 @@ async function fetchCommitteesForSlots(
 ) {
   logger.info(`Fetching committees for slots: ${slotsToFetch.join(", ")}`);
 
-  const fetchPromises = slotsToFetch.map(async (slot) => {
+  const fetchPromises = slotsToFetch.map(async (slotToFetch) => {
     try {
-      const committees = await getCommittees(slot);
-      return { slot, success: true, committees };
+      const committees = await getCommittees(slotToFetch);
+      return {
+        slot: slotToFetch,
+        success: true,
+        committees: committees.filter((c) => +c.slot >= slotToFetch),
+      };
     } catch (error) {
-      return { slot, success: false, error };
+      return { slot: slotToFetch, success: false, error };
     }
   });
 
