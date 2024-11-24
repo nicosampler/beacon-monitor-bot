@@ -204,59 +204,45 @@ async function updateAndDeleteValidatorAttestations(
                     Prisma.sql`(${u.slot}, ${u.index}, ${u.aggregationBitsIndex}, ${u.attestationDelay})`
                 )
               )}
-            ) AS v(slot, index, aggregationBitsIndex, delay)
+            ) AS v(slot, index, "aggregationBitsIndex", delay)
             WHERE c.slot = v.slot 
               AND c.index = v.index 
-              AND c."aggregationBitsIndex" = v.aggregationBitsIndex;
+              AND c."aggregationBitsIndex" = v."aggregationBitsIndex";
           `;
 
           await tx.$executeRaw(updateQuery);
         }
       }
 
-      // Process deletes
+      // Process deletes using CTE
       if (attestations.deletes.length > 0) {
-        // Insert data in chunks
         const deleteChunks = chunk(attestations.deletes, prismaBatchSize);
         for (const batchDeletes of deleteChunks) {
-          const insertQuery = Prisma.sql`
-            INSERT INTO tmp_delete_committee (slot, index, aggregation_bits_index)
-            VALUES ${Prisma.join(
-              batchDeletes.map(
-                (d) =>
-                  Prisma.sql`(${d.slot}, ${d.index}, ${d.aggregationBitsIndex})`
-              )
-            )};
+          const deleteQuery = Prisma.sql`
+            WITH rows_to_delete AS (
+              SELECT c.*
+              FROM "Committee" c
+              INNER JOIN (
+                VALUES ${Prisma.join(
+                  batchDeletes.map(
+                    (d) =>
+                      Prisma.sql`(${d.slot}, ${d.index}, ${d.aggregationBitsIndex})`
+                  )
+                )}
+              ) AS t(slot, index, "aggregationBitsIndex")
+              ON c.slot = t.slot
+                AND c.index = t.index
+                AND c."aggregationBitsIndex" = t."aggregationBitsIndex"
+            )
+            DELETE FROM "Committee"
+            USING rows_to_delete
+            WHERE "Committee".slot = rows_to_delete.slot
+              AND "Committee".index = rows_to_delete.index
+              AND "Committee"."aggregationBitsIndex" = rows_to_delete."aggregationBitsIndex";
           `;
-          await tx.$executeRaw(insertQuery);
+
+          const deletedCount = await tx.$executeRaw(deleteQuery);
         }
-
-        const countQuery = await tx.$queryRaw<[{ count: bigint }]>`
-          SELECT COUNT(*) as count FROM tmp_delete_committee;
-        `;
-        logger.info(
-          `Inserted ${countQuery[0].count.toString()} records into tmp_delete_committee table`
-        );
-
-        // Delete matching records
-        const deleteQuery = Prisma.sql`
-          DELETE FROM "Committee" c
-          USING tmp_delete_committee t
-          WHERE c.slot = t.slot 
-            AND c.index = t.index 
-            AND c."aggregationBitsIndex" = t.aggregation_bits_index;
-        `;
-        const deletedCount = await tx.$executeRaw(deleteQuery);
-        logger.info(
-          `Deleted ${deletedCount} records from Committee table. ${
-            deletedCount < Number(countQuery[0].count)
-              ? `${Number(countQuery[0].count) - deletedCount} were not found`
-              : ""
-          }`
-        );
-
-        // Truncate temp table
-        await tx.$executeRaw(Prisma.sql`TRUNCATE TABLE tmp_delete_committee;`);
       }
 
       // Update slot
