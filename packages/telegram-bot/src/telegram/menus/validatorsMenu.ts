@@ -6,25 +6,51 @@ import { claim } from "@/src/telegram/commands/claim.js";
 import { handleError } from "@/src/utils/errors/handleError.js";
 import { loadValidators } from "@/src/telegram/commands/loadValidators.js";
 import { MyContext } from "@/src/config/session.js";
-import { myWithdrawalAddresses } from "@/src/telegram/commands/myWithdrawalAddresses.js";
 import { sendMessage } from "@/src/telegram/utils/messaging.js";
+import { myAddresses } from "@/src/telegram/commands/myWithdrawalAddresses.js";
+import { loadFeeRewardAddress } from "@/src/telegram/commands/loadFeeRewardAddress.js";
+import { removeAddress } from "@/src/telegram/commands/removeAddress.js";
 
 export function createValidatorsMenu(bot: BotType) {
   const validatorsMenu = new MenuTemplate<MyContext>(
     "🕵🏽‍♂️ Validators management "
   );
-  validatorsMenu.interact("loadAddress", {
+  validatorsMenu.interact("loadWithdrawalAddress", {
     text: "Add Withdrawal address",
     do: async (ctx) => {
-      if (ctx.from?.is_bot) {
-        await sendMessage(
-          ctx.from.id,
-          "This command is not available for bots."
-        );
+      try {
+        if (ctx.from?.is_bot) {
+          await sendMessage(
+            ctx.from.id,
+            "This command is not available for bots."
+          );
+          return true;
+        }
+        await ctx.conversation.enter(loadValidators.name);
+        return true;
+      } catch (error) {
+        await handleError(error);
         return true;
       }
-      await ctx.conversation.enter(loadValidators.name);
-      return true;
+    },
+  });
+  validatorsMenu.interact("loadFeeRewardAddress", {
+    text: "Add fee reward address",
+    do: async (ctx) => {
+      try {
+        if (ctx.from?.is_bot) {
+          await sendMessage(
+            ctx.from.id,
+            "This command is not available for bots."
+          );
+          return true;
+        }
+        await ctx.conversation.enter(loadFeeRewardAddress.name);
+        return true;
+      } catch (error) {
+        await handleError(error);
+        return true;
+      }
     },
   });
   validatorsMenu.interact("claimRewards", {
@@ -39,9 +65,9 @@ export function createValidatorsMenu(bot: BotType) {
     },
   });
   validatorsMenu.interact("myAddresses", {
-    text: "My withdrawal addresses",
+    text: "My addresses",
     do: async (context) => {
-      await myWithdrawalAddresses(context);
+      await myAddresses(context);
       return true;
     },
   });
@@ -57,9 +83,30 @@ export function createValidatorsMenu(bot: BotType) {
   //     return true;
   //   },
   // });
+  validatorsMenu.interact("removeAddress", {
+    text: "Remove address",
+    do: async (ctx) => {
+      try {
+        if (ctx.from?.is_bot) {
+          await sendMessage(
+            ctx.from.id,
+            "This command is not available for bots."
+          );
+          return true;
+        }
+        await ctx.conversation.enter(removeAddress.name);
+        return true;
+      } catch (error) {
+        await handleError(error);
+        return true;
+      }
+    },
+  });
   validatorsMenu.manualRow(createBackMainMenuButtons());
 
   bot.use(createConversation(loadValidators));
+  bot.use(createConversation(loadFeeRewardAddress));
+  bot.use(createConversation(removeAddress));
 
   return validatorsMenu;
 }

@@ -12,13 +12,13 @@ export function registerMainMenu(bot: BotType) {
   const menu = new MenuTemplate<MyContext>("Main menu");
 
   // bot.command("dashboard", dashboard);
-  menu.interact("Dashboard", {
-    text: "📊 Dashboard",
-    do: async (ctx) => {
-      await dashboard(ctx);
-      return true;
-    },
-  });
+  // menu.interact("Dashboard", {
+  //   text: "📊 Dashboard",
+  //   do: async (ctx) => {
+  //     await dashboard(ctx);
+  //     return true;
+  //   },
+  // });
 
   // Validators menu
   const validatorsMenu = createValidatorsMenu(bot);

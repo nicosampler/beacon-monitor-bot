@@ -85,9 +85,29 @@ export function getUserWithWithdrawalAddresses_db(userId: number) {
 
 export async function deleteUser_db(userId: number) {
   try {
-    const deleteUser = prisma.user.delete({ where: { id: userId } });
+    // First disconnect all relationships
+    const disconnectRelations = prisma.user.update({
+      where: { id: userId },
+      data: {
+        withdrawalAddresses: {
+          set: [], // This disconnects all relationships without deleting the addresses
+        },
+        feeRewardAddresses: {
+          set: [], // This disconnects all relationships without deleting the addresses
+        },
+        validators: {
+          set: [], // This disconnects all relationships without deleting the validators
+        },
+      },
+    });
 
-    const res = await prisma.$transaction([deleteUser]);
+    // Then delete the user
+    const deleteUser = prisma.user.delete({
+      where: { id: userId },
+    });
+
+    // Execute both operations in a transaction
+    const res = await prisma.$transaction([disconnectRelations, deleteUser]);
 
     return res;
   } catch (error) {
@@ -144,5 +164,27 @@ export function updateUserMessageId_db(userId: number, messageId: number) {
     })
     .catch((error) => {
       throw new AppError("Error updating user message id", "BD_ERROR", error);
+    });
+}
+
+export function deleteAddress(userId: number, address: string) {
+  return prisma.user
+    .update({
+      where: { id: userId },
+      data: {
+        withdrawalAddresses: {
+          disconnect: {
+            address: address,
+          },
+        },
+        feeRewardAddresses: {
+          disconnect: {
+            address: address,
+          },
+        },
+      },
+    })
+    .catch((error) => {
+      throw new AppError("Error removing address from user", "BD_ERROR", error);
     });
 }

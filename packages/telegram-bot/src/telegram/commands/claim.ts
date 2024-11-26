@@ -3,7 +3,7 @@ import { addDays, compareAsc, format } from "date-fns";
 import { Message } from "grammy/types";
 
 import { getWithdrawalAddresses_db } from "@/src/prisma/withdrawalAddresses.js";
-//import { signer } from "@/src/config/provider.js";
+import { signer } from "@/src/config/provider.js";
 import depositInstance from "@/src/utils/evm/deposit.js";
 import { inMemoryUsers } from "@/src/utils/inMemoryDB.js";
 import { getUser_db, updateUserById_db } from "@/src/prisma/users.js";
@@ -28,11 +28,10 @@ async function _calculateClaimCoolDown(userId: number) {
 
 async function _claimRewards(withdrawalAddresses: string[]) {
   try {
-    // const tx = await depositInstance
-    //   .connect(signer)
-    //   .claimWithdrawals(withdrawalAddresses);
-    // return (await tx.wait()).transactionHash;
-    return Promise.resolve("0x123");
+    const tx = await depositInstance
+      .connect(signer)
+      .claimWithdrawals(withdrawalAddresses);
+    return (await tx.wait()).transactionHash;
   } catch (error) {
     throw new AppError("Error claiming rewards", "EVM_ERROR", error);
   }

@@ -33,14 +33,6 @@ model Committee {
   @@index([slot, attestationDelay])
 }
 
-model tmp_delete_committee {
-  slot                   Int
-  index                  Int
-  aggregation_bits_index Int
-
-  @@id([slot, index, aggregation_bits_index])
-}
-
 model Validator {
   id                Int     @id
   status            Int?
@@ -154,13 +146,14 @@ model LastSummaryUpdate {
 }
 
 model User {
-  id          BigInt    @id
-  userId      BigInt    @unique
-  chatId      BigInt    @unique
-  username    String    @unique
-  messageId   BigInt?
-  lastClaimed DateTime?
-  statusNofi  DateTime?
+  id            BigInt    @id
+  userId        BigInt    @unique
+  chatId        BigInt    @unique
+  username      String    @unique
+  messageId     BigInt?
+  lastClaimed   DateTime?
+  statusNofi    DateTime?
+  hasBlockedBot Boolean   @default(false)
 
   performanceNotif  DateTime?
   attestationsNotif DateTime?
