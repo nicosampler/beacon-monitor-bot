@@ -85,7 +85,7 @@ export async function loadValidators(
     let tmpReply = await ctx.reply(`🔄 Loading validators...!`);
 
     // recover user data from the database
-    const userDB = await getFullUsers_db(userId);
+    // const userDB = await getFullUsers_db(userId);
 
     // check if the user has already reached the maximum number of validators allowed
     // const currentUserValidators = userDB?.validators ?? [];
@@ -97,30 +97,30 @@ export async function loadValidators(
     // return;
 
     // call the api to bring all the validators associated with the address
-    const userValidators = await prisma.validator.findMany({
-      where: {
-        withdrawalAddress: {
-          equals: withdrawalAddress,
-          mode: "insensitive",
-        },
-        NOT: {
-          users: {
-            some: {
-              id: userId,
-            },
-          },
-        },
-      },
-    });
+    // const userValidators = await prisma.validator.findMany({
+    //   where: {
+    //     withdrawalAddress: {
+    //       equals: withdrawalAddress,
+    //       mode: "insensitive",
+    //     },
+    //     NOT: {
+    //       users: {
+    //         some: {
+    //           id: userId,
+    //         },
+    //       },
+    //     },
+    //   },
+    // });
 
-    // check if there are validators for the address
-    if (!userValidators.length) {
-      await editMessage(
-        tmpReply,
-        `👎 No new validators have been found for this address.`
-      );
-      return;
-    }
+    // // check if there are validators for the address
+    // if (!userValidators.length) {
+    //   await editMessage(
+    //     tmpReply,
+    //     `👎 No new validators have been found for this address.`
+    //   );
+    //   return;
+    // }
 
     // limit validators to the maximum number of validators per user
     //const availableSeats = 600;
@@ -154,30 +154,30 @@ export async function loadValidators(
           create: { address: withdrawalAddress },
         },
       },
-      validators: {
-        connect: userValidators.map((validator) => ({
-          id: validator.id,
-        })),
-      },
+      // validators: {
+      //   connect: userValidators.map((validator) => ({
+      //     id: validator.id,
+      //   })),
+      // },
     };
 
     await upsertUser_db(userId, userData, userData);
 
-    // add user to inMemoryDB
-    // if (!inMemoryUsers[userId]) {
-    //   inMemoryUsers[userId] = {
-    //     id: userId,
-    //     chatId: userId,
-    //   };
-    // }
+    // Conectar validadores - el resultado será el número de filas insertadas
+    const result = await prisma.$executeRaw`
+      INSERT INTO "_UserToValidator" ("A", "B")
+      SELECT ${userId}, "id"
+      FROM "Validator"
+      WHERE LOWER("withdrawalAddress") = LOWER(${withdrawalAddress})
+      AND NOT EXISTS (
+        SELECT 1 FROM "_UserToValidator"
+        WHERE "A" = ${userId} AND "B" = "Validator"."id"
+      )
+    `;
 
-    // reset user inMemoryDB
-    // resetUser(userId);
-
-    // Notify the user
     await editMessage(
       tmpReply,
-      `${userValidators.length} validators were added to your account 💪!
+      `${result} validators were added to your account 💪!
 - It will take some minutes to start providing stats -
 `
     );
