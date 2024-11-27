@@ -154,14 +154,13 @@ export async function loadValidators(
           create: { address: withdrawalAddress },
         },
       },
-      // validators: {
-      //   connect: userValidators.map((validator) => ({
-      //     id: validator.id,
-      //   })),
-      // },
     };
 
-    await upsertUser_db(userId, userData, userData);
+    await prisma.user.upsert({
+      where: { id: userId },
+      update: userData,
+      create: userData,
+    });
 
     // Conectar validadores - el resultado será el número de filas insertadas
     const result = await prisma.$executeRaw`
@@ -178,11 +177,10 @@ export async function loadValidators(
     await editMessage(
       tmpReply,
       `${result} validators were added to your account 💪!
-- It will take some minutes to start providing stats -
-`
+- It will take some minutes to start providing stats -`
     );
 
-    await dashboard(ctx);
+    //await dashboard(ctx);
   } catch (error) {
     await handleError(error, ctx.message?.chat.id);
   }

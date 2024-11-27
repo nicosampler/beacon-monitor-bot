@@ -1,9 +1,14 @@
-import { deleteUser_db as _deleteUser } from "@/src/prisma/users.js";
+import {
+  deleteUser_db as _deleteUser,
+  getUser_db,
+} from "@/src/prisma/users.js";
 import { getDataFromContext } from "../utils/getUserIdFromCtx.js";
-import { inMemoryUsers } from "@/src/utils/inMemoryDB.js";
 import { sendMessage } from "@/src/telegram/utils/messaging.js";
 import { handleError } from "@/src/utils/errors/handleError.js";
 import { MyContext } from "@/src/config/session.js";
+import { getPrisma } from "@/src/config/prisma.js";
+
+const prisma = getPrisma();
 
 export async function deleteUser(ctx: MyContext) {
   try {
@@ -12,10 +17,13 @@ export async function deleteUser(ctx: MyContext) {
     if (!userId) return false;
 
     // delete user from db
-    await _deleteUser(userId);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      sendMessage(userId, "User not found.");
+      return false;
+    }
 
-    // delete user from inMemoryDB
-    delete inMemoryUsers[userId];
+    await _deleteUser(userId);
 
     // notify user
     sendMessage(

@@ -147,9 +147,11 @@ async function fetchValidatorsBatch(
 
 // TODO: move to a different file.
 export async function getActiveValidators(): Promise<number[]> {
-  if (validatorsCache) {
-    return validatorsCache;
-  }
+  // if (validatorsCache) {
+  //   return validatorsCache;
+  // }
+
+  // TODO: implement cache (?)
 
   const batchSize = 25000;
   let allValidators: number[] = [];
@@ -167,7 +169,7 @@ export async function getActiveValidators(): Promise<number[]> {
     currentBatch++;
   }
 
-  validatorsCache = allValidators;
+  // validatorsCache = allValidators;
   return validatorsCache;
 }
 
