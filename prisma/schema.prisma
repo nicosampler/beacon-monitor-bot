@@ -64,7 +64,7 @@ model HourlyValidatorStats {
   attestationsMissed Int?
 
   @@id([validatorIndex, date, hour])
-  @@index([date])
+  @@index([date,hour])
 }
 
 model HourlyExecutionRewards {

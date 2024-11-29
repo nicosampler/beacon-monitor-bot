@@ -147,13 +147,7 @@ async function fetchValidatorsBatch(
 
 // TODO: move to a different file.
 export async function getActiveValidators(): Promise<number[]> {
-  // if (validatorsCache) {
-  //   return validatorsCache;
-  // }
-
-  // TODO: implement cache (?)
-
-  const batchSize = 25000;
+  const batchSize = 200000;
   let allValidators: number[] = [];
   let currentBatch = 0;
 
@@ -163,14 +157,13 @@ export async function getActiveValidators(): Promise<number[]> {
       batchSize
     );
 
-    if (validators.length < batchSize) break;
-
     allValidators = [...allValidators, ...validators];
+
+    if (validators.length < batchSize) break;
     currentBatch++;
   }
 
-  // validatorsCache = allValidators;
-  return validatorsCache;
+  return allValidators;
 }
 
 // Method to manually invalidate cache if needed

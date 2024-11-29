@@ -66,8 +66,8 @@ async function fetchBeaconRewardsTask() {
     let currentEpochToAdd = epochToFetch;
 
     if (epochDistance > 0) {
-      // Process up to 5 epochs, or the actual distance if it's smaller
-      const numberOfEpochsToProcess = Math.min(epochDistance, 5);
+      // Process up to N epochs, or the actual distance if it's smaller
+      const numberOfEpochsToProcess = Math.min(epochDistance, 3);
 
       for (
         let i = 0;
@@ -92,7 +92,7 @@ async function fetchBeaconRewardsTask() {
 }
 
 export const job = new SimpleIntervalJob(
-  { seconds: 80, runImmediately: true },
+  { seconds: 20, runImmediately: true },
   new AsyncTask(`${ID}_task`, () =>
     fetchBeaconRewardsTask().catch((e) => logger.error("TASK-CATCH", e))
   ),

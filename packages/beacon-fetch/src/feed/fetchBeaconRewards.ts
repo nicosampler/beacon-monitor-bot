@@ -21,6 +21,7 @@ export async function fetchBeaconRewards(
 ) {
   try {
     const activeValidators = await getActiveValidators();
+    logger.info(`Active validators: ${activeValidators.length}`);
 
     if (!activeValidators.length) {
       logger.warn(`No active validators found for epochs ${epochs.join(", ")}`);
@@ -49,29 +50,33 @@ export async function fetchBeaconRewards(
       .filter((id) => activeValidatorsIds.has(id))
       .map((id) => id.toString());
 
-    const validatorIdBatches = chunk(allValidatorIds, 150000);
+    const validatorIdBatches = chunk(allValidatorIds, 250000);
 
-    // Create promises for each epoch's validator batches
-    const epochPromises = epochs.map((epochNumber) => {
-      const rewardsPromises = validatorIdBatches.map((validatorIds) =>
-        getAttestationRewards(epochNumber, validatorIds)
-      );
-      return {
+    // Sort epochs to process them in order
+    const sortedEpochs = [...epochs].sort((a, b) => a - b);
+
+    // Create a map to track promises for each epoch
+    const epochPromisesMap = new Map(
+      sortedEpochs.map((epochNumber) => [
         epochNumber,
-        promise: Promise.all(rewardsPromises),
-      };
-    });
+        validatorIdBatches.map((validatorIds) =>
+          getAttestationRewards(epochNumber, validatorIds)
+        ),
+      ])
+    );
 
-    // Process epochs sequentially
-    for (const { epochNumber, promise } of epochPromises) {
-      const responses = await promise;
+    // Process epochs in order as soon as their data is available
+    for (const epochNumber of sortedEpochs) {
+      logger.info(`Waiting for responses of epoch ${epochNumber}`);
 
-      logger.info(`Processing epoch ${epochNumber}`);
+      const responses = await Promise.all(epochPromisesMap.get(epochNumber)!);
 
-      // Check for 404 errors
+      // Check for 404 errors before processing
       if (responses.some((res) => res.status === 404)) {
         throw new Error(`404 - Aborting for epoch ${epochNumber}`);
       }
+
+      logger.info(`Processing epoch ${epochNumber}`);
 
       const epochTimestamp = getTimestampFromEpochNumber(epochNumber);
       const { date, hour } = convertToUTC(epochTimestamp);
@@ -91,8 +96,14 @@ export async function fetchBeaconRewards(
       // Process database operations for this epoch
       await prisma.$transaction(
         async (tx) => {
-          const rewardsDataBatches = chunk(rewardsData, 50000);
-          for (const batch of rewardsDataBatches) {
+          logger.info(`Creating temporary table`);
+          await tx.$executeRaw`
+            CREATE TEMPORARY TABLE temp_validator_stats (
+              LIKE "HourlyValidatorStats" INCLUDING ALL
+            ) ON COMMIT DROP
+          `;
+          const batches = chunk(rewardsData, 100000);
+          for (const batch of batches) {
             const values = batch
               .map(
                 (reward) =>
@@ -100,18 +111,26 @@ export async function fetchBeaconRewards(
               )
               .join(",");
 
-            await prisma.$executeRaw`
-            INSERT INTO "HourlyValidatorStats" ("validatorIndex", "hour", "date", "head", "target", "source", "inactivity")
-            VALUES ${Prisma.raw(values)}
-            ON CONFLICT ("validatorIndex", "hour", "date") DO UPDATE SET
+            await tx.$executeRaw`
+              INSERT INTO temp_validator_stats VALUES ${Prisma.raw(values)}
+            `;
+          }
+          logger.info(`Inserting done`);
+
+          // Merge con la tabla principal
+          logger.info(`Merging with main table`);
+          await tx.$executeRaw`
+            INSERT INTO "HourlyValidatorStats"
+            SELECT * FROM temp_validator_stats
+            ON CONFLICT ("validatorIndex", "hour", "date") 
+            DO UPDATE SET
               "head" = "HourlyValidatorStats"."head" + EXCLUDED."head",
               "target" = "HourlyValidatorStats"."target" + EXCLUDED."target",
               "source" = "HourlyValidatorStats"."source" + EXCLUDED."source",
               "inactivity" = "HourlyValidatorStats"."inactivity" + EXCLUDED."inactivity"
           `;
-          }
 
-          // Update epoch status within the same transaction
+          // Update epoch status
           await tx.epoch.update({
             where: { epoch: epochNumber },
             data: { rewardsFetched: true },
@@ -122,9 +141,7 @@ export async function fetchBeaconRewards(
         }
       );
 
-      logger.info(
-        `Rewards data for epoch ${epochNumber} processed successfully`
-      );
+      logger.info(`Done for epoch ${epochNumber}`);
     }
   } catch (error) {
     if (error.message.includes("404 - Aborting")) {
