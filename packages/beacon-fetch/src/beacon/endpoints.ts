@@ -12,10 +12,12 @@ import { AxiosError } from "axios";
 import pRetry from "p-retry";
 
 export async function getCommittees(
-  stateId: string | number
+  epoch: number,
+  stateId = "head",
 ): Promise<GetCommittees["data"]> {
   const results = await instance.get<GetCommittees>(
-    `${env.BEACON_API_URL}/eth/v1/beacon/states/${stateId}/committees`
+    `${env.BEACON_API_URL}/eth/v1/beacon/states/${stateId}/committees`,
+    { params: { epoch } }
   );
 
   return results.data.data;
