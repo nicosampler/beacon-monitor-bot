@@ -93,7 +93,9 @@ async function getNextSlotToFetch(logger: CustomLogger) {
     return null;
   }
 
-  logger.info(`Slot to fetch: ${slotToFetch}`);
+  logger.info(
+    `Slot to fetch: ${slotToFetch}. headSlot: ${headSlot} - maxSlotToFetch: ${maxSlotToFetch}`
+  );
 
   return slotToFetch;
 
@@ -203,17 +205,12 @@ async function processAndSaveCommittees(
 
 // New function to handle parallel fetching
 export async function fetchNextCommittees(logger: CustomLogger): Promise<void> {
-  try {
-    const slotToFetch = await getNextSlotToFetch(logger);
-    if (!slotToFetch) return;
+  const slotToFetch = await getNextSlotToFetch(logger);
+  if (!slotToFetch) return;
 
-    // send all the API request in parallel
-    const committees = await getCommittees(slotToFetch);
-    await processAndSaveCommittees(logger, slotToFetch, committees);
+  // send all the API request in parallel
+  const committees = await getCommittees(slotToFetch);
+  await processAndSaveCommittees(logger, slotToFetch, committees);
 
-    logger.info(`Done!`);
-  } catch (error) {
-    logger.error("Error in fetchNextCommittees", error);
-    throw error;
-  }
+  logger.info(`Done!`);
 }
