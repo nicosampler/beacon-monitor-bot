@@ -15,50 +15,46 @@ const oldestLookbackSlotDate = new Date(
 );
 
 async function summarizeHourlyTask() {
-  try {
-    const summary = await prisma.lastSummaryUpdate.findFirst();
+  const summary = await prisma.lastSummaryUpdate.findFirst();
 
-    const lastSummaryDate =
-      summary?.hourlyValidatorStats ?? oldestLookbackSlotDate;
-    const nextSummaryDate = addHours(lastSummaryDate, 1);
+  const lastSummaryDate =
+    summary?.hourlyValidatorStats ?? oldestLookbackSlotDate;
+  const nextSummaryDate = addHours(lastSummaryDate, 1);
 
-    const now = new Date();
-    const oneHourBefore = subHours(now, 1);
+  const now = new Date();
+  const oneHourBefore = subHours(now, 1);
 
-    logger.info(
-      `lastSummaryDate: ${lastSummaryDate}, nextSummaryDate: ${nextSummaryDate}, oneHourBefore: ${oneHourBefore}`
-    );
+  logger.info(
+    `lastSummaryDate: ${lastSummaryDate}, nextSummaryDate: ${nextSummaryDate}, oneHourBefore: ${oneHourBefore}`
+  );
 
-    // We should only summarize data that is older than 1 hour
-    // Examples:
-    // Case 1 - Skip:
-    //   now = 12:00
-    //   nowMinus1h = 11:00
-    //   nextSummaryDate = 11:00
-    //   Skip because we can't process data from 11:00 yet
-    //
-    // Case 2 - Process:
-    //   now = 12:00
-    //   nowMinus1h = 11:00
-    //   nextSummaryDate = 10:00
-    //   Process because 10:00 is older than 11:00 (data is complete)
-    if (nextSummaryDate > oneHourBefore) {
-      logger.info("Skipping, data is too recent (less than 1 hour old)");
-      return;
-    }
-
-    await summarizeHourly(lastSummaryDate, nextSummaryDate, logger);
-
-    logger.info("Done.");
-  } catch (error) {
-    logger.error("Error in summarizeAttestationsHourly task", error);
+  // We should only summarize data that is older than 1 hour
+  // Examples:
+  // Case 1 - Skip:
+  //   now = 12:00
+  //   nowMinus1h = 11:00
+  //   nextSummaryDate = 11:00
+  //   Skip because we can't process data from 11:00 yet
+  //
+  // Case 2 - Process:
+  //   now = 12:00
+  //   nowMinus1h = 11:00
+  //   nextSummaryDate = 10:00
+  //   Process because 10:00 is older than 11:00 (data is complete)
+  if (nextSummaryDate > oneHourBefore) {
+    logger.info("Skipping, data is too recent (less than 1 hour old)");
+    return;
   }
+
+  await summarizeHourly(lastSummaryDate, nextSummaryDate, logger);
+
+  logger.info("Done.");
 }
 
 export const job = new SimpleIntervalJob(
   { minutes: 10, runImmediately: true },
   new AsyncTask(`${ID}_task`, () =>
-    summarizeHourlyTask().catch((e) => logger.error("TASK-CATCH", e))
+    summarizeHourlyTask().catch((e) => logger.error("TASK-CATCH", e.message))
   ),
   {
     id: ID,

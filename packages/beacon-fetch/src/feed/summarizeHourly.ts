@@ -170,7 +170,7 @@ export async function removeProcessedExecutionRewards(
 }
 
 export async function summarizeAtomicTransaction(
-  committeeValidators: ValidatorMissedAttestations[],
+  validatorsMissedAttestations: ValidatorMissedAttestations[],
   executionRewards: ValidatorExecutionRewards[],
   hour: number,
   date: string,
@@ -182,19 +182,27 @@ export async function summarizeAtomicTransaction(
 
   await prisma.$transaction(
     async (tx) => {
-      for (let i = 0; i < committeeValidators.length; i += BATCH_SIZE) {
-        const batch = committeeValidators.slice(i, i + BATCH_SIZE);
-        await processCommitteeValidatorsBatch(tx, batch, hour, date);
-      }
+      if (
+        validatorsMissedAttestations.length > 0 &&
+        executionRewards.length > 0
+      ) {
+        // Process missed attestations in batches
+        const missedAttestationBatches = chunk(
+          validatorsMissedAttestations,
+          BATCH_SIZE
+        );
+        for (const batch of missedAttestationBatches) {
+          await processCommitteeValidatorsBatch(tx, batch, hour, date);
+        }
 
-      for (let i = 0; i < executionRewards.length; i += BATCH_SIZE) {
-        const batch = executionRewards.slice(i, i + BATCH_SIZE);
-        await processExecutionRewardsBatch(tx, batch, hour, date);
-      }
+        // Process execution rewards in batches
+        const executionRewardBatches = chunk(executionRewards, BATCH_SIZE);
+        for (const batch of executionRewardBatches) {
+          await processExecutionRewardsBatch(tx, batch, hour, date);
+        }
 
-      if (committeeValidators.length > 0 && executionRewards.length > 0) {
         await updateLastSummaryUpdate("hourlyValidatorStats", endTime, tx);
-        //await removeProcessedCommitteeRecords(tx, endSlot, logger);
+        // await removeProcessedCommitteeRecords(tx, endSlot, logger);
         // TODO: move cleanup to a separate task
         await removeProcessedExecutionRewards(tx, endTime, logger);
       } else {
@@ -242,7 +250,7 @@ export async function summarizeHourly(
   }
 
   // Missed attestations
-  const committeeValidators = await aggregateMissedAttestations(
+  const validatorsMissedAttestations = await aggregateMissedAttestations(
     startSlot,
     endSlot
   );
@@ -257,7 +265,7 @@ export async function summarizeHourly(
 
   // update the hourly validator stats
   await summarizeAtomicTransaction(
-    committeeValidators,
+    validatorsMissedAttestations,
     executionRewards,
     hour,
     date,

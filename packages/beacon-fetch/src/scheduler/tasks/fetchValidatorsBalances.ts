@@ -6,9 +6,11 @@ const ID = "fetchValidatorsBalances";
 const logger = createLogger(ID, false);
 
 export const job = new SimpleIntervalJob(
-  { minutes: 10, runImmediately: true },
+  { minutes: 10, runImmediately: false },
   new AsyncTask(`${ID}_task`, () =>
-    fetchValidatorsBalances(logger).catch((e) => logger.error("TASK-CATCH", e))
+    fetchValidatorsBalances(logger).catch((e) =>
+      logger.error("TASK-CATCH", e.message)
+    )
   ),
   {
     id: ID,

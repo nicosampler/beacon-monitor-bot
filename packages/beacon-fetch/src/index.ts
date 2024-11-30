@@ -1,4 +1,5 @@
 //import createMissingSlots from "@/src/feed/createMissingSlots.js";
+import { fetchValidatorsBalances } from "@/src/feed/fetchValidatorsBalances.js";
 import createLogger from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { scheduleTasks } from "@/src/scheduler/index.js";
@@ -9,7 +10,9 @@ const logger = createLogger("index");
 async function main() {
   await prisma.$connect();
 
-  //await createMissingSlots();
+  if (!(await prisma.validator.findFirst())) {
+    await fetchValidatorsBalances(logger);
+  }
 
   scheduleTasks();
 }
