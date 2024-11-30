@@ -47,7 +47,11 @@ async function fetchNewCommittees() {
     return null;
   }
 
-  await fetchCommittee(logger, slotToFetchEpoch, lastSlotInCommittee.slot);
+  await fetchCommittee(
+    logger,
+    slotToFetchEpoch,
+    lastSlotInCommittee?.slot || -1
+  );
 
   logger.info(`Done!`);
 }
@@ -57,7 +61,7 @@ export const job = new SimpleIntervalJob(
   new AsyncTask(`${ID}_task`, () => {
     return fetchNewCommittees().catch((e) => {
       const logger = createLogger(ID);
-      logger.error("TASK-CATCH", e.message);
+      logger.error("TASK-CATCH", e);
     });
   }),
   {

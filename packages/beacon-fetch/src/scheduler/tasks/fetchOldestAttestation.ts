@@ -12,7 +12,6 @@ import {
 } from "@/src/feed/utils.js";
 
 const ID = "FetchAttestation";
-const prisma = getPrisma();
 
 export const fetchOldestAttestation = async () => {
   const now = new Date();
@@ -28,7 +27,7 @@ export const fetchOldestAttestation = async () => {
       ? lastProcessedSlot.slot + 1
       : oldestLookbackSlot;
 
-    const logger = createLogger(`${ID} for slot ${slotToFetch}`, true);
+    const logger = createLogger(`${ID} for slot ${slotToFetch}`, false);
 
     if (slotToFetch > maxSlotToFetch) {
       logger.info(
