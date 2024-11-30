@@ -8,7 +8,9 @@ export const job = new SimpleIntervalJob(
   { seconds: 2, runImmediately: true },
   new AsyncTask(`${ID}_task`, () => {
     const logger = createLogger(ID);
-    return fetchNextCommittees().catch((e) => logger.error("TASK-CATCH", e));
+    return fetchNextCommittees(logger).catch((e) =>
+      logger.error("TASK-CATCH", e.message)
+    );
   }),
   {
     id: ID,

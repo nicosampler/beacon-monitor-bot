@@ -4,7 +4,7 @@ import { AxiosResponse, InternalAxiosRequestConfig } from "axios";
 export function logRequest(
   request: InternalAxiosRequestConfig
 ): InternalAxiosRequestConfig {
-  const logger = createLogger(null, false);
+  const logger = createLogger(null, true);
   logger.info(
     // body: request.data,
     `${request.method?.toUpperCase()} ${request.url}`
@@ -13,7 +13,7 @@ export function logRequest(
 }
 
 export function logResponse(response: AxiosResponse): AxiosResponse {
-  const logger = createLogger(null, false);
+  const logger = createLogger(null, true);
   const message = `<< ${
     response.status
   } ${response.config?.method?.toUpperCase()} ${response.config?.url}`;

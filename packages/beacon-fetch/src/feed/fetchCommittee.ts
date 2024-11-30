@@ -4,8 +4,16 @@ import pRetry from "p-retry";
 import { getCommittees } from "@/src/beacon/endpoints.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import createLogger, { CustomLogger } from "@/src/lib/pino.js";
-import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
-import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
+import {
+  getEpochFromSlot,
+  getEpochSlots,
+  getOldestLookbackSlot,
+} from "@/src/beacon/utils/misc.js";
+import {
+  getEpochNumberFromTimestamp,
+  getSlotNumberFromTimestamp,
+  getTimestampFromEpochNumber,
+} from "@/src/beacon/utils/time.js";
 import { env } from "@/src/env.js";
 import {
   db_getLastSlotInCommittee,
@@ -62,11 +70,15 @@ async function getNextSlotToFetch(logger: CustomLogger) {
   const now = new Date();
   const headSlot = getSlotNumberFromTimestamp(now.getTime());
   const oldestLookbackSlot = getOldestLookbackSlot();
-
   const lastSlotInCommittee = await db_getLastSlotInCommittee();
+  const maxSlotToFetch = getEpochSlots(
+    getEpochFromSlot(headSlot + env.BEACON_SLOTS_PER_EPOCH * 3)
+  ).endSlot;
+  const slotToFetch = lastSlotInCommittee
+    ? lastSlotInCommittee.slot + 1
+    : oldestLookbackSlot;
 
-  // only fetch up to one epoch ahead
-  if (lastSlotInCommittee?.slot > env.BEACON_SLOTS_PER_EPOCH + headSlot) {
+  if (slotToFetch > maxSlotToFetch) {
     logger.info(`Skipping, head slot is too far in the future`);
     return null;
   }
@@ -80,10 +92,6 @@ async function getNextSlotToFetch(logger: CustomLogger) {
     logger.info(`Skipping, last slot with attestations is too back in time`);
     return null;
   }
-
-  const slotToFetch = lastSlotInCommittee
-    ? lastSlotInCommittee.slot + 1
-    : oldestLookbackSlot;
 
   logger.info(`Slot to fetch: ${slotToFetch}`);
 
@@ -194,9 +202,7 @@ async function processAndSaveCommittees(
 }
 
 // New function to handle parallel fetching
-export async function fetchNextCommittees(): Promise<void> {
-  const logger = createLogger("FetchCommittees", false);
-
+export async function fetchNextCommittees(logger: CustomLogger): Promise<void> {
   try {
     const slotToFetch = await getNextSlotToFetch(logger);
     if (!slotToFetch) return;
