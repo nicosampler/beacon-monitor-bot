@@ -31,6 +31,7 @@ model Committee {
   @@id([slot, index, aggregationBitsIndex])
   @@index([slot, validatorIndex])
   @@index([slot, attestationDelay])
+  @@index([validatorIndex, slot])
 }
 
 model Validator {

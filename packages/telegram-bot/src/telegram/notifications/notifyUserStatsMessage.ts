@@ -1,5 +1,4 @@
 import format from "date-fns/format";
-import { subHours } from "date-fns";
 import { formatEther } from "ethers/lib/utils.js";
 import { bot } from "@/src/config/index.js";
 import { getPrisma } from "@/src/config/prisma.js";
@@ -12,7 +11,6 @@ import {
   getEpochFromSlot,
   getEpochSlots,
   slotsIn1h,
-  slotsInDay,
   VALIDATOR_STATUS,
 } from "@/src/utils/misc.js";
 import { AppError } from "@/src/utils/errors/AppError.js";
@@ -26,14 +24,8 @@ import {
   DAYS_IN_YEAR,
   DAYS_IN_MONTH,
 } from "@/src/constants/index.js";
-import {
-  Committee,
-  Prisma,
-  User,
-  Validator,
-  WithdrawalAddress,
-} from "@prisma/client";
-import { getFullUsers_db } from "@/src/prisma/users.js";
+import { Committee, User, Validator, WithdrawalAddress } from "@prisma/client";
+import { CustomLogger } from "@/src/lib/pino.js";
 
 const prisma = getPrisma();
 const tokenUnit = 32000000000; // TODO: move to env file
@@ -79,9 +71,7 @@ interface UserStats {
   validatorStats: ValidatorByStatus;
 }
 
-export async function notifyUserStatsMessage(
-  userId: bigint
-): Promise<number | undefined> {
+async function slotsInfo() {
   const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
   const headSlot = currentSlot - Number(process.env.BEACON_DELAY_SLOTS_TO_HEAD);
   const lastSlotProcessed = await prisma.slot.findFirst({
@@ -92,19 +82,33 @@ export async function notifyUserStatsMessage(
   const maxSlotToQuery =
     getEpochSlots(epochFromLastSlotProcessed).startSlot - 1;
 
-  const user = await prisma.user.findUnique({
-    where: { userId },
-    include: { validators: true, withdrawalAddresses: true },
-  });
-
   // Bot is syncing if the last slot processed is one slot behind the max slot to query
   let syncing = false;
   if (headSlot - maxSlotToQuery > Number(process.env.BEACON_SLOTS_PER_EPOCH)) {
     syncing = true;
   }
 
-  // calculate user stats
-  const stats = await getUserAllStats(syncing, maxSlotToQuery, user);
+  return { headSlot, maxSlotToQuery, syncing };
+}
+
+async function getUser(userId: bigint) {
+  return await prisma.user.findUnique({
+    where: { userId },
+    include: { validators: true, withdrawalAddresses: true },
+  });
+}
+
+export async function notifyUserStatsMessage(
+  userId: bigint,
+  logger: CustomLogger
+): Promise<number | undefined> {
+  const { headSlot, maxSlotToQuery, syncing } = await slotsInfo();
+
+  logger.info(`db full user`);
+  const user = await getUser(userId);
+  logger.info(`db full user done`);
+
+  const stats = await getUserAllStats(syncing, maxSlotToQuery, user, logger);
 
   // send message to the user
   const message = formatStatsMessage(stats, {
@@ -119,18 +123,12 @@ export async function notifyUserStatsMessage(
   );
 }
 
-function calculateValidatorStatuses(
+function getValidatorStatuses(
   user: User & { validators: Validator[] },
+  beaconActiveValidators: Validator[],
   userMissedAttestations: Committee[],
   maxSlotToQuery: number
 ): ValidatorByStatus {
-  // filter active validators
-  const beaconActiveValidators = user.validators.filter(
-    (v) =>
-      v.status === VALIDATOR_STATUS.active_ongoing ||
-      v.status === VALIDATOR_STATUS.active_exiting
-  );
-
   const lastEpoch = getEpochFromSlot(maxSlotToQuery);
 
   const inactiveIds: number[] = [];
@@ -190,20 +188,22 @@ async function getUserAllStats(
   user: User & {
     validators: Validator[];
     withdrawalAddresses: WithdrawalAddress[];
-  }
+  },
+  logger: CustomLogger
 ): Promise<UserStats> {
-  const activeValidators = user.validators.filter(
+  const beaconActiveValidators = user.validators.filter(
     (v) =>
       v.status === VALIDATOR_STATUS.active_ongoing ||
       v.status === VALIDATOR_STATUS.active_exiting
   );
+  logger.info(`beacon active validators: ${beaconActiveValidators.length}`);
 
-  console.log("activeValidators: ", activeValidators.length);
-
+  logger.info(`get missed attestations`);
   const missedAttestations = await getMissedAttestations(
-    activeValidators,
+    Number(user.id),
     maxSlotToQuery
   );
+  logger.info(`get missed attestations done`);
 
   const [
     validatorStatuses,
@@ -212,14 +212,19 @@ async function getUserAllStats(
     rewardsStats,
     withdrawable,
   ] = await Promise.all([
-    calculateValidatorStatuses(user, missedAttestations, maxSlotToQuery),
-    calculate1hPerformanceStats(
-      false, //syncing,
+    getValidatorStatuses(
+      user,
+      beaconActiveValidators,
       missedAttestations,
-      activeValidators.length
+      maxSlotToQuery
+    ),
+    get1hPerformance(
+      syncing,
+      missedAttestations,
+      beaconActiveValidators.length
     ),
     getUserBalance(user.validators),
-    calculateTableStats(user),
+    calculateTableStats(user, logger),
     getWithdrawableAmountByUserId(Number(user.id)),
   ]);
 
@@ -239,7 +244,7 @@ async function getUserAllStats(
   };
 }
 
-async function calculate1hPerformanceStats(
+async function get1hPerformance(
   syncing: boolean,
   missedAttestations: Committee[],
   userActiveValidators: number
@@ -272,7 +277,10 @@ function getUserBalance(validators: Validator[]) {
   };
 }
 
-async function calculateTableStats(user: User & { validators: Validator[] }) {
+async function calculateTableStats(
+  user: User & { validators: Validator[] },
+  logger: CustomLogger
+) {
   const validatorStatsDailyQuery = `
     SELECT 
       COALESCE(SUM(head), 0) as head,
@@ -281,10 +289,8 @@ async function calculateTableStats(user: User & { validators: Validator[] }) {
       COALESCE(SUM(inactivity), 0) as inactivity,
       COALESCE(SUM("attestationsMissed"), 0) as "attestationsMissed"
     FROM "HourlyValidatorStats" hvs
-
     JOIN "_UserToValidator" uv ON uv."B" = hvs."validatorIndex"
     JOIN "Validator" v ON v.id = uv."B"
-
     WHERE uv."A" = $1
       AND (
         hvs.date = CURRENT_DATE AND hvs.hour <= EXTRACT(HOUR FROM NOW()) 
@@ -292,33 +298,6 @@ async function calculateTableStats(user: User & { validators: Validator[] }) {
       )
       AND v.status IN (2, 3)`;
 
-  const validatorStatsDailyResults = await prisma.$queryRawUnsafe<
-    {
-      head: string;
-      target: string;
-      source: string;
-      inactivity: string;
-      attestationsMissed: BigInt;
-    }[]
-  >(validatorStatsDailyQuery, user.id);
-
-  if (!validatorStatsDailyResults.length) return null;
-
-  const totalDailyConsensus =
-    BigInt(validatorStatsDailyResults[0].head) +
-    BigInt(validatorStatsDailyResults[0].target) +
-    BigInt(validatorStatsDailyResults[0].source) +
-    BigInt(validatorStatsDailyResults[0].inactivity);
-
-  const totalDailyConsensusInWei =
-    (BigInt(totalDailyConsensus) * BigInt(1e18)) / BigInt(tokenUnit);
-
-  const totalDailyConsensusEth = Number(
-    formatEther(totalDailyConsensusInWei.toString())
-  );
-
-  // TODO: update to lowercase
-  // TODO:make it lowercase when the user enters the address
   const executionRewardsDailyQuery = `
     SELECT 
       COALESCE(SUM(her.amount), 0) as total
@@ -327,13 +306,41 @@ async function calculateTableStats(user: User & { validators: Validator[] }) {
     WHERE fra."B" = $1
       AND her.date >= NOW() - INTERVAL '24 hours'`;
 
-  const executionResults = await prisma.$queryRawUnsafe<{ total: string }[]>(
-    executionRewardsDailyQuery,
-    user.id
+  logger.info(`1d stats`);
+  const [validatorStats, executionRewards] = await Promise.all([
+    prisma.$queryRawUnsafe<
+      {
+        head: string;
+        target: string;
+        source: string;
+        inactivity: string;
+        attestationsMissed: BigInt;
+      }[]
+    >(validatorStatsDailyQuery, user.id),
+    prisma.$queryRawUnsafe<
+      {
+        total: string;
+      }[]
+    >(executionRewardsDailyQuery, user.id),
+  ]);
+  logger.info(`1d stats done`);
+  if (!validatorStats.length) return null;
+
+  const totalDailyConsensus =
+    BigInt(validatorStats[0].head) +
+    BigInt(validatorStats[0].target) +
+    BigInt(validatorStats[0].source) +
+    BigInt(validatorStats[0].inactivity);
+
+  const totalDailyConsensusInWei =
+    (BigInt(totalDailyConsensus) * BigInt(1e18)) / BigInt(tokenUnit);
+
+  const totalDailyConsensusEth = Number(
+    formatEther(totalDailyConsensusInWei.toString())
   );
 
   const totalDailyExecution = Number(
-    formatEther(executionResults[0].total.toString())
+    formatEther(executionRewards[0].total.toString())
   );
 
   const totalUsd =
@@ -345,7 +352,7 @@ async function calculateTableStats(user: User & { validators: Validator[] }) {
   const performance =
     100 *
     (1 -
-      Number(validatorStatsDailyResults[0].attestationsMissed) /
+      Number(validatorStats[0].attestationsMissed) /
         (epochsInDay * user.validators.length));
 
   return {
@@ -434,31 +441,36 @@ function formatStatsMessage(
 }
 
 async function getMissedAttestations(
-  activeValidators: Validator[],
+  userId: number,
   maxSlotToQuery: number
 ): Promise<Committee[]> {
-  return prisma.committee.findMany({
-    where: {
-      slot: {
-        lte: maxSlotToQuery,
-        gte: maxSlotToQuery - slotsIn1h,
-      },
-      validatorIndex: {
-        in: activeValidators.map((v) => v.id),
-      },
-      OR: [
-        { attestationDelay: null },
-        {
-          attestationDelay: {
-            gt: Number(process.env.BEACON_MAX_ATTESTATION_DELAY),
-          },
-        },
-      ],
-    },
-    orderBy: {
-      slot: "desc",
-    },
-  });
+  return prisma.$queryRaw<Committee[]>`
+    WITH RECURSIVE slots AS (
+      SELECT ${maxSlotToQuery - slotsIn1h} as slot_start, ${maxSlotToQuery} as slot_end
+    ),
+    active_validators AS MATERIALIZED (
+      SELECT DISTINCT v.id
+      FROM "_UserToValidator" uv 
+      JOIN "Validator" v ON v.id = uv."B"
+      WHERE uv."A" = ${userId}
+      AND v.status IN (${VALIDATOR_STATUS.active_ongoing}, ${VALIDATOR_STATUS.active_exiting})
+    )
+    SELECT c.* 
+    FROM active_validators av
+    CROSS JOIN slots s
+    JOIN LATERAL (
+      SELECT *
+      FROM "Committee" c
+      WHERE c."validatorIndex" = av.id
+      AND c.slot BETWEEN s.slot_start AND s.slot_end
+      AND (
+        c."attestationDelay" IS NULL 
+        OR c."attestationDelay" > ${Number(process.env.BEACON_MAX_ATTESTATION_DELAY)}
+      )
+      LIMIT 1
+    ) c ON true
+    ORDER BY c.slot DESC
+  `;
 }
 
 async function updateOrSendMessage(

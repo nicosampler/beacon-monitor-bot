@@ -12,18 +12,25 @@ import { notifyValidatorsActivityChanged } from "@/src/telegram/notifications/no
 import { handleError } from "@/src/utils/errors/handleError.js";
 import { AsyncTask } from "toad-scheduler";
 import { getEpochSlots } from "@/src/utils/misc.js";
+import createLogger from "@/src/lib/pino.js";
 
 export async function updateUsersStatsImp(userId?: number) {
   const users = await getAllUserIds_db(userId);
 
-  const userChunks = chunk(users, 5);
+  const userChunks = chunk(
+    users.filter((user) => user.username == "nfd_87"),
+    5
+  );
 
   for (const currentChunk of userChunks) {
     await Promise.all(
       currentChunk.map(async (user) => {
-        console.log(`${new Date()} - Notifying stats for: ${user.username}`);
+        const logger = createLogger(`notify user: ${user.username}`);
         try {
-          const messageIdStats = await notifyUserStatsMessage(user.userId);
+          const messageIdStats = await notifyUserStatsMessage(
+            user.userId,
+            logger
+          );
 
           if (messageIdStats && messageIdStats !== Number(user.messageId)) {
             await updateUserMessageId_db(Number(user.id), messageIdStats);

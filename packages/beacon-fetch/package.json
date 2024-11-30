@@ -26,7 +26,6 @@
     "p-retry": "^6.2.0",
     "pg": "^8.5.1",
     "pino": "^9.3.1",
-    "pino-multi-stream": "^6.0.0",
     "pino-pretty": "^11.2.1",
     "pino-tee": "^0.3.0",
     "rate-limiter-flexible": "^5.0.3",

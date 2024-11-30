@@ -46,19 +46,19 @@ async function fetchBeaconRewardsTask() {
       return;
     }
 
-    const lastSlotWithRewards = await prisma.slot.findFirst({
-      where: { attestationsFetched: true },
-      orderBy: { slot: "desc" },
-    });
+    // const lastSlotWithRewards = await prisma.slot.findFirst({
+    //   where: { attestationsFetched: true },
+    //   orderBy: { slot: "desc" },
+    // });
 
-    const epochOfLastSlotWithRewards = getEpochNumberFromTimestamp(
-      getTimestampFromSlotNumber(lastSlotWithRewards?.slot)
-    );
+    // const epochOfLastSlotWithRewards = getEpochNumberFromTimestamp(
+    //   getTimestampFromSlotNumber(lastSlotWithRewards?.slot)
+    // );
 
-    if (epochToFetch - epochOfLastSlotWithRewards > 2) {
-      logger.info(`Skipping, last slot with rewards is too back in time.`);
-      return;
-    }
+    // if (epochToFetch - epochOfLastSlotWithRewards > 2) {
+    //   logger.info(`Skipping, last slot with attestations is too back in time.`);
+    //   return;
+    // }
 
     // Calculate how many epochs we can process based on distance to head
     const epochDistance = headEpoch - epochToFetch;
