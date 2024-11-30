@@ -178,6 +178,9 @@ importers:
       pino:
         specifier: ^9.3.1
         version: 9.3.1
+      pino-pretty:
+        specifier: ^11.2.1
+        version: 11.2.1
       rate-limiter-flexible:
         specifier: ^5.0.3
         version: 5.0.3
