@@ -47,6 +47,8 @@ async function fetchNewCommittees() {
     return null;
   }
 
+  logger.info(`Fetching...`);
+
   await fetchCommittee(
     logger,
     slotToFetchEpoch,
