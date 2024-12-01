@@ -1,5 +1,5 @@
 import { logRequest, logResponse } from "@/src/utils/http/index.js";
-import { limitRequests } from "@/src/blockscout/utils/rateLimiter.js";
+import { limitRequests } from "@/src/execution/utils/rateLimiter.js";
 import axios, { InternalAxiosRequestConfig } from "axios";
 import * as AxiosLogger from "axios-logger";
 

@@ -47,7 +47,7 @@ async function fetchNewCommittees() {
     return null;
   }
 
-  logger.info(`Fetching...`);
+  logger.info("");
 
   await fetchCommittee(
     logger,

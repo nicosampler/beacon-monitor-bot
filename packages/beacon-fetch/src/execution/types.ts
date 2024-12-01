@@ -1,4 +1,4 @@
-export type Miner = {
+export type Blockscout_Miner = {
   ens_domain_name: string | null;
   hash: string; // miner address
   implementations: any[];
@@ -12,12 +12,12 @@ export type Miner = {
   watchlist_names: any[];
 };
 
-export type Reward = {
+export type Blockscout_Reward = {
   reward: string; // reward in wei
   type: string; // check for "Miner Reward"
 };
 
-export type Blocks = {
+export type Blockscout_Blocks = {
   base_fee_per_gas: string;
   blob_gas_price: string | null;
   blob_gas_used: string;
@@ -33,11 +33,11 @@ export type Blocks = {
   gas_used_percentage: number;
   hash: string;
   height: number;
-  miner: Miner;
+  miner: Blockscout_Miner;
   nonce: string;
   parent_hash: string;
   priority_fee: number;
-  rewards: Reward[];
+  rewards: Blockscout_Reward[];
   size: number;
   timestamp: string;
   total_difficulty: string;
@@ -46,4 +46,17 @@ export type Blocks = {
   type: string;
   uncles_hashes: string[];
   withdrawals_count: number;
+};
+
+export type Etherscan_BlockReward = {
+  status: string;
+  message: string;
+  result: {
+    blockNumber: string;
+    timeStamp: string;
+    blockMiner: string;
+    blockReward: string;
+    uncles: string[];
+    uncleInclusionReward: string;
+  };
 };

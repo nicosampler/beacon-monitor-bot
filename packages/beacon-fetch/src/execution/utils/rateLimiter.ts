@@ -3,14 +3,14 @@ import { RateLimiterMemory } from "rate-limiter-flexible";
 
 // Create a rate limiter per second
 const limiterPerSecond = new RateLimiterMemory({
-  points: env.BLOCKSCOUT_API_REQUEST_PER_SECOND,
+  points: env.EXECUTION_API_REQUEST_PER_SECOND,
   duration: 1, // Per second
   keyPrefix: "per-second",
 });
 
 // Create a rate limiter per minute
 const limiterPerMinute = new RateLimiterMemory({
-  points: env.BLOCKSCOUT_API_REQUEST_PER_MINUTE,
+  points: env.EXECUTION_API_REQUEST_PER_MINUTE,
   duration: 60, // Per minute
   keyPrefix: "per-minute",
 });

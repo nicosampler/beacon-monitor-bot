@@ -20,19 +20,19 @@ export const env = createEnv({
     BEACON_MAX_ATTESTATION_DELAY: z.number().int().min(2),
     // Beacon API
     BEACON_API_URL: z.string().url(),
-    BEACON_API_KEY: z.string().optional(),
+    BEACON_API_BKP_URL: z.string().url(),
     BEACON_API_REQUEST_PER_SECOND: z.number().int().positive(),
     BEACON_API_REQUEST_PER_MINUTE: z.number().int().positive(),
 
     // Execution
     EXECUTION_BLOCK_LOOKBACK: z.number().int().positive(),
-
-    // Blockscout API
-    BLOCKSCOUT_API_URL: z.string().url(),
-    BEACON_API_BKP_URL: z.string().url(),
-    BLOCKSCOUT_API_KEY: z.string().optional(),
-    BLOCKSCOUT_API_REQUEST_PER_SECOND: z.number().int().positive(),
-    BLOCKSCOUT_API_REQUEST_PER_MINUTE: z.number().int().positive(),
+    // Execution API
+    EXECUTION_API_URL: z.string().url(),
+    EXECUTION_API_KEY: z.string().optional(),
+    EXECUTION_API_BKP_URL: z.string().url(),
+    EXECUTION_API_BKP_KEY: z.string().optional(),
+    EXECUTION_API_REQUEST_PER_SECOND: z.number().int().positive(),
+    EXECUTION_API_REQUEST_PER_MINUTE: z.number().int().positive(),
   },
   runtimeEnv: {
     ..._env,
@@ -52,13 +52,12 @@ export const env = createEnv({
 
     // Execution config
     EXECUTION_BLOCK_LOOKBACK: Number(_env.EXECUTION_BLOCK_LOOKBACK),
-
-    // Blockscout API
-    BLOCKSCOUT_API_REQUEST_PER_SECOND: Number(
-      _env.BLOCKSCOUT_API_REQUEST_PER_SECOND
+    // Execution API
+    EXECUTION_API_REQUEST_PER_SECOND: Number(
+      _env.EXECUTION_API_REQUEST_PER_SECOND
     ),
-    BLOCKSCOUT_API_REQUEST_PER_MINUTE: Number(
-      _env.BLOCKSCOUT_API_REQUEST_PER_MINUTE
+    EXECUTION_API_REQUEST_PER_MINUTE: Number(
+      _env.EXECUTION_API_REQUEST_PER_MINUTE
     ),
   },
   emptyStringAsUndefined: true,

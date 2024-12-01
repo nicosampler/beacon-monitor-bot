@@ -71,11 +71,6 @@ export async function fetchBeaconRewards(
 
       const responses = await Promise.all(epochPromisesMap.get(epochNumber)!);
 
-      // Check for 404 errors before processing
-      if (responses.some((res) => res.status === 404)) {
-        throw new Error(`404 - Aborting for epoch ${epochNumber}`);
-      }
-
       logger.info(`Processing epoch ${epochNumber}`);
 
       const epochTimestamp = getTimestampFromEpochNumber(epochNumber);
@@ -83,7 +78,7 @@ export async function fetchBeaconRewards(
 
       // Concatenate all rewards data for this epoch
       const rewardsData = responses.flatMap((response) =>
-        response.data.data.total_rewards.map((validatorInfo) => ({
+        response.data.total_rewards.map((validatorInfo) => ({
           validatorIndex: parseInt(validatorInfo.validator_index),
           epoch: epochNumber,
           head: BigInt(validatorInfo.head || "0"),
