@@ -61,7 +61,13 @@ export const job = new SimpleIntervalJob(
   new AsyncTask(`${ID}_task`, () => {
     return fetchNewCommittees().catch((e) => {
       const logger = createLogger(ID);
-      logger.error("TASK-CATCH", e);
+      logger.error("TASK-CATCH", {
+        message: e.message,
+        stack: e.stack,
+        code: e.code,
+        status: e.status,
+        url: e.config?.url,
+      });
     });
   }),
   {
