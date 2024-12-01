@@ -17,10 +17,7 @@ import createLogger from "@/src/lib/pino.js";
 export async function updateUsersStatsImp(userId?: number) {
   const users = await getAllUserIds_db(userId);
 
-  const userChunks = chunk(
-    users.filter((user) => user.username == "nfd_87"),
-    5
-  );
+  const userChunks = chunk(users, 5);
 
   for (const currentChunk of userChunks) {
     await Promise.all(
