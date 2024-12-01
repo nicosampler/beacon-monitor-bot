@@ -1,74 +1,34 @@
 import { getPrisma } from "@/src/lib/prisma.js";
 import { CustomLogger } from "@/src/lib/pino.js";
 import { env } from "@/src/env.js";
-import { BlockResponse, getBlock } from "@/src/execution/endpoints.js";
-import { addSeconds, differenceInSeconds } from "date-fns";
+import { getBlock } from "@/src/execution/endpoints.js";
+import { addSeconds } from "date-fns";
 import { Decimal } from "@prisma/client/runtime/library";
 
 const prisma = getPrisma();
 
-export async function fetchExecutionRewards(logger: CustomLogger) {
-  // Get the latest saved block
-  const latestReward = await prisma.executionRewards.findFirst({
-    orderBy: { timestamp: "desc" },
-  });
-
-  let blockToQuery: number;
-
-  if (latestReward) {
-    const now = new Date();
-    const secondsSinceLastBlock = Math.abs(
-      differenceInSeconds(now, latestReward.timestamp)
-    );
-
-    // If the time since the last block is less than a slot duration * 5, abort
-    if (
-      secondsSinceLastBlock <
-      env.BEACON_SLOT_DURATION_IN_SECONDS * env.BEACON_DELAY_SLOTS_TO_HEAD
-    ) {
-      logger.info(`Skipping, too close to the head.`);
-      return;
-    }
-
-    blockToQuery = latestReward.blockNumber + 1;
-  } else {
-    blockToQuery = env.EXECUTION_BLOCK_LOOKBACK;
-  }
-
-  logger.info(`Fetching block: ${blockToQuery}`);
-  let blockInfo: BlockResponse = undefined;
-
+export async function fetchExecutionRewards(
+  logger: CustomLogger,
+  blockToQuery: number,
+  latestRewardTimestamp: Date
+) {
   try {
-    blockInfo = await getBlock(blockToQuery);
+    const blockInfo = await getBlock(blockToQuery);
+    await prisma.executionRewards.create({
+      data: blockInfo,
+    });
   } catch (error: any) {
-    if (
-      error.response.status === 404 &&
-      error.response.statusText === "Not Found"
-    ) {
-      logger.info(`Block ${blockToQuery} not found`);
-
-      await prisma.executionRewards.create({
-        data: {
-          address: "",
-          timestamp: addSeconds(
-            latestReward.timestamp,
-            env.BEACON_SLOT_DURATION_IN_SECONDS
-          ),
-          amount: new Decimal(0),
-          blockNumber: blockToQuery,
-        },
-      });
-
-      return;
-    } else {
-      logger.error(`Error fetching block ${blockToQuery}: ${error}`, {
-        message: error.message,
-      });
-      return;
-    }
+    logger.warn("Not found");
+    await prisma.executionRewards.create({
+      data: {
+        address: "",
+        timestamp: addSeconds(
+          latestRewardTimestamp,
+          env.BEACON_SLOT_DURATION_IN_SECONDS
+        ),
+        amount: new Decimal(0),
+        blockNumber: blockToQuery,
+      },
+    });
   }
-
-  await prisma.executionRewards.create({
-    data: blockInfo,
-  });
 }

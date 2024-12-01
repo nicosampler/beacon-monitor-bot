@@ -292,11 +292,14 @@ async function calculateTableStats(
     JOIN "_UserToValidator" uv ON uv."B" = hvs."validatorIndex"
     JOIN "Validator" v ON v.id = uv."B"
     WHERE uv."A" = $1
+      AND v.status IN (2, 3)
       AND (
-        hvs.date = CURRENT_DATE AND hvs.hour <= EXTRACT(HOUR FROM NOW()) 
-        OR hvs.date = CURRENT_DATE - INTERVAL '1 day' AND hvs.hour > EXTRACT(HOUR FROM NOW()) 
-      )
-      AND v.status IN (2, 3)`;
+        -- Today's records up to current hour
+        (hvs.date = CURRENT_DATE AND hvs.hour <= EXTRACT(HOUR FROM NOW()))
+        OR
+        -- Yesterday's records after current hour
+        (hvs.date = CURRENT_DATE - INTERVAL '1 day' AND hvs.hour > EXTRACT(HOUR FROM NOW()))
+      )`;
 
   const executionRewardsDailyQuery = `
     SELECT 
@@ -445,11 +448,11 @@ async function getMissedAttestations(
   maxSlotToQuery: number
 ): Promise<Committee[]> {
   return prisma.$queryRaw<Committee[]>`
-    WITH RECURSIVE slots AS (
+    WITH slots AS (
       SELECT ${maxSlotToQuery - slotsIn1h} as slot_start, ${maxSlotToQuery} as slot_end
     ),
     active_validators AS MATERIALIZED (
-      SELECT DISTINCT v.id
+      SELECT v.id
       FROM "_UserToValidator" uv 
       JOIN "Validator" v ON v.id = uv."B"
       WHERE uv."A" = ${userId}
@@ -467,7 +470,6 @@ async function getMissedAttestations(
         c."attestationDelay" IS NULL 
         OR c."attestationDelay" > ${Number(process.env.BEACON_MAX_ATTESTATION_DELAY)}
       )
-      LIMIT 1
     ) c ON true
     ORDER BY c.slot DESC
   `;
