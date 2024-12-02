@@ -209,7 +209,7 @@ async function getUserAllStats(
     validatorStatuses,
     performance,
     balanceStats,
-    rewardsStats,
+    tableStats,
     withdrawable,
   ] = await Promise.all([
     getValidatorStatuses(
@@ -240,7 +240,7 @@ async function getUserAllStats(
       value: (withdrawable * tokenPrice).toFixed(0),
     },
     apy: 0,
-    rewards: rewardsStats,
+    rewards: tableStats,
   };
 }
 
@@ -336,7 +336,7 @@ async function calculateTableStats(
     BigInt(validatorStats[0].inactivity);
 
   const totalDailyConsensusInWei =
-    (BigInt(totalDailyConsensus) * BigInt(1e18)) / BigInt(tokenUnit);
+    (BigInt(totalDailyConsensus) * BigInt(1e9)) / 32n;
 
   const totalDailyConsensusEth = Number(
     formatEther(totalDailyConsensusInWei.toString())

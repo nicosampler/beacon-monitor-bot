@@ -77,16 +77,17 @@ export async function fetchBeaconRewards(
       const { date, hour } = convertToUTC(epochTimestamp);
 
       // Concatenate all rewards data for this epoch
-      const rewardsData = responses.flatMap((response) =>
-        response.data.total_rewards.map((validatorInfo) => ({
-          validatorIndex: parseInt(validatorInfo.validator_index),
-          epoch: epochNumber,
-          head: BigInt(validatorInfo.head || "0"),
-          target: BigInt(validatorInfo.target || "0"),
-          source: BigInt(validatorInfo.source || "0"),
-          inactivity: BigInt(validatorInfo.inactivity || "0"),
-        }))
-      );
+      const rewardsData = responses
+        .flatMap((response) =>
+          response.data.total_rewards.map((validatorInfo) => ({
+            validatorIndex: Number(validatorInfo.validator_index),
+            epoch: epochNumber,
+            head: BigInt(validatorInfo.head || "0"),
+            target: BigInt(validatorInfo.target || "0"),
+            source: BigInt(validatorInfo.source || "0"),
+            inactivity: BigInt(validatorInfo.inactivity || "0"),
+          }))
+        )
 
       // Process database operations for this epoch
       await prisma.$transaction(
