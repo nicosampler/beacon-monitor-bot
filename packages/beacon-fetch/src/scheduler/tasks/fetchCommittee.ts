@@ -47,6 +47,7 @@ async function fetchNewCommittees() {
     return null;
   }
 
+  // Logging the context
   logger.info("");
 
   await fetchCommittee(
@@ -60,8 +61,8 @@ async function fetchNewCommittees() {
 
 export const job = new SimpleIntervalJob(
   { seconds: 10, runImmediately: true },
-  new AsyncTask(`${ID}_task`, () => {
-    return fetchNewCommittees().catch((e) => {
+  new AsyncTask(`${ID}_task`, () =>
+    fetchNewCommittees().catch((e) => {
       const logger = createLogger(ID);
       logger.error("TASK-CATCH", {
         message: e.message,
@@ -70,8 +71,8 @@ export const job = new SimpleIntervalJob(
         status: e.status,
         url: e.config?.url,
       });
-    });
-  }),
+    })
+  ),
   {
     id: ID,
     preventOverrun: true,

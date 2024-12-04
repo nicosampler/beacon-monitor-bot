@@ -42,7 +42,7 @@ export const fetchOldestAttestation = async () => {
       return;
     }
 
-    await fetchAttestation(slotToFetch, logger);
+    return fetchAttestation(slotToFetch, logger);
   } catch (error) {}
 };
 

@@ -44,38 +44,38 @@ async function fetchBeaconRewardsTask() {
     }
 
     // Calculate how many epochs we can process based on distance to head
-    const epochDistance = headEpoch - epochToFetch;
-    const epochsToProcess: number[] = [];
-    let currentEpochToAdd = epochToFetch;
+    // const epochDistance = headEpoch - epochToFetch;
+    // const epochsToProcess: number[] = [];
+    // let currentEpochToAdd = epochToFetch;
 
-    if (epochDistance > 0) {
-      // Process up to N epochs, or the actual distance if it's smaller
-      const numberOfEpochsToProcess = Math.min(epochDistance, 3);
+    // if (epochDistance > 0) {
+    //   // Process up to N epochs, or the actual distance if it's smaller
+    //   const numberOfEpochsToProcess = Math.min(epochDistance, 3);
 
-      for (
-        let i = 0;
-        i < numberOfEpochsToProcess && currentEpochToAdd <= headEpoch;
-        i++
-      ) {
-        epochsToProcess.push(currentEpochToAdd);
-        currentEpochToAdd++;
-      }
-    } else {
-      epochsToProcess.push(epochToFetch);
-    }
+    //   for (
+    //     let i = 0;
+    //     i < numberOfEpochsToProcess && currentEpochToAdd <= headEpoch;
+    //     i++
+    //   ) {
+    //     epochsToProcess.push(currentEpochToAdd);
+    //     currentEpochToAdd++;
+    //   }
+    // } else {
+    //   epochsToProcess.push(epochToFetch);
+    // }
 
     logger.info(
-      `Fetching beacon rewards for epochs ${epochsToProcess.join(", ")}. HeadEpoch: ${headEpoch}.`
+      `Fetching beacon rewards for epoch ${epochToFetch}. HeadEpoch: ${headEpoch}.`
     );
 
-    await fetchBeaconRewards(epochsToProcess, logger);
+    await fetchBeaconRewards(epochToFetch, logger);
   } catch (error) {
     logger.error(`Error fetching beacon rewards: ${error}`, error);
   }
 }
 
 export const job = new SimpleIntervalJob(
-  { seconds: 20, runImmediately: true },
+  { seconds: 10, runImmediately: true },
   new AsyncTask(`${ID}_task`, () =>
     fetchBeaconRewardsTask().catch((e) => logger.error("TASK-CATCH", e))
   ),

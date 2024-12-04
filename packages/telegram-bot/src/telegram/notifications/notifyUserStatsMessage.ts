@@ -28,7 +28,8 @@ import { Committee, User, Validator, WithdrawalAddress } from "@prisma/client";
 import { CustomLogger } from "@/src/lib/pino.js";
 
 const prisma = getPrisma();
-const tokenUnit = 32000000000; // TODO: move to env file
+const scale = BigInt(10) ** BigInt(18);
+const tokenUnit = BigInt(32000000000); // TODO: move this to a env var. For ETH, it should be just 10**9
 
 interface ValidatorByStatus {
   activeIds: number[];
@@ -49,24 +50,24 @@ interface UserStats {
   };
   apy?: number;
   rewards: {
-    daily: {
-      performance: string;
-      consensus: string;
-      execution: string;
-      usd: string;
-    } | null;
-    weekly: {
-      performance: string;
-      consensus: string;
-      execution: string;
-      usd: string;
-    } | null;
-    monthly: {
-      performance: string;
-      consensus: string;
-      execution: string;
-      usd: string;
-    } | null;
+    daily?: {
+      performance: number;
+      consensus: number;
+      execution: number;
+      usd: number;
+    };
+    weekly?: {
+      performance: number;
+      consensus: number;
+      execution: number;
+      usd: number;
+    };
+    monthly?: {
+      performance: number;
+      consensus: number;
+      execution: number;
+      usd: number;
+    };
   } | null;
   validatorStats: ValidatorByStatus;
 }
@@ -269,7 +270,7 @@ function getUserBalance(validators: Validator[]) {
     BigInt(0)
   );
 
-  const total = Number(totalBalance) / tokenUnit;
+  const total = Number(totalBalance) / Number(tokenUnit);
 
   return {
     total: total.toFixed(2),
@@ -280,7 +281,7 @@ function getUserBalance(validators: Validator[]) {
 async function calculateTableStats(
   user: User & { validators: Validator[] },
   logger: CustomLogger
-) {
+): Promise<UserStats["rewards"]> {
   const validatorStatsDailyQuery = `
     SELECT 
       COALESCE(SUM(head), 0) as head,
@@ -293,13 +294,7 @@ async function calculateTableStats(
     JOIN "Validator" v ON v.id = uv."B"
     WHERE uv."A" = $1
       AND v.status IN (2, 3)
-      AND (
-        -- Today's records up to current hour
-        (hvs.date = CURRENT_DATE AND hvs.hour <= EXTRACT(HOUR FROM NOW()))
-        OR
-        -- Yesterday's records after current hour
-        (hvs.date = CURRENT_DATE - INTERVAL '1 day' AND hvs.hour > EXTRACT(HOUR FROM NOW()))
-      )`;
+      AND hvs.date = CURRENT_DATE - INTERVAL '1 day'`;
 
   const executionRewardsDailyQuery = `
     SELECT 
@@ -336,7 +331,7 @@ async function calculateTableStats(
     BigInt(validatorStats[0].inactivity);
 
   const totalDailyConsensusInWei =
-    (BigInt(totalDailyConsensus) * BigInt(1e9)) / 32n;
+    (BigInt(totalDailyConsensus) * scale) / tokenUnit;
 
   const totalDailyConsensusEth = Number(
     formatEther(totalDailyConsensusInWei.toString())
@@ -360,35 +355,31 @@ async function calculateTableStats(
 
   return {
     daily: {
-      performance: formatNumber(performance, 4),
-      consensus: totalDailyConsensusEth.toFixed(2),
-      execution: totalDailyExecution.toFixed(2),
-      usd: formatNumber(totalUsd, 3, "$"),
+      performance: performance,
+      consensus: totalDailyConsensusEth,
+      execution: totalDailyExecution,
+      usd: totalUsd,
     },
-    weekly: null,
-    // {
-    //   performance: "0",
-    //   consensus: "0",
-    //   execution: "0",
-    //   usd: formatNumber(0, 4, "$"),
-    // },
-    monthly: null,
-    // {
-    //   performance: "0",
-    //   consensus: "0",
-    //   execution: "0",
-    //   usd: formatNumber(0, 4, "$"),
-    // },
   };
 }
 
-function calculateAPY(totalBalance: number, monthlyRewards: number): number {
+function calculateAPY_monthly(
+  totalBalance: number,
+  monthlyRewards: number
+): number {
   if (!totalBalance || !monthlyRewards) return 0;
   return (
     ((1 + monthlyRewards / totalBalance) ** (DAYS_IN_YEAR / DAYS_IN_MONTH) -
       1) *
     100
   );
+}
+
+function calculateAPY_daily(
+  totalBalance: number,
+  dailyRewards: number
+): number {
+  return ((1 + dailyRewards / totalBalance) ** DAYS_IN_YEAR - 1) * 100;
 }
 
 function formatStatsMessage(
@@ -413,15 +404,18 @@ function formatStatsMessage(
   const mainStats = [
     `Last 1h perf: ${status.syncing ? "(needs sync)" : `${performance}%`}`,
     `Bal: ${balance.total} ${TOKEN_SYMBOL} $${balance.value}`,
-    `APY: 🔜`,
+    `APY: ${calculateAPY_daily(
+      Number(balance.total),
+      stats.rewards.daily.consensus
+    ).toFixed(2)}%`,
     `Claimable: ${withdrawable.total} ${TOKEN_SYMBOL} $${withdrawable.value}`,
   ].join("\n");
 
   const rewardsSection = [
     `Stats:`,
     `---------------------------`,
-    `   perf%   ${TOKEN_SYMBOL}  ${FEE_REWARDS_SYMBOL}  Total`,
-    `d: ${stats.rewards.daily.performance}  ${stats.rewards.daily.consensus}  ${stats.rewards.daily.execution}  ${stats.rewards.daily.usd}`,
+    `   perf%  ${TOKEN_SYMBOL}   ${FEE_REWARDS_SYMBOL}  Total`,
+    `d: ${formatNumber(stats.rewards.daily.performance, 4)}  ${formatNumber(stats.rewards.daily.consensus, 3)}  ${formatNumber(stats.rewards.daily.execution, 3)}  ${formatNumber(stats.rewards.daily.usd, 4, "$")}`,
     `w:            🔜`,
     `m:            🔜`,
   ].join("\n");

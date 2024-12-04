@@ -41,9 +41,11 @@ const fetchExecutionRewardsTask = async () => {
 
   const logger = createLogger(`${ID} ${blockToQuery}`, false);
 
-  fetchExecutionRewards(logger, blockToQuery, latestReward?.timestamp).catch(
-    (e) => logger.error("TASK-CATCH", e.message)
-  );
+  return fetchExecutionRewards(
+    logger,
+    blockToQuery,
+    latestReward?.timestamp
+  ).catch((e) => logger.error("TASK-CATCH", e.message));
 };
 
 export const job = new SimpleIntervalJob(
