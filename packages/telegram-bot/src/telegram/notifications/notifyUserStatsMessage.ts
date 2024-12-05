@@ -294,7 +294,13 @@ async function calculateTableStats(
     JOIN "Validator" v ON v.id = uv."B"
     WHERE uv."A" = $1
       AND v.status IN (2, 3)
-      AND hvs.date = CURRENT_DATE - INTERVAL '1 day'`;
+      AND (
+        -- Today's records up to current hour
+        (hvs.date = CURRENT_DATE AND hvs.hour <= EXTRACT(HOUR FROM NOW()))
+        OR
+        -- Yesterday's records after current hour
+        (hvs.date = CURRENT_DATE - INTERVAL '1 day' AND hvs.hour > EXTRACT(HOUR FROM NOW()))
+      )`;
 
   const executionRewardsDailyQuery = `
     SELECT 
