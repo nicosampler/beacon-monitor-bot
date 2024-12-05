@@ -54,7 +54,7 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
       )
     );
 
-    // logger.info(`Processing epoch ${epoch}`);
+    logger.info(`Processing epoch ${epoch}`);
 
     const epochTimestamp = getTimestampFromEpochNumber(epoch);
     const { date, hour } = convertToUTC(epochTimestamp);

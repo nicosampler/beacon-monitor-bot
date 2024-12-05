@@ -33,7 +33,7 @@ async function fetchNewCommittees() {
   );
 
   // Skip if the committee does not exist yet
-  if (slotToFetchEpoch > headEpoch + 2) {
+  if (slotToFetchEpoch > headEpoch + 1) {
     logger.info(`Skipping, epoch ${slotToFetchEpoch} is too far in the future`);
     return null;
   }
