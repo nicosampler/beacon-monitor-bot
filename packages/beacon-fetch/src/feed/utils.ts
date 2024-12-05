@@ -1,8 +1,7 @@
 import { getPrisma } from "@/src/lib/prisma.js";
 import { Prisma, LastSummaryUpdate } from "@prisma/client";
 import { VALIDATOR_STATUS } from "@/src/constants/index.js";
-import pMemoize from "p-memoize";
-import ExpiryMap from "expiry-map";
+import memoize from "memoize";
 import ms from "ms";
 import { env } from "@/src/env.js";
 
@@ -147,7 +146,7 @@ async function fetchValidatorsBatch(
 }
 
 // TODO: invalidate cache if we detect a new validator.
-export const getActiveValidators = pMemoize(
+export const getActiveValidators = memoize(
   async function (): Promise<number[]> {
     const batchSize = 200000;
     let allValidators: number[] = [];
@@ -168,10 +167,8 @@ export const getActiveValidators = pMemoize(
     return allValidators;
   },
   {
-    cache: new ExpiryMap(
-      ms(
-        `${env.BEACON_SLOT_DURATION_IN_SECONDS * env.BEACON_SLOTS_PER_EPOCH * 5} seconds`
-      )
+    maxAge: ms(
+      `${env.BEACON_SLOT_DURATION_IN_SECONDS * env.BEACON_SLOTS_PER_EPOCH * 5} seconds`
     ),
   }
 );
