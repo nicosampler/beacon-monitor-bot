@@ -8,7 +8,6 @@ import { fetchBeaconRewards } from "@/src/feed/fetchBeaconRewards.js"; // Assumi
 
 const prisma = getPrisma();
 const ID = "fetchBeaconRewards";
-const logger = createLogger(ID, false);
 
 /* 
   This task fetches the beacon rewards 
@@ -25,60 +24,37 @@ async function fetchBeaconRewardsTask() {
     getOldestLookbackSlot() / env.BEACON_SLOTS_PER_EPOCH
   );
 
-  try {
-    const lastProcessedEpoch = await prisma.epoch.findFirst({
-      where: {
-        rewardsFetched: true,
-      },
-      orderBy: { epoch: "desc" },
-      select: { epoch: true },
-    });
+  const lastProcessedEpoch = await prisma.epoch.findFirst({
+    where: {
+      rewardsFetched: true,
+    },
+    orderBy: { epoch: "desc" },
+    select: { epoch: true },
+  });
 
-    const epochToFetch = lastProcessedEpoch
-      ? Math.min(lastProcessedEpoch.epoch + 1, headEpoch)
-      : oldestLookbackEpoch;
-
-    if (epochToFetch > headEpoch) {
-      logger.info(`No new epochs to fetch`);
-      return;
-    }
-
-    // Calculate how many epochs we can process based on distance to head
-    // const epochDistance = headEpoch - epochToFetch;
-    // const epochsToProcess: number[] = [];
-    // let currentEpochToAdd = epochToFetch;
-
-    // if (epochDistance > 0) {
-    //   // Process up to N epochs, or the actual distance if it's smaller
-    //   const numberOfEpochsToProcess = Math.min(epochDistance, 3);
-
-    //   for (
-    //     let i = 0;
-    //     i < numberOfEpochsToProcess && currentEpochToAdd <= headEpoch;
-    //     i++
-    //   ) {
-    //     epochsToProcess.push(currentEpochToAdd);
-    //     currentEpochToAdd++;
-    //   }
-    // } else {
-    //   epochsToProcess.push(epochToFetch);
-    // }
-
-    logger.info(
-      `Fetching beacon rewards for epoch ${epochToFetch}. HeadEpoch: ${headEpoch}.`
-    );
-
-    await fetchBeaconRewards(epochToFetch, logger);
-  } catch (error) {
-    logger.error(`Error fetching beacon rewards: ${error}`, error);
+  if (lastProcessedEpoch?.epoch + 1 > headEpoch) {
+    createLogger(ID).info(`No new epochs to fetch`);
+    return;
   }
+
+  const epochToFetch = lastProcessedEpoch
+    ? Math.min(lastProcessedEpoch.epoch + 1, headEpoch)
+    : oldestLookbackEpoch;
+
+  const logger = createLogger(`${ID} Epoch: ${epochToFetch}`);
+  logger.info(`Fetching. HeadEpoch: ${headEpoch}.`);
+
+  await fetchBeaconRewards(epochToFetch, logger);
+
+  logger.info(`Done`);
 }
 
 export const job = new SimpleIntervalJob(
-  { seconds: 10, runImmediately: true },
-  new AsyncTask(`${ID}_task`, () =>
-    fetchBeaconRewardsTask().catch((e) => logger.error("TASK-CATCH", e))
-  ),
+  { seconds: 5, runImmediately: true },
+  new AsyncTask(`${ID}_task`, () => {
+    const logger = createLogger(ID);
+    return fetchBeaconRewardsTask().catch((e) => logger.error("TASK-CATCH", e));
+  }),
   {
     id: ID,
     preventOverrun: true,

@@ -3,7 +3,7 @@ import createLogger from "@/src/lib/pino.js";
 import { cleanupCommittee } from "@/src/feed/cleanupCommittee.js";
 
 const ID = "cleanupCommittee";
-const logger = createLogger(ID, false);
+const logger = createLogger(ID, true);
 
 // TODO: Make it part of the summarizeHourly task
 export const job = new SimpleIntervalJob(

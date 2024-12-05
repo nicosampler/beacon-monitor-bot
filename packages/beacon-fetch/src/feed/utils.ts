@@ -1,6 +1,10 @@
 import { getPrisma } from "@/src/lib/prisma.js";
-import { Prisma, LastSummaryUpdate, PrismaClient } from "@prisma/client";
+import { Prisma, LastSummaryUpdate } from "@prisma/client";
 import { VALIDATOR_STATUS } from "@/src/constants/index.js";
+import pMemoize from "p-memoize";
+import ExpiryMap from "expiry-map";
+import ms from "ms";
+import { env } from "@/src/env.js";
 
 const prisma = getPrisma();
 
@@ -119,9 +123,6 @@ export async function getHighestValidatorId(): Promise<number> {
   return highestValidator?.id ?? -1;
 }
 
-// Cache configuration
-let validatorsCache: number[] | null = null;
-
 async function fetchValidatorsBatch(
   skip: number,
   take: number
@@ -145,28 +146,32 @@ async function fetchValidatorsBatch(
   return validators.map((v) => v.id);
 }
 
-// TODO: move to a different file.
-export async function getActiveValidators(): Promise<number[]> {
-  const batchSize = 200000;
-  let allValidators: number[] = [];
-  let currentBatch = 0;
+// TODO: invalidate cache if we detect a new validator.
+export const getActiveValidators = pMemoize(
+  async function (): Promise<number[]> {
+    const batchSize = 200000;
+    let allValidators: number[] = [];
+    let currentBatch = 0;
 
-  while (true) {
-    const validators = await fetchValidatorsBatch(
-      currentBatch * batchSize,
-      batchSize
-    );
+    while (true) {
+      const validators = await fetchValidatorsBatch(
+        currentBatch * batchSize,
+        batchSize
+      );
 
-    allValidators = [...allValidators, ...validators];
+      allValidators = [...allValidators, ...validators];
 
-    if (validators.length < batchSize) break;
-    currentBatch++;
+      if (validators.length < batchSize) break;
+      currentBatch++;
+    }
+
+    return allValidators;
+  },
+  {
+    cache: new ExpiryMap(
+      ms(
+        `${env.BEACON_SLOT_DURATION_IN_SECONDS * env.BEACON_SLOTS_PER_EPOCH * 5} seconds`
+      )
+    ),
   }
-
-  return allValidators;
-}
-
-// Method to manually invalidate cache if needed
-export function invalidateValidatorsCache(): void {
-  validatorsCache = null;
-}
+);

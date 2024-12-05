@@ -9,7 +9,7 @@ import { convertToUTC } from "@/src/utils/date/index.js";
 
 const prisma = getPrisma();
 const ID = "Summarize:Daily";
-const logger = createLogger(ID);
+const logger = createLogger(ID, true);
 
 const oldestLookbackSlotDate = new Date(
   getTimestampFromSlotNumber(getOldestLookbackSlot())

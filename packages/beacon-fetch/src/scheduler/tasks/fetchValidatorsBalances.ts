@@ -3,7 +3,7 @@ import createLogger from "@/src/lib/pino.js";
 import { AsyncTask, SimpleIntervalJob } from "toad-scheduler";
 
 const ID = "fetchValidatorsBalances";
-const logger = createLogger(ID, false);
+const logger = createLogger(ID, true);
 
 export const job = new SimpleIntervalJob(
   { minutes: 10, runImmediately: false },

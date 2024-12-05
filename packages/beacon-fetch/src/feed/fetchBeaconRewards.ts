@@ -17,6 +17,7 @@ const prisma = getPrisma();
 
 export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
   try {
+    // TODO: cache this, and only fetch if new validators were found.
     const activeValidators = await getActiveValidators();
     logger.info(`Active validators: ${activeValidators.length}`);
 
@@ -34,7 +35,6 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
 
     const highestValidatorId = await getHighestValidatorId();
 
-    // TODO: cache this, and only fetch if new validators were found.
     // Get validator IDs that we will use to fetch rewards for
     const activeValidatorsIds = new Set(activeValidators.map((v) => v));
     const allValidatorIds = Array.from(
@@ -54,7 +54,7 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
       )
     );
 
-    logger.info(`Processing epoch ${epoch}`);
+    // logger.info(`Processing epoch ${epoch}`);
 
     const epochTimestamp = getTimestampFromEpochNumber(epoch);
     const { date, hour } = convertToUTC(epochTimestamp);
@@ -74,7 +74,7 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
     // Process database operations for this epoch
     await prisma.$transaction(
       async (tx) => {
-        logger.info(`Creating temporary table`);
+        //logger.info(`Creating temporary table`);
         await tx.$executeRaw`
           CREATE TEMPORARY TABLE temp_validator_stats (
             LIKE "HourlyValidatorStats" INCLUDING ALL
@@ -93,10 +93,10 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
             INSERT INTO temp_validator_stats VALUES ${Prisma.raw(values)}
           `;
         }
-        logger.info(`Inserting done`);
+        // logger.info(`Inserting done`);
 
         // Merge con la tabla principal
-        logger.info(`Merging with main table`);
+        //logger.info(`Merging with main table`);
         await tx.$executeRaw`
           INSERT INTO "HourlyValidatorStats"
           SELECT * FROM temp_validator_stats
@@ -109,11 +109,11 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
         `;
 
         // check if rewards was fetched for this epoch
-        const epochExists = await tx.epoch.findUnique({
-          where: { epoch, rewardsFetched: true },
+        const dbEpoch = await tx.epoch.findUnique({
+          where: { epoch },
         });
 
-        if (epochExists) {
+        if (dbEpoch.rewardsFetched) {
           logger.warn(`Rewards already fetched for epoch ${epoch}`);
           return;
         }
@@ -128,8 +128,6 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
         timeout: ms("10m"),
       }
     );
-
-    logger.info(`Done for epoch ${epoch}`);
   } catch (error) {
     if (error.message.includes("404 - Aborting")) {
       logger.error(error.message, error);

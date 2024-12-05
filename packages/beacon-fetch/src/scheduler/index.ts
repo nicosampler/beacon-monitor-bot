@@ -10,6 +10,14 @@ import { job as cleanupCommitteeJob } from "@/src/scheduler/tasks/cleanupCommitt
 import { job as fetchCommitteeJob } from "@/src/scheduler/tasks/fetchCommittee.js";
 //import { job as maintainCommitteeJob } from "@/src/scheduler/tasks/maintainCommittee.js";
 
+// TODO: re-think the scheduler tasks.
+// Easy way to disable/enable logs for a task.
+// Easy way to share IDs.
+// Easy way to see the schedule time at a glance.
+// Unify how to create logger when there is no ID. (createLogger refactor)
+// Move the logic that prevents the task to run to the task function, instead of the implementation.
+// Logger errors should ALWAYS be logged.
+
 export function scheduleTasks() {
   // Fetch the oldest attestation
   scheduler.addSimpleIntervalJob(fetchCommitteeJob);
