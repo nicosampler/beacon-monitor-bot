@@ -114,7 +114,7 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
         });
 
         if (epochExists) {
-          logger.info(`Rewards already fetched for epoch ${epoch}`);
+          logger.warn(`Rewards already fetched for epoch ${epoch}`);
           return;
         }
 
