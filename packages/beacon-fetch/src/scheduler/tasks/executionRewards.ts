@@ -28,7 +28,7 @@ const fetchExecutionRewardsTask = async () => {
     ) {
       const logger = createLogger(
         `${ID} ${latestReward.blockNumber + 1}`,
-        false
+        true
       );
       logger.info(`Skipping, too close to the head.`);
       return;

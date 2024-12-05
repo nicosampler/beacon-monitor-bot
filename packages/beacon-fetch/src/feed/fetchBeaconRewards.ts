@@ -15,10 +15,7 @@ import { convertToUTC } from "@/src/utils/date/index.js";
 
 const prisma = getPrisma();
 
-export async function fetchBeaconRewards(
-  epoch: number,
-  logger: CustomLogger
-) {
+export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
   try {
     const activeValidators = await getActiveValidators();
     logger.info(`Active validators: ${activeValidators.length}`);
@@ -63,17 +60,16 @@ export async function fetchBeaconRewards(
     const { date, hour } = convertToUTC(epochTimestamp);
 
     // Concatenate all rewards data for this epoch
-    const rewardsData = responses
-      .flatMap((response) =>
-        response.data.total_rewards.map((validatorInfo) => ({
-          validatorIndex: Number(validatorInfo.validator_index),
-          epoch: epoch,
-          head: BigInt(validatorInfo.head || "0"),
-          target: BigInt(validatorInfo.target || "0"),
-          source: BigInt(validatorInfo.source || "0"),
-          inactivity: BigInt(validatorInfo.inactivity || "0"),
-        }))
-      )
+    const rewardsData = responses.flatMap((response) =>
+      response.data.total_rewards.map((validatorInfo) => ({
+        validatorIndex: Number(validatorInfo.validator_index),
+        epoch: epoch,
+        head: BigInt(validatorInfo.head || "0"),
+        target: BigInt(validatorInfo.target || "0"),
+        source: BigInt(validatorInfo.source || "0"),
+        inactivity: BigInt(validatorInfo.inactivity || "0"),
+      }))
+    );
 
     // Process database operations for this epoch
     await prisma.$transaction(
@@ -111,6 +107,16 @@ export async function fetchBeaconRewards(
             "source" = "HourlyValidatorStats"."source" + EXCLUDED."source",
             "inactivity" = "HourlyValidatorStats"."inactivity" + EXCLUDED."inactivity"
         `;
+
+        // check if rewards was fetched for this epoch
+        const epochExists = await tx.epoch.findUnique({
+          where: { epoch, rewardsFetched: true },
+        });
+
+        if (epochExists) {
+          logger.info(`Rewards already fetched for epoch ${epoch}`);
+          return;
+        }
 
         // Update epoch status
         await tx.epoch.update({
