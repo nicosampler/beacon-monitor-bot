@@ -41,7 +41,7 @@ async function fetchBeaconRewardsTask() {
     ? Math.min(lastProcessedEpoch.epoch + 1, headEpoch)
     : oldestLookbackEpoch;
 
-  const logger = createLogger(`${ID} Epoch: ${epochToFetch}`);
+  const logger = createLogger(`${ID} Epoch: ${epochToFetch}`, true);
   logger.info(`Fetching. HeadEpoch: ${headEpoch}.`);
 
   await fetchBeaconRewards(epochToFetch, logger);

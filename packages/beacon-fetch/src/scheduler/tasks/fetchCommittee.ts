@@ -29,7 +29,7 @@ async function fetchNewCommittees() {
 
   const logger = createLogger(
     `${ID} epoch ${slotToFetchEpoch} - HeadEpoch:${headEpoch} HeadSlot:${headSlot}`,
-    true
+    false
   );
 
   // Skip if the committee does not exist yet

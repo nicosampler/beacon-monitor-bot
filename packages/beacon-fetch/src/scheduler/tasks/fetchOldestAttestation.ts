@@ -27,7 +27,7 @@ export const fetchOldestAttestation = async () => {
       ? lastProcessedSlot.slot + 1
       : oldestLookbackSlot;
 
-    const logger = createLogger(`${ID} for slot ${slotToFetch}`, true);
+    const logger = createLogger(`${ID} for slot ${slotToFetch}`, false);
 
     if (slotToFetch > maxSlotToFetch) {
       logger.info(

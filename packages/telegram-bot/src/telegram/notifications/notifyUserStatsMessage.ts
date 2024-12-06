@@ -26,6 +26,7 @@ import {
 } from "@/src/constants/index.js";
 import { Committee, User, Validator, WithdrawalAddress } from "@prisma/client";
 import { CustomLogger } from "@/src/lib/pino.js";
+import { notifyUnderPerformance } from "@/src/telegram/notifications/notifyUnderPerformance.js";
 
 const prisma = getPrisma();
 const scale = BigInt(10) ** BigInt(18);
@@ -39,7 +40,7 @@ interface ValidatorByStatus {
 }
 
 interface UserStats {
-  performance: string;
+  performance1h: number | null;
   balance: {
     total: string;
     value: string;
@@ -208,7 +209,7 @@ async function getUserAllStats(
 
   const [
     validatorStatuses,
-    performance,
+    performance1h,
     balanceStats,
     tableStats,
     withdrawable,
@@ -229,8 +230,10 @@ async function getUserAllStats(
     getWithdrawableAmountByUserId(Number(user.id)),
   ]);
 
+  await notifyUnderPerformance(user, performance1h);
+
   return {
-    performance,
+    performance1h ,
     validatorStats: validatorStatuses,
     balance: {
       total: balanceStats.total,
@@ -250,16 +253,15 @@ async function get1hPerformance(
   missedAttestations: Committee[],
   userActiveValidators: number
 ) {
-  if (syncing) return "0";
+  if (syncing) return null;
 
+  if (!userActiveValidators) return null;
   const expectedAttestations = epochsIn1h * userActiveValidators;
-  if (expectedAttestations === 0) return "0";
 
-  const performancePercentage = (
+  const performancePercentage =
     ((expectedAttestations - missedAttestations.length) /
       expectedAttestations) *
-    100
-  ).toFixed(2);
+    100;
 
   return performancePercentage;
 }
@@ -396,7 +398,12 @@ function formatStatsMessage(
     maxSlotToQuery: number;
   }
 ): string {
-  const { performance, balance, withdrawable, validatorStats } = stats;
+  const {
+    performance1h: performance,
+    balance,
+    withdrawable,
+    validatorStats,
+  } = stats;
 
   const syncStatus = status.syncing
     ? `⚠️ ${status.headSlot - status.maxSlotToQuery} slots behind ⚠️`
@@ -408,7 +415,7 @@ function formatStatsMessage(
     : `🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`;
 
   const mainStats = [
-    `Last 1h perf: ${status.syncing ? "(needs sync)" : `${performance}%`}`,
+    `Last 1h perf: ${performance == null ? "-" : `${performance.toFixed(2)}%`}`,
     `Bal: ${balance.total} ${TOKEN_SYMBOL} $${balance.value}`,
     `APY: ${calculateAPY_daily(
       Number(balance.total),
