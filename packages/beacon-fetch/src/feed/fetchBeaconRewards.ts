@@ -43,11 +43,8 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
     )
       .filter((id) => activeValidatorsIds.has(id))
       .map((id) => id.toString());
-
     const validatorIdBatches = chunk(allValidatorIds, 250000);
-
     logger.info(`Waiting for responses of epoch ${epoch}`);
-
     const responses = await Promise.all(
       validatorIdBatches.map((validatorIds) =>
         getAttestationRewards(epoch, validatorIds)
@@ -55,10 +52,8 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
     );
 
     logger.info(`Processing epoch ${epoch}`);
-
     const epochTimestamp = getTimestampFromEpochNumber(epoch);
     const { date, hour } = convertToUTC(epochTimestamp);
-
     // Concatenate all rewards data for this epoch
     const rewardsData = responses.flatMap((response) =>
       response.data.total_rewards.map((validatorInfo) => ({
@@ -80,8 +75,9 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
             LIKE "HourlyValidatorStats" INCLUDING ALL
           ) ON COMMIT DROP
         `;
-        const batches = chunk(rewardsData, 100000);
-        for (const batch of batches) {
+
+        const batches = chunk(rewardsData, 250000);
+        const batchPromises = batches.map((batch) => {
           const values = batch
             .map(
               (reward) =>
@@ -89,14 +85,15 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
             )
             .join(",");
 
-          await tx.$executeRaw`
+          return tx.$executeRaw`
             INSERT INTO temp_validator_stats VALUES ${Prisma.raw(values)}
           `;
-        }
-        // logger.info(`Inserting done`);
+        });
+        await Promise.all(batchPromises);
+        logger.info(`Inserting done`);
 
         // Merge con la tabla principal
-        //logger.info(`Merging with main table`);
+        logger.info(`Merging with main table`);
         await tx.$executeRaw`
           INSERT INTO "HourlyValidatorStats"
           SELECT * FROM temp_validator_stats
