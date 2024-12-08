@@ -4,8 +4,9 @@ import { Conversation } from "@grammyjs/conversations";
 import { MyContext } from "@/src/config/session.js";
 import { handleError } from "@/src/utils/errors/handleError.js";
 import { sendMessage } from "@/src/telegram/utils/messaging.js";
-import { updateUserById_db } from "@/src/prisma/users.js";
+import { getUser_db, updateUserById_db } from "@/src/prisma/users.js";
 import { isNumberInRange } from "@/src/utils/misc.js";
+import { AppError } from "@/src/utils/errors/AppError.js";
 
 async function _waitForInput(
   conversation: Conversation<MyContext>,
@@ -23,8 +24,8 @@ async function _waitForInput(
     }
 
     // check if it is a valid eth address
-    if (!isNumberInRange(input, 1, 100)) {
-      await ctx.reply(`Enter a number between 1 and 100.`);
+    if (!isNumberInRange(input, 50, 99.9)) {
+      await ctx.reply(`Enter a number between 50 and 99.9.`);
       continue;
     } else {
       isValidInput = true;
@@ -40,13 +41,17 @@ export async function performanceThreshold(
   ctx: MyContext
 ) {
   try {
-    // ask for the withdrawal address
-    await ctx.reply(
-      `Enter the performance drop percentage that should trigger an alert. (type "exit" to abort)`
-    );
-
     // get uerId
     const { userId } = await getDataFromContext(ctx);
+    const user = await getUser_db(userId);
+    if (!user) {
+      throw new AppError("User not found", "NOT_FOUND");
+    }
+
+    // ask for the withdrawal address
+    await ctx.reply(
+      `Enter the minimum performance percentage below which an alert should be triggered (e.g., enter "80" to be alerted when performance drops below 80%). Current threshold is ${user.performanceThreshold}. (Type "exit" to abort).`
+    );
 
     const input = await _waitForInput(conversation, ctx);
 

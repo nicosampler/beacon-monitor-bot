@@ -4,7 +4,7 @@ import { createConversation } from "@grammyjs/conversations";
 import { BotType } from "@/src/config/index.js";
 import { MyContext } from "@/src/config/session.js";
 import { performanceThreshold } from "@/src/telegram/commands/performanceThreshold.js";
-import { attestationThreshold } from "@/src/telegram/commands/attestationsThreshold.js";
+import { inactiveOnMissedAttestations } from "@/src/telegram/commands/inactiveOnMissedAttestations.js";
 
 export function createAlertingMenu(bot: BotType) {
   const alertingMenu = new MenuTemplate<MyContext>("🔔 Configure alerts");
@@ -15,10 +15,10 @@ export function createAlertingMenu(bot: BotType) {
       return true;
     },
   });
-  alertingMenu.interact("setAttestationsThreshold", {
-    text: "🙈 Missed attestations",
+  alertingMenu.interact("setInactiveOnMissedAttestationsThreshold", {
+    text: "🟡 Inactive validators",
     do: async (context) => {
-      await context.conversation.enter(attestationThreshold.name);
+      await context.conversation.enter(inactiveOnMissedAttestations.name);
       return true;
     },
   });
@@ -26,7 +26,7 @@ export function createAlertingMenu(bot: BotType) {
   alertingMenu.manualRow(createBackMainMenuButtons());
 
   bot.use(createConversation(performanceThreshold));
-  bot.use(createConversation(attestationThreshold));
+  bot.use(createConversation(inactiveOnMissedAttestations));
 
   return alertingMenu;
 }

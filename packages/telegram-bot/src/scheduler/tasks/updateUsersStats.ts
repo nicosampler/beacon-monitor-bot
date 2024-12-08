@@ -2,17 +2,12 @@ import chunk from "lodash/chunk.js";
 
 import {
   getAllUserIds_db,
-  getFullUsers_db,
   updateUserMessageId_db,
 } from "@/src/prisma/users.js";
-import { notifyMissedAttestations } from "@/src/telegram/notifications/notifyMissedAttestations.js";
-import { notifyUnderPerformance } from "@/src/telegram/notifications/notifyUnderPerformance.js";
-import { notifyUserStatsMessage } from "@/src/telegram/notifications/notifyUserStatsMessage.js";
-import { notifyValidatorsActivityChanged } from "@/src/telegram/notifications/notifyValidatorsActivityChanged.js";
 import { handleError } from "@/src/utils/errors/handleError.js";
 import { AsyncTask } from "toad-scheduler";
-import { getEpochSlots } from "@/src/utils/misc.js";
 import createLogger from "@/src/lib/pino.js";
+import { notifyUserStatsMessage } from "@/src/scheduler/tasks/notifyUserStatsMessage.js";
 
 export async function updateUsersStatsImp(userId?: number) {
   const users = await getAllUserIds_db(userId);

@@ -4,8 +4,9 @@ import { Conversation } from "@grammyjs/conversations";
 import { MyContext } from "@/src/config/session.js";
 import { handleError } from "@/src/utils/errors/handleError.js";
 import { sendMessage } from "@/src/telegram/utils/messaging.js";
-import { updateUserById_db } from "@/src/prisma/users.js";
+import { getUser_db, updateUserById_db } from "@/src/prisma/users.js";
 import { isNumberInRange } from "@/src/utils/misc.js";
+import { AppError } from "@/src/utils/errors/AppError.js";
 
 async function _waitForInput(
   conversation: Conversation<MyContext>,
@@ -23,7 +24,7 @@ async function _waitForInput(
     }
 
     // check if it is a valid eth address
-    if (!isNumberInRange(input, 1, 100)) {
+    if (!isNumberInRange(input, 1, 10)) {
       await ctx.reply(`Enter a number between 1 and 10.`);
       continue;
     } else {
@@ -35,18 +36,22 @@ async function _waitForInput(
   return Number(input);
 }
 
-export async function attestationThreshold(
+export async function inactiveOnMissedAttestations(
   conversation: Conversation<MyContext>,
   ctx: MyContext
 ) {
   try {
+    // get uerId
+    const { userId } = await getDataFromContext(ctx);
+    const user = await getUser_db(userId);
+    if (!user) {
+      throw new AppError("User not found", "NOT_FOUND");
+    }
+
     // ask for the withdrawal address
     await ctx.reply(
-      `Enter the number of consecutive missed attestations that should trigger an alert. (type "exit" to abort)`
+      `Enter the number of consecutive missed attestations after which a validator is considered inactive. Current threshold is ${user.inactiveOnMissedAttestations}. (type "exit" to abort)`
     );
-
-    // get uerId
-    const { userId, username } = await getDataFromContext(ctx);
 
     const input = await _waitForInput(conversation, ctx);
 
@@ -57,11 +62,11 @@ export async function attestationThreshold(
 
     // Update DB
     await updateUserById_db(userId, {
-      attestationThreshold: input,
+      inactiveOnMissedAttestations: input,
     });
 
     // Send confirmation message
-    await sendMessage(userId, `Attestations threshold set at: ${input}.`);
+    await sendMessage(userId, `Threshold set at: ${input}.`);
   } catch (error) {
     await handleError(error, ctx.message?.chat.id);
   }

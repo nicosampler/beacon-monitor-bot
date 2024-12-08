@@ -8,6 +8,6 @@ import {
 } from "@/src/scheduler/tasks/updateUsersStats.js";
 
 export const allTasks = {
-  tokenPrice: { task: tokenPriceTask, imp: tokenPriceTaskImp },
+  tokenPrice: { task: tokenPriceTask, imp: tokenPriceTaskImp }, // log and time
   notifyUsers: { task: updateUsersStats, imp: updateUsersStatsImp },
 };

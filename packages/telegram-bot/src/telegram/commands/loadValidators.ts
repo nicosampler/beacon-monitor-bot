@@ -1,14 +1,8 @@
 import { isAddress } from "ethers/lib/utils.js";
-import { User } from "@prisma/client";
-import { inMemoryUsers, resetUser } from "@/src/utils/inMemoryDB.js";
-import { countAllValidatorsLoaded } from "@/src/prisma/validatros.js";
 import { Conversation } from "@grammyjs/conversations";
 import { MyContext } from "@/src/config/session.js";
 import { handleError } from "@/src/utils/errors/handleError.js";
-import { AppError } from "@/src/utils/errors/AppError.js";
 import { editMessage } from "@/src/telegram/utils/messaging.js";
-import { getFullUsers_db, upsertUser_db } from "@/src/prisma/users.js";
-import { dashboard } from "@/src/telegram/commands/dashboard.js";
 import { getDataFromContext } from "@/src/telegram/utils/getUserIdFromCtx.js";
 import { getPrisma } from "@/src/config/prisma.js";
 

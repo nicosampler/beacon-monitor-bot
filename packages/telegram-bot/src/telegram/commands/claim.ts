@@ -5,7 +5,6 @@ import { Message } from "grammy/types";
 import { getWithdrawalAddresses_db } from "@/src/prisma/withdrawalAddresses.js";
 import { signer } from "@/src/config/provider.js";
 import depositInstance from "@/src/utils/evm/deposit.js";
-import { inMemoryUsers } from "@/src/utils/inMemoryDB.js";
 import { getUser_db, updateUserById_db } from "@/src/prisma/users.js";
 import { getDataFromContext } from "@/src/telegram/utils/getUserIdFromCtx.js";
 import { editMessage, replyMessage } from "@/src/telegram/utils/messaging.js";
@@ -73,7 +72,6 @@ export async function claim(ctx: Context) {
 
     // update user.
     await updateUserById_db(userId, { lastClaimed: new Date() });
-    inMemoryUsers[userId].withdrawable = 0;
   } catch (error) {
     await handleError(error, ctx.message?.chat.id);
   }

@@ -26,7 +26,8 @@ import {
 } from "@/src/constants/index.js";
 import { Committee, User, Validator, WithdrawalAddress } from "@prisma/client";
 import { CustomLogger } from "@/src/lib/pino.js";
-import { notifyUnderPerformance } from "@/src/telegram/notifications/notifyUnderPerformance.js";
+import { notifyUnderPerformance } from "@/src/scheduler/tasks/notifyUnderPerformance.js";
+import { notifyInactiveValidators } from "@/src/scheduler/tasks/notifyInactiveValidators.js";
 
 const prisma = getPrisma();
 const scale = BigInt(10) ** BigInt(18);
@@ -112,6 +113,12 @@ export async function notifyUserStatsMessage(
 
   const stats = await getUserAllStats(syncing, maxSlotToQuery, user, logger);
 
+  // TODO: check null values.
+  if (!syncing) {
+    await notifyUnderPerformance(user, stats.performance1h);
+    await notifyInactiveValidators(user, stats.validatorStats.inactiveIds);
+  }
+
   // send message to the user
   const message = formatStatsMessage(stats, {
     syncing,
@@ -135,29 +142,19 @@ function getValidatorStatuses(
 
   const inactiveIds: number[] = [];
   for (const validator of beaconActiveValidators) {
-    // filter missed attestations for this validator
+    // get the last missed attestations for this validator
     const recentMissed = userMissedAttestations
       .filter((entry) => entry.validatorIndex === validator.id)
-      .slice(0, user.attestationThreshold)
-      .map((entry) => getEpochFromSlot(entry.slot));
+      .slice(0, user.inactiveOnMissedAttestations)
+      .map((entry) => getEpochFromSlot(entry.slot))
+      .filter((slot) => slot > lastEpoch - user.inactiveOnMissedAttestations);
 
     // Skip if not enough missed attestations
-    // or if the last epoch is not in the recent missed
-    if (
-      recentMissed.length < user.attestationThreshold ||
-      !recentMissed.includes(lastEpoch)
-    ) {
+    if (recentMissed.length < user.inactiveOnMissedAttestations) {
       continue;
     }
 
-    // check if the epochs are consecutive
-    const missedConsecutiveEpochs = recentMissed.every(
-      (epoch, index) => epoch === recentMissed[0] - index
-    );
-
-    if (missedConsecutiveEpochs) {
-      inactiveIds.push(validator.id);
-    }
+    inactiveIds.push(validator.id);
   }
 
   const activeIds = beaconActiveValidators
@@ -230,10 +227,8 @@ async function getUserAllStats(
     getWithdrawableAmountByUserId(Number(user.id)),
   ]);
 
-  await notifyUnderPerformance(user, performance1h);
-
   return {
-    performance1h ,
+    performance1h,
     validatorStats: validatorStatuses,
     balance: {
       total: balanceStats.total,

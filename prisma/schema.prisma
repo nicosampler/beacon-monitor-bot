@@ -153,14 +153,13 @@ model User {
   username      String    @unique
   messageId     BigInt?
   lastClaimed   DateTime?
-  statusNofi    DateTime?
   hasBlockedBot Boolean   @default(false)
 
   performanceNotif  DateTime?
-  attestationsNotif DateTime?
-
   performanceThreshold Int @default(90)
-  attestationThreshold Int @default(5)
+
+  inactiveNotif DateTime?
+  inactiveOnMissedAttestations Int @default(3)
 
   feeRewardAddresses  FeeRewardAddress[]  @relation("FeeRewardAddressToUser")
   validators          Validator[]         @relation("UserToValidator")
