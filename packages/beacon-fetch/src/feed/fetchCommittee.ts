@@ -1,5 +1,4 @@
 import chunk from "lodash/chunk.js";
-import pRetry from "p-retry";
 
 import { getCommittees } from "@/src/beacon/endpoints.js";
 import { getPrisma } from "@/src/lib/prisma.js";

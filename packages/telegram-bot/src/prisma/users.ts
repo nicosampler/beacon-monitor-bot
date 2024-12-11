@@ -115,6 +115,16 @@ export async function deleteUser_db(userId: number) {
   }
 }
 
+export async function clearAlertDelay_db(userId: number) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      performanceNotif: null,
+      inactiveNotif: null,
+    },
+  });
+}
+
 type UpdateArgs = Parameters<typeof prisma.user.update>;
 export function updateUserById_db(userId: number, data: UpdateArgs[0]["data"]) {
   return prisma.user

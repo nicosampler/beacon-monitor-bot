@@ -93,3 +93,25 @@ export type AttestationRewards = {
     }[];
   };
 };
+
+export type BlockRewards = {
+  execution_optimistic: boolean;
+  finalized: boolean;
+  data: {
+    proposer_index: string;
+    total: string;
+    attestations: string;
+    sync_aggregate: string;
+    proposer_slashings: string;
+    attester_slashings: string;
+  };
+};
+
+export type SyncCommitteeRewards = {
+  execution_optimistic: boolean;
+  finalized: boolean;
+  data: {
+    validator_index: string;
+    reward: string;
+  }[];
+};

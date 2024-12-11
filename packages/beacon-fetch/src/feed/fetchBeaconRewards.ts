@@ -17,15 +17,6 @@ const prisma = getPrisma();
 
 export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
   try {
-    // TODO: cache this, and only fetch if new validators were found.
-    const activeValidators = await getActiveValidators();
-    logger.info(`Active validators: ${activeValidators.length}`);
-
-    if (!activeValidators.length) {
-      logger.warn(`No active validators found for epoch ${epoch}`);
-      return;
-    }
-
     // Create epoch record in db if it doesn't exist
     await prisma.epoch.upsert({
       where: { epoch },
@@ -33,38 +24,20 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
       update: {}, // no update needed, just create if doesn't exist
     });
 
-    const highestValidatorId = await getHighestValidatorId();
-
-    // Get validator IDs that we will use to fetch rewards for
-    const activeValidatorsIds = new Set(activeValidators.map((v) => v));
-    const allValidatorIds = Array.from(
-      { length: highestValidatorId + 1 },
-      (_, i) => i
-    )
-      .filter((id) => activeValidatorsIds.has(id))
-      .map((id) => id.toString());
-    const validatorIdBatches = chunk(allValidatorIds, 250000);
-    logger.info(`Waiting for responses of epoch ${epoch}`);
-    const responses = await Promise.all(
-      validatorIdBatches.map((validatorIds) =>
-        getAttestationRewards(epoch, validatorIds)
-      )
-    );
+    const response = await getAttestationRewards(epoch, []); 
 
     logger.info(`Processing epoch ${epoch}`);
     const epochTimestamp = getTimestampFromEpochNumber(epoch);
     const { date, hour } = convertToUTC(epochTimestamp);
     // Concatenate all rewards data for this epoch
-    const rewardsData = responses.flatMap((response) =>
-      response.data.total_rewards.map((validatorInfo) => ({
-        validatorIndex: Number(validatorInfo.validator_index),
-        epoch: epoch,
-        head: BigInt(validatorInfo.head || "0"),
-        target: BigInt(validatorInfo.target || "0"),
-        source: BigInt(validatorInfo.source || "0"),
-        inactivity: BigInt(validatorInfo.inactivity || "0"),
-      }))
-    );
+    const rewardsData = response.data.total_rewards.map((validatorInfo) => ({
+      validatorIndex: Number(validatorInfo.validator_index),
+      epoch: epoch,
+      head: BigInt(validatorInfo.head || "0"),
+      target: BigInt(validatorInfo.target || "0"),
+      source: BigInt(validatorInfo.source || "0"),
+      inactivity: BigInt(validatorInfo.inactivity || "0"),
+    }));
 
     // Process database operations for this epoch
     await prisma.$transaction(

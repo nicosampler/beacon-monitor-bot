@@ -13,18 +13,20 @@ model Epoch {
 }
 
 model Slot {
-  slot                Int         @id
-  attestationsFetched Boolean // Whether the attestations for this slot have been fetched
-  committee           Committee[]
+  slot                   Int         @id
+  attestationsFetched    Boolean     @default(false) // Whether the attestations for this slot have been fetched
+  syncRewardsFetched     Boolean     @default(false)  // Whether the sync rewards for this slot have been fetched 
+  committee              Committee[]
 
   @@index([attestationsFetched, slot])
+  @@index([syncRewardsFetched, slot])
 }
 
 model Committee {
   slot                 Int
   index                Int // indicates what position in the epoch this slot is in
   aggregationBitsIndex Int // indicates what position in the aggregation bits this validator was assigned to
-  validatorIndex       Int
+  validatorIndex       Int // TODO: should be a relation?
   attestationDelay     Int?
   slot_relation        Slot @relation(fields: [slot], references: [slot], onDelete: Cascade)
 
@@ -58,10 +60,13 @@ model HourlyValidatorStats {
   validatorIndex     Int
   hour               Int // 0-23
   date               DateTime @db.Date // dd-mm-yyyy
-  head               BigInt?
-  target             BigInt?
-  source             BigInt?
-  inactivity         BigInt?
+  
+  syncCommittee      BigInt? // Rewarded for participating in the sync committee
+  head               BigInt? // Reward for attesting
+  target             BigInt? // Reward for attesting
+  source             BigInt? // Reward for attesting
+  inactivity         BigInt? // Reward for attesting
+  
   attestationsMissed Int?
 
   @@id([validatorIndex, date, hour])
@@ -86,6 +91,7 @@ model DailyValidatorStats {
   target             BigInt?
   source             BigInt?
   inactivity         BigInt?
+  syncCommittee      BigInt?
   attestationsMissed Int?
 
   @@id([validatorIndex, date])
@@ -100,41 +106,6 @@ model DailyExecutionRewards {
 
   @@id([address, date])
   @@index([date])
-}
-
-model WeeklyValidatorStats {
-  validatorIndex     Int
-  week               Int // 1-53
-  year               Int
-  executionRewards   Decimal @db.Decimal(78, 0)
-  beaconRewards      Decimal @db.Decimal(78, 0)
-  attestationsMissed Int
-
-  @@id([validatorIndex, week, year])
-  @@index([year, week])
-}
-
-model MonthlyValidatorStats {
-  validatorIndex     Int
-  month              Int // 1-12
-  year               Int
-  executionRewards   Decimal @db.Decimal(78, 0)
-  beaconRewards      Decimal @db.Decimal(78, 0)
-  attestationsMissed Int
-
-  @@id([validatorIndex, month, year])
-  @@index([year, month])
-}
-
-model YearlyValidatorStats {
-  validatorIndex     Int
-  year               Int
-  executionRewards   Decimal @db.Decimal(78, 0)
-  beaconRewards      Decimal @db.Decimal(78, 0)
-  attestationsMissed Int
-
-  @@id([validatorIndex, year])
-  @@index([year])
 }
 
 model LastSummaryUpdate {

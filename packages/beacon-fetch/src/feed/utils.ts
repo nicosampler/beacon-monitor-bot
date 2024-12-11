@@ -43,6 +43,13 @@ export const db_existCommitteeForSlot = async (slot: number) => {
   return res !== null;
 };
 
+export const db_getLastSlotWithSyncRewards = async () =>
+  await prisma.slot.findFirst({
+    where: { syncRewardsFetched: true },
+    orderBy: { slot: "desc" },
+    select: { slot: true },
+  });
+
 export const db_getSlotByNumbers = async (slots: number[]) => {
   const res = await prisma.slot.findMany({
     where: { slot: { in: slots } },

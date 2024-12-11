@@ -6,7 +6,7 @@ import { updateLastSummaryUpdate } from "@/src/feed/utils.js";
 import { CustomLogger } from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import chunk from "lodash/chunk.js";
-import { addDays } from "date-fns";
+import { addDays, addHours } from "date-fns";
 
 const prisma = getPrisma();
 
@@ -23,6 +23,14 @@ export async function hasAllHourlyStats(date: Date): Promise<boolean> {
     where: {
       hour: 0,
       date: addDays(date, 1),
+      head: {
+        // Set by beacon rewards
+        not: null,
+      },
+      syncCommittee: {
+        // Set by sync committee rewards
+        not: null,
+      },
     },
   });
   return hasLastHour != null;
@@ -51,6 +59,7 @@ export async function aggregateHourlyStats(date: Date) {
       source: true,
       inactivity: true,
       attestationsMissed: true,
+      syncCommittee: true,
     },
   });
 }
@@ -150,6 +159,7 @@ export async function summarizeAtomicTransaction(
             source: stat._sum.source || null,
             inactivity: stat._sum.inactivity || null,
             attestationsMissed: stat._sum.attestationsMissed || null,
+            syncCommittee: stat._sum.syncCommittee || null,
           })),
         });
       }
@@ -183,6 +193,7 @@ export async function summarizeAtomicTransaction(
   logger.info("Done.");
 }
 
+// TODO: add explanation about the requirements for the daily stats to run.
 export async function summarizeDaily(
   date: Date,
   day: number,

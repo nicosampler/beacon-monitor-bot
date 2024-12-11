@@ -1,10 +1,12 @@
 import { instance } from "@/src/beacon/utils/instance.js";
 import {
   AttestationRewards,
+  BlockRewards,
   GetAttestations,
   GetCommittees,
   GetValidators,
   GetValidatorsBalances,
+  SyncCommitteeRewards,
   ValidatorStatus,
 } from "@/src/beacon/types.js";
 import { env } from "@/src/env.js";
@@ -118,6 +120,28 @@ export async function getAttestationRewards(
   return makeBeaconRequest(async (url) => {
     const res = await instance.post<AttestationRewards>(
       `${url}/eth/v1/beacon/rewards/attestations/${stateId}`,
+      validatorIds
+    );
+    return res.data;
+  });
+}
+
+export async function getBlockRewards(slot: number): Promise<BlockRewards> {
+  return makeBeaconRequest(async (url) => {
+    const res = await instance.get<BlockRewards>(
+      `${url}/eth/v1/beacon/rewards/blocks/${slot}`
+    );
+    return res.data;
+  });
+}
+
+export async function getSyncCommitteeRewards(
+  slot: number,
+  validatorIds: string[]
+): Promise<SyncCommitteeRewards> {
+  return makeBeaconRequest(async (url) => {
+    const res = await instance.post<SyncCommitteeRewards>(
+      `${url}/eth/v1/beacon/rewards/sync_committee/${slot}`,
       validatorIds
     );
     return res.data;
