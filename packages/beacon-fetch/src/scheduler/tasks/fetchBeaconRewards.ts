@@ -5,9 +5,9 @@ import { getEpochNumberFromTimestamp } from "@/src/beacon/utils/time.js";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { env } from "@/src/env.js";
 import { fetchBeaconRewards } from "@/src/feed/fetchBeaconRewards.js"; // Assuming this function exists
+import { scheduler } from "@/src/lib/scheduler.js";
 
 const prisma = getPrisma();
-const ID = "fetchBeaconRewards";
 
 /* 
   This task fetches the beacon rewards 
@@ -16,7 +16,7 @@ const ID = "fetchBeaconRewards";
   It skips fetching if the last slot with rewards is too far back in time.
   It also skips fetching if the last slot with rewards is from the current epoch.
  */
-async function fetchBeaconRewardsTask() {
+async function fetchBeaconRewardsTask(ID: string, logsEnabled: boolean) {
   const now = new Date();
   const currentEpoch = getEpochNumberFromTimestamp(now.getTime());
   const headEpoch = currentEpoch - 2; // Give some buffer to avoid so many 404
@@ -41,22 +41,34 @@ async function fetchBeaconRewardsTask() {
     ? Math.min(lastProcessedEpoch.epoch + 1, headEpoch)
     : oldestLookbackEpoch;
 
-  const logger = createLogger(`${ID} Epoch: ${epochToFetch}`, true);
+  const logger = createLogger(`${ID} Epoch: ${epochToFetch}`, logsEnabled);
   logger.info(`Fetching. HeadEpoch: ${headEpoch}.`);
 
   await fetchBeaconRewards(epochToFetch, logger);
-
-  logger.info(`Done`);
 }
 
-export const job = new SimpleIntervalJob(
-  { seconds: 5, runImmediately: true },
-  new AsyncTask(`${ID}_task`, () => {
-    const logger = createLogger(ID);
-    return fetchBeaconRewardsTask().catch((e) => logger.error("TASK-CATCH", e));
-  }),
-  {
-    id: ID,
-    preventOverrun: true,
-  }
-);
+export function scheduleFetchBeaconRewards({
+  logsEnabled,
+  interval,
+  ID,
+}: {
+  logsEnabled: boolean;
+  interval: number;
+  ID: string;
+}) {
+  scheduler.addSimpleIntervalJob(
+    new SimpleIntervalJob(
+      { milliseconds: interval, runImmediately: true },
+      new AsyncTask(`${ID}_task`, () => {
+        const logger = createLogger(ID);
+        return fetchBeaconRewardsTask(ID, logsEnabled).catch((e) =>
+          logger.error("TASK-CATCH", e)
+        );
+      }),
+      {
+        id: ID,
+        preventOverrun: true,
+      }
+    )
+  );
+}

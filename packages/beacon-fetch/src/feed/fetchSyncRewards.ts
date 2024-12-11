@@ -51,6 +51,10 @@ export const fetchSyncRewards = async (slot: number, logger: CustomLogger) => {
         VALUES ${Prisma.raw(values)}
         ON CONFLICT ("validatorIndex", "hour", "date") 
         DO UPDATE SET
+          "head" = COALESCE("HourlyValidatorStats"."head", 0),
+          "target" = COALESCE("HourlyValidatorStats"."target", 0),
+          "source" = COALESCE("HourlyValidatorStats"."source", 0),
+          "inactivity" = COALESCE("HourlyValidatorStats"."inactivity", 0),
           "syncCommittee" = COALESCE("HourlyValidatorStats"."syncCommittee", 0) + EXCLUDED."syncCommittee"
       `;
 

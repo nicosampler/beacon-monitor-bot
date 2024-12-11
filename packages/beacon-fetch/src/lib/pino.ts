@@ -21,14 +21,14 @@ const getCurrentLogFileName = () => {
 };
 
 // Function to create a logger with optional context
-const createLogger = (context: string | null, ignore: boolean = false) => {
+const createLogger = (context: string | null, enabled: boolean = true) => {
   const logWithContext = (
     level: "info" | "warn" | "error" | "debug",
     message: string,
     ...args: any[]
   ) => {
-    // Return early if ignore is true
-    if (ignore) return;
+    // Only log if enabled is true
+    if (!enabled) return;
 
     const logObject = context ? { context, ...args } : args;
     logger[level](logObject, message);

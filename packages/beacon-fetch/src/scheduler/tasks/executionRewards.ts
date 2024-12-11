@@ -4,11 +4,11 @@ import createLogger from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { differenceInSeconds } from "date-fns";
 import { env } from "@/src/env.js";
+import { scheduler } from "@/src/lib/scheduler.js";
 
-const ID = "fetchExecutionRewards";
 const prisma = getPrisma();
 
-const fetchExecutionRewardsTask = async () => {
+const _fetchExecutionRewardsTask = async (ID: string, logsEnabled: boolean) => {
   const latestReward = await prisma.executionRewards.findFirst({
     orderBy: { timestamp: "desc" },
   });
@@ -39,20 +39,33 @@ const fetchExecutionRewardsTask = async () => {
     blockToQuery = env.EXECUTION_BLOCK_LOOKBACK;
   }
 
-  const logger = createLogger(`${ID} ${blockToQuery}`, false);
+  const logger = createLogger(`${ID} ${blockToQuery}`, logsEnabled);
 
-  return fetchExecutionRewards(
-    logger,
-    blockToQuery,
-    latestReward?.timestamp
-  ).catch((e) => logger.error("TASK-CATCH", e.message));
+  await fetchExecutionRewards(logger, blockToQuery, latestReward?.timestamp);
 };
 
-export const job = new SimpleIntervalJob(
-  { seconds: 1, runImmediately: true },
-  new AsyncTask(`${ID}_task`, () => fetchExecutionRewardsTask()),
-  {
-    id: ID,
-    preventOverrun: true,
-  }
-);
+export function scheduleFetchExecutionRewards({
+  logsEnabled,
+  interval,
+  ID,
+}: {
+  logsEnabled: boolean;
+  interval: number;
+  ID: string;
+}) {
+  scheduler.addSimpleIntervalJob(
+    new SimpleIntervalJob(
+      { milliseconds: interval, runImmediately: true },
+      new AsyncTask(`${ID}_task`, () => {
+        const logger = createLogger(ID, logsEnabled);
+        return _fetchExecutionRewardsTask(ID, logsEnabled).catch((e) =>
+          logger.error("TASK-CATCH", e.message)
+        );
+      }),
+      {
+        id: ID,
+        preventOverrun: true,
+      }
+    )
+  );
+}

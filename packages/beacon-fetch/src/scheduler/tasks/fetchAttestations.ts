@@ -10,10 +10,9 @@ import {
   db_existCommitteeForSlot,
   db_getLastSlotWithAttestations,
 } from "@/src/feed/utils.js";
+import { scheduler } from "@/src/lib/scheduler.js";
 
-const ID = "FetchAttestation";
-
-export const fetchAttestations = async () => {
+export const fetchAttestations = async (ID: string, logsEnabled: boolean) => {
   const now = new Date();
   const currentSlot = getSlotNumberFromTimestamp(now.getTime());
   const maxSlotToFetch = currentSlot - env.BEACON_DELAY_SLOTS_TO_HEAD;
@@ -27,7 +26,7 @@ export const fetchAttestations = async () => {
       ? lastProcessedSlot.slot + 1
       : oldestLookbackSlot;
 
-    const logger = createLogger(`${ID} for slot ${slotToFetch}`, false);
+    const logger = createLogger(`${ID} for slot ${slotToFetch}`, logsEnabled);
 
     if (slotToFetch > maxSlotToFetch) {
       logger.info(
@@ -46,14 +45,28 @@ export const fetchAttestations = async () => {
   } catch (error) {}
 };
 
-export const job = new SimpleIntervalJob(
-  { seconds: 1, runImmediately: true },
-  new AsyncTask(`${ID}_task`, () => {
-    const logger = createLogger(ID);
-    return fetchAttestations().catch((e) => logger.error("TASK-CATCH", e));
-  }),
-  {
-    id: ID,
-    preventOverrun: true,
-  }
-);
+export function scheduleFetchAttestations({
+  logsEnabled,
+  interval,
+  ID,
+}: {
+  logsEnabled: boolean;
+  interval: number;
+  ID: string;
+}) {
+  scheduler.addSimpleIntervalJob(
+    new SimpleIntervalJob(
+      { milliseconds: interval, runImmediately: true },
+      new AsyncTask(`${ID}_task`, () => {
+        const logger = createLogger(ID);
+        return fetchAttestations(ID, logsEnabled).catch((e) =>
+          logger.error("TASK-CATCH", e)
+        );
+      }),
+      {
+        id: ID,
+        preventOverrun: true,
+      }
+    )
+  );
+}

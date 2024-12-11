@@ -11,11 +11,10 @@ import {
 } from "@/src/beacon/utils/misc.js";
 import { env } from "@/src/env.js";
 import { fetchCommittee } from "@/src/feed/fetchCommittee.js";
-
-const ID = "FetchCommittee";
+import { scheduler } from "@/src/lib/scheduler.js";
 
 // Add new function to calculate next slots to fetch
-async function fetchNewCommittees() {
+async function fetchNewCommittees(ID: string, logsEnabled: boolean) {
   const now = new Date();
   const headSlot = getSlotNumberFromTimestamp(now.getTime());
   const headEpoch = getEpochFromSlot(headSlot);
@@ -29,7 +28,7 @@ async function fetchNewCommittees() {
 
   const logger = createLogger(
     `${ID} epoch ${slotToFetchEpoch} - HeadEpoch:${headEpoch} HeadSlot:${headSlot}`,
-    false
+    logsEnabled
   );
 
   // Skip if the committee does not exist yet
@@ -60,22 +59,34 @@ async function fetchNewCommittees() {
   logger.info(`Done!`);
 }
 
-export const job = new SimpleIntervalJob(
-  { seconds: 10, runImmediately: true },
-  new AsyncTask(`${ID}_task`, () =>
-    fetchNewCommittees().catch((e) => {
-      const logger = createLogger(ID);
-      logger.error("TASK-CATCH", {
-        message: e.message,
-        stack: e.stack,
-        code: e.code,
-        status: e.status,
-        url: e.config?.url,
-      });
-    })
-  ),
-  {
-    id: ID,
-    preventOverrun: true,
-  }
-);
+export function scheduleFetchCommittee({
+  logsEnabled,
+  interval,
+  ID,
+}: {
+  logsEnabled: boolean;
+  interval: number;
+  ID: string;
+}) {
+  scheduler.addSimpleIntervalJob(
+    new SimpleIntervalJob(
+      { milliseconds: interval, runImmediately: true },
+      new AsyncTask(`${ID}_task`, () =>
+        fetchNewCommittees(ID, logsEnabled).catch((e) => {
+          const logger = createLogger(ID);
+          logger.error("TASK-CATCH", {
+            message: e.message,
+            stack: e.stack,
+            code: e.code,
+            status: e.status,
+            url: e.config?.url,
+          });
+        })
+      ),
+      {
+        id: ID,
+        preventOverrun: true,
+      }
+    )
+  );
+}

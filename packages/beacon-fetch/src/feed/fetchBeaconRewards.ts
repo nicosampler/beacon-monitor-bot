@@ -24,7 +24,7 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
       update: {}, // no update needed, just create if doesn't exist
     });
 
-    const response = await getAttestationRewards(epoch, []); 
+    const response = await getAttestationRewards(epoch, []);
 
     logger.info(`Processing epoch ${epoch}`);
     const epochTimestamp = getTimestampFromEpochNumber(epoch);
@@ -75,7 +75,8 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
             "head" = "HourlyValidatorStats"."head" + EXCLUDED."head",
             "target" = "HourlyValidatorStats"."target" + EXCLUDED."target",
             "source" = "HourlyValidatorStats"."source" + EXCLUDED."source",
-            "inactivity" = "HourlyValidatorStats"."inactivity" + EXCLUDED."inactivity"
+            "inactivity" = "HourlyValidatorStats"."inactivity" + EXCLUDED."inactivity",
+            "syncCommittee" = COALESCE("HourlyValidatorStats"."syncCommittee", 0)
         `;
 
         // check if rewards was fetched for this epoch
@@ -98,6 +99,7 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
         timeout: ms("10m"),
       }
     );
+    logger.info(`Done.`);
   } catch (error) {
     if (error.message.includes("404 - Aborting")) {
       logger.error(error.message, error);

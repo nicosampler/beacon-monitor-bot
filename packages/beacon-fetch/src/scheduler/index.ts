@@ -1,15 +1,15 @@
-import { scheduler } from "@/src/lib/scheduler.js";
+import { scheduleFetchExecutionRewards } from "@/src/scheduler/tasks/executionRewards.js";
+import { scheduleFetchAttestations } from "@/src/scheduler/tasks/fetchAttestations.js";
+import { scheduleFetchValidatorsBalances } from "@/src/scheduler/tasks/fetchValidatorsBalances.js";
+import { scheduleFetchValidatorsInfo } from "@/src/scheduler/tasks/fetchValidatorsInfo.js";
+import { scheduleFetchBeaconRewards } from "@/src/scheduler/tasks/fetchBeaconRewards.js";
+import { scheduleFetchCommittee } from "@/src/scheduler/tasks/fetchCommittee.js";
+import { scheduleFetchSyncRewards } from "@/src/scheduler/tasks/fetchSyncRewards.js";
 import { job as summarizeHourlyJob } from "@/src/scheduler/tasks/summarizeHourly.js";
-import { job as executionRewardsJob } from "@/src/scheduler/tasks/executionRewards.js";
-import { job as fetchOldestAttestationJob } from "@/src/scheduler/tasks/fetchAttestations.js";
-import { job as validatorsBalancesJob } from "@/src/scheduler/tasks/fetchValidatorsBalances.js";
-import { job as fetchValidatorsInfo } from "@/src/scheduler/tasks/fetchValidatorsInfo.js";
-import { job as fetchBeaconRewardsJob } from "@/src/scheduler/tasks/fetchBeaconRewards.js";
 import { job as summarizeDailyJob } from "@/src/scheduler/tasks/summarizeDaily.js";
-import { job as cleanupCommitteeJob } from "@/src/scheduler/tasks/cleanupCommittee.js";
-import { job as fetchCommitteeJob } from "@/src/scheduler/tasks/fetchCommittee.js";
-import { job as fetchSyncRewardsJob } from "@/src/scheduler/tasks/fetchSyncRewards.js";
-//import { job as maintainCommitteeJob } from "@/src/scheduler/tasks/maintainCommittee.js";
+import { job as cleanupCommitteeJob } from "@/src/scheduler/tasks/maintainCommittee.js";
+import ms from "ms";
+import { scheduler } from "@/src/lib/scheduler.js";
 
 // TODO: re-think the scheduler tasks.
 // Easy way to disable/enable logs for a task.
@@ -20,23 +20,49 @@ import { job as fetchSyncRewardsJob } from "@/src/scheduler/tasks/fetchSyncRewar
 // Logger errors should ALWAYS be logged.
 
 export function scheduleTasks() {
-  // Fetch the oldest attestation
-  scheduler.addSimpleIntervalJob(fetchCommitteeJob);
-  scheduler.addSimpleIntervalJob(fetchOldestAttestationJob);
+  scheduleFetchCommittee({
+    logsEnabled: false,
+    interval: ms("10s"),
+    ID: "FetchCommittee",
+  });
 
-  // Fetch the execution rewards for the current block and store them in the db.
-  scheduler.addSimpleIntervalJob(executionRewardsJob);
-  // Fetch the beacon rewards for the current epoch and store them in the db
-  scheduler.addSimpleIntervalJob(fetchBeaconRewardsJob);
-  // Fetch block and sync rewards for the current slot and store them in the db
-  scheduler.addSimpleIntervalJob(fetchSyncRewardsJob);
+  scheduleFetchAttestations({
+    logsEnabled: false,
+    interval: ms("2s"),
+    ID: "FetchAttestations",
+  });
 
-  // Fetch the validators balances for updating the validator balances in the db.
-  scheduler.addSimpleIntervalJob(validatorsBalancesJob);
-  // Check for validators info, like status, withdrawal address, etc.
-  scheduler.addSimpleIntervalJob(fetchValidatorsInfo);
+  scheduleFetchExecutionRewards({
+    logsEnabled: false,
+    interval: ms("2s"),
+    ID: "FetchExecutionRewards",
+  });
 
-  // Summarize hourly attestation and rewards
+  scheduleFetchBeaconRewards({
+    logsEnabled: true,
+    interval: ms("20s"),
+    ID: "FetchBeaconRewards",
+  });
+
+  scheduleFetchSyncRewards({
+    logsEnabled: true,
+    interval: ms("2s"),
+    ID: "FetchSyncRewards",
+  });
+
+  scheduleFetchValidatorsBalances({
+    logsEnabled: true,
+    interval: ms("10m"),
+    ID: "FetchValidatorsBalances",
+  });
+
+  scheduleFetchValidatorsInfo({
+    logsEnabled: true,
+    interval: ms("10m"),
+    ID: "FetchValidatorsInfo",
+  });
+
+  //  Summarize hourly attestation and rewards
   scheduler.addSimpleIntervalJob(summarizeHourlyJob);
   // Summarize daily attestation and rewards
   scheduler.addSimpleIntervalJob(summarizeDailyJob);
