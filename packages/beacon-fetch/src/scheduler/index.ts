@@ -4,26 +4,21 @@ import { scheduleFetchValidatorsBalances } from "@/src/scheduler/tasks/fetchVali
 import { scheduleFetchValidatorsInfo } from "@/src/scheduler/tasks/fetchValidatorsInfo.js";
 import { scheduleFetchBeaconRewards } from "@/src/scheduler/tasks/fetchBeaconRewards.js";
 import { scheduleFetchCommittee } from "@/src/scheduler/tasks/fetchCommittee.js";
-import { scheduleFetchSyncRewards } from "@/src/scheduler/tasks/fetchSyncRewards.js";
+import { scheduleFetchBlockAndSyncRewards } from "@/src/scheduler/tasks/fetchBlockAndSyncRewards.js";
 import { job as summarizeHourlyJob } from "@/src/scheduler/tasks/summarizeHourly.js";
 import { job as summarizeDailyJob } from "@/src/scheduler/tasks/summarizeDaily.js";
 import { job as cleanupCommitteeJob } from "@/src/scheduler/tasks/maintainCommittee.js";
 import ms from "ms";
 import { scheduler } from "@/src/lib/scheduler.js";
 
-// TODO: re-think the scheduler tasks.
-// Easy way to disable/enable logs for a task.
-// Easy way to share IDs.
-// Easy way to see the schedule time at a glance.
-// Unify how to create logger when there is no ID. (createLogger refactor)
 // Move the logic that prevents the task to run to the task function, instead of the implementation.
-// Logger errors should ALWAYS be logged.
-
 export function scheduleTasks() {
   scheduleFetchCommittee({
+    id: "FetchCommittee",
     logsEnabled: false,
-    interval: ms("10s"),
-    ID: "FetchCommittee",
+    intervalMs: ms("5s"),
+    runImmediately: true,
+    preventOverrun: true,
   });
 
   scheduleFetchAttestations({
@@ -39,15 +34,15 @@ export function scheduleTasks() {
   });
 
   scheduleFetchBeaconRewards({
-    logsEnabled: true,
+    logsEnabled: false,
     interval: ms("20s"),
     ID: "FetchBeaconRewards",
   });
 
-  scheduleFetchSyncRewards({
+  scheduleFetchBlockAndSyncRewards({
     logsEnabled: true,
     interval: ms("2s"),
-    ID: "FetchSyncRewards",
+    ID: "FetchBlockAndSyncRewards",
   });
 
   scheduleFetchValidatorsBalances({

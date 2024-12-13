@@ -21,20 +21,34 @@ const getCurrentLogFileName = () => {
 };
 
 // Function to create a logger with optional context
-const createLogger = (context: string | null, enabled: boolean = true) => {
+const createLogger = (
+  initialContext: string | null,
+  enabled: boolean = true
+) => {
+  // Add context state that can be modified
+  let currentContext = initialContext;
+
   const logWithContext = (
     level: "info" | "warn" | "error" | "debug",
     message: string,
     ...args: any[]
   ) => {
-    // Only log if enabled is true
-    if (!enabled) return;
+    // Only skip logging if enabled is false AND it's not an error
+    if (!enabled && level !== "error") return;
 
-    const logObject = context ? { context, ...args } : args;
+    const logObject = currentContext
+      ? { context: currentContext, ...args }
+      : args;
     logger[level](logObject, message);
   };
 
   return {
+    // Add method to update context
+    addContext: (extraContext: string) => {
+      currentContext = currentContext
+        ? `${currentContext} - ${extraContext}`
+        : extraContext;
+    },
     info: (message: string, ...args: any[]) =>
       logWithContext("info", message, ...args),
     warn: (message: string, ...args: any[]) =>
@@ -47,7 +61,8 @@ const createLogger = (context: string | null, enabled: boolean = true) => {
       logWithContext("debug", message, ...args),
   };
 };
-// Define the Logger type using ReturnType based on the createLogger function
+
+// Update the type definition to include the new setContext method
 export type CustomLogger = ReturnType<typeof createLogger>;
 
 // Modify the logger creation to be a function

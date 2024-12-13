@@ -3,6 +3,7 @@ import chunk from "lodash/chunk.js";
 import { getCommittees } from "@/src/beacon/endpoints.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { CustomLogger } from "@/src/lib/pino.js";
+import { GetCommittees } from "@/src/beacon/types.js";
 
 type Committee = {
   slot: string;
@@ -124,6 +125,18 @@ export async function fetchCommittee(
   slotToFetchEpoch: number,
   lastSlotInCommittee: number
 ): Promise<void> {
-  const committees = await getCommittees(slotToFetchEpoch);
+  let committees: GetCommittees["data"];
+  try {
+    committees = await getCommittees(slotToFetchEpoch);
+  } catch (e) {
+    throw {
+      message: e.message,
+      stack: e.stack,
+      code: e.code,
+      status: e.status,
+      url: e.config?.url,
+    };
+  }
+
   await processAndSaveCommittees(logger, lastSlotInCommittee, committees);
 }

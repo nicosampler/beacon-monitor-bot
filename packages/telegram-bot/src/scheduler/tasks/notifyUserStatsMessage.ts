@@ -286,7 +286,8 @@ async function calculateTableStats(
       COALESCE(SUM(source), 0) as source,
       COALESCE(SUM(inactivity), 0) as inactivity,
       COALESCE(SUM("attestationsMissed"), 0) as "attestationsMissed",
-      COALESCE(SUM("syncCommittee"), 0) as "syncCommittee"
+      COALESCE(SUM("syncCommittee"), 0) as "syncCommittee",
+      COALESCE(SUM("blockReward"), 0) as "blockReward"
     FROM "HourlyValidatorStats" hvs
     JOIN "_UserToValidator" uv ON uv."B" = hvs."validatorIndex"
     JOIN "Validator" v ON v.id = uv."B"
@@ -317,6 +318,7 @@ async function calculateTableStats(
         source: string;
         inactivity: string;
         syncCommittee: string;
+        blockReward: string;
 
         attestationsMissed: BigInt;
       }[]
@@ -335,7 +337,8 @@ async function calculateTableStats(
     BigInt(validatorStats[0].target) +
     BigInt(validatorStats[0].source) +
     BigInt(validatorStats[0].inactivity) +
-    BigInt(validatorStats[0].syncCommittee);
+    BigInt(validatorStats[0].syncCommittee) +
+    BigInt(validatorStats[0].blockReward);
 
   const totalDailyConsensusInWei =
     (BigInt(totalDailyConsensus) * scale) / tokenUnit;

@@ -45,7 +45,7 @@ export const db_existCommitteeForSlot = async (slot: number) => {
 
 export const db_getLastSlotWithSyncRewards = async () =>
   await prisma.slot.findFirst({
-    where: { syncRewardsFetched: true },
+    where: { blockAndSyncRewardsFetched: true },
     orderBy: { slot: "desc" },
     select: { slot: true },
   });

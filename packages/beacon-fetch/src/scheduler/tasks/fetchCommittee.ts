@@ -1,5 +1,5 @@
 import { AsyncTask, SimpleIntervalJob } from "toad-scheduler";
-import createLogger from "@/src/lib/pino.js";
+import createLogger, { CustomLogger } from "@/src/lib/pino.js";
 import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
 import {
   db_getLastSlotInCommittee,
@@ -12,9 +12,10 @@ import {
 import { env } from "@/src/env.js";
 import { fetchCommittee } from "@/src/feed/fetchCommittee.js";
 import { scheduler } from "@/src/lib/scheduler.js";
+import { TaskOptions } from "@/src/scheduler/tasks/types.js";
 
 // Add new function to calculate next slots to fetch
-async function fetchNewCommittees(ID: string, logsEnabled: boolean) {
+async function fetchNewCommittees(logger: CustomLogger) {
   const now = new Date();
   const headSlot = getSlotNumberFromTimestamp(now.getTime());
   const headEpoch = getEpochFromSlot(headSlot);
@@ -26,9 +27,8 @@ async function fetchNewCommittees(ID: string, logsEnabled: boolean) {
     : oldestLookbackSlot;
   const slotToFetchEpoch = getEpochFromSlot(slotToFetch);
 
-  const logger = createLogger(
-    `${ID} epoch ${slotToFetchEpoch} - HeadEpoch:${headEpoch} HeadSlot:${headSlot}`,
-    logsEnabled
+  logger.addContext(
+    `epoch ${slotToFetchEpoch} - HeadEpoch:${headEpoch} HeadSlot:${headSlot}`
   );
 
   // Skip if the committee does not exist yet
@@ -60,33 +60,28 @@ async function fetchNewCommittees(ID: string, logsEnabled: boolean) {
 }
 
 export function scheduleFetchCommittee({
+  id,
   logsEnabled,
-  interval,
-  ID,
-}: {
-  logsEnabled: boolean;
-  interval: number;
-  ID: string;
-}) {
-  scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob(
-      { milliseconds: interval, runImmediately: true },
-      new AsyncTask(`${ID}_task`, () =>
-        fetchNewCommittees(ID, logsEnabled).catch((e) => {
-          const logger = createLogger(ID);
-          logger.error("TASK-CATCH", {
-            message: e.message,
-            stack: e.stack,
-            code: e.code,
-            status: e.status,
-            url: e.config?.url,
-          });
-        })
-      ),
-      {
-        id: ID,
-        preventOverrun: true,
-      }
-    )
+  intervalMs,
+  runImmediately,
+  preventOverrun,
+}: TaskOptions) {
+  const logger = createLogger(id, logsEnabled);
+
+  const task = new AsyncTask(`${id}_task`, () =>
+    fetchNewCommittees(logger).catch((e) => {
+      logger.error("TASK-CATCH", e);
+    })
   );
+
+  const job = new SimpleIntervalJob(
+    { milliseconds: intervalMs, runImmediately: runImmediately },
+    task,
+    {
+      id: id,
+      preventOverrun: preventOverrun,
+    }
+  );
+
+  scheduler.addSimpleIntervalJob(job);
 }
