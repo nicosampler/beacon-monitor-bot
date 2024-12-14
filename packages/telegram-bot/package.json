@@ -32,6 +32,7 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.14.200",
+    "@types/memoizee": "^0.4.11",
     "@types/nedb": "^1.8.16",
     "@types/node": "^20.8.4",
     "dotenv-cli": "^7.4.2",

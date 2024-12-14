@@ -13,10 +13,11 @@ model Epoch {
 }
 
 model Slot {
-  slot                   Int         @id
-  attestationsFetched    Boolean     @default(false) // Whether the attestations for this slot have been fetched
-  blockAndSyncRewardsFetched     Boolean     @default(false)  // Whether the sync rewards for this slot have been fetched 
-  committee              Committee[]
+  slot      Int         @id
+  committee Committee[]
+
+  attestationsFetched        Boolean @default(false) // Whether the attestations for this slot have been fetched
+  blockAndSyncRewardsFetched Boolean @default(false) // Whether the sync rewards for this slot have been fetched 
 
   @@index([attestationsFetched, slot])
 }
@@ -56,21 +57,21 @@ model ExecutionRewards {
 }
 
 model HourlyValidatorStats {
-  validatorIndex     Int
-  hour               Int // 0-23
-  date               DateTime @db.Date // dd-mm-yyyy
+  validatorIndex Int
+  hour           Int // 0-23
+  date           DateTime @db.Date // dd-mm-yyyy
 
-  blockReward        BigInt? // Reward for proposing a block
-  syncCommittee      BigInt? // Rewarded for participating in the sync committee
-  head               BigInt? // Reward for attesting
-  target             BigInt? // Reward for attesting
-  source             BigInt? // Reward for attesting
-  inactivity         BigInt? // Reward for attesting
-  
+  blockReward   BigInt? // Reward for proposing a block
+  syncCommittee BigInt? // Rewarded for participating in the sync committee
+  head          BigInt? // Reward for attesting
+  target        BigInt? // Reward for attesting
+  source        BigInt? // Reward for attesting
+  inactivity    BigInt? // Reward for attesting
+
   attestationsMissed Int?
 
   @@id([validatorIndex, date, hour])
-  @@index([date,hour])
+  @@index([date, hour])
 }
 
 model HourlyExecutionRewards {
@@ -85,13 +86,16 @@ model HourlyExecutionRewards {
 }
 
 model DailyValidatorStats {
-  validatorIndex     Int
-  date               DateTime @db.Date
-  head               BigInt?
-  target             BigInt?
-  source             BigInt?
-  inactivity         BigInt?
-  syncCommittee      BigInt?
+  validatorIndex Int
+  date           DateTime @db.Date
+
+  head          BigInt?
+  target        BigInt?
+  source        BigInt?
+  inactivity    BigInt?
+  syncCommittee BigInt?
+  blockReward   BigInt?
+
   attestationsMissed Int?
 
   @@id([validatorIndex, date])
@@ -126,11 +130,11 @@ model User {
   lastClaimed   DateTime?
   hasBlockedBot Boolean   @default(false)
 
-  performanceNotif  DateTime?
-  performanceThreshold Int @default(90)
+  performanceNotif     DateTime?
+  performanceThreshold Int       @default(90)
 
-  inactiveNotif DateTime?
-  inactiveOnMissedAttestations Int @default(3)
+  inactiveNotif                DateTime?
+  inactiveOnMissedAttestations Int       @default(3)
 
   feeRewardAddresses  FeeRewardAddress[]  @relation("FeeRewardAddressToUser")
   validators          Validator[]         @relation("UserToValidator")

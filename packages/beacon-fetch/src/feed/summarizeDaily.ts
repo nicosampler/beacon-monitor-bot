@@ -8,6 +8,14 @@ import { getPrisma } from "@/src/lib/prisma.js";
 import chunk from "lodash/chunk.js";
 import { addDays, addHours } from "date-fns";
 
+export type AggregateHourlyStats = Awaited<
+  ReturnType<typeof aggregateHourlyStats>
+>[number];
+
+export type AggregateExecutionRewards = Awaited<
+  ReturnType<typeof aggregateExecutionRewards>
+>[number];
+
 const prisma = getPrisma();
 
 export function calculateSlotRange(startTime: Date, endTime: Date) {
@@ -29,6 +37,10 @@ export async function hasAllHourlyStats(date: Date): Promise<boolean> {
       },
       syncCommittee: {
         // Set by sync committee rewards
+        not: null,
+      },
+      blockReward: {
+        // Set by block rewards
         not: null,
       },
     },
@@ -60,12 +72,10 @@ export async function aggregateHourlyStats(date: Date) {
       inactivity: true,
       attestationsMissed: true,
       syncCommittee: true,
+      blockReward: true,
     },
   });
 }
-export type AggregateHourlyStats = Awaited<
-  ReturnType<typeof aggregateHourlyStats>
->[number];
 
 export async function aggregateExecutionRewards(date: Date) {
   return prisma.hourlyExecutionRewards.groupBy({
@@ -77,35 +87,6 @@ export async function aggregateExecutionRewards(date: Date) {
       amount: true,
     },
   });
-}
-export type AggregateExecutionRewards = Awaited<
-  ReturnType<typeof aggregateExecutionRewards>
->[number];
-
-export async function processExecutionRewardsBatch(
-  tx: Prisma.TransactionClient,
-  executionRewards: AggregateExecutionRewards[],
-  hour: number,
-  date: string
-) {
-  const batches = chunk(executionRewards, 5000);
-
-  for (const batch of batches) {
-    const values = batch
-      .map(
-        (stat) => `('${stat.address}', ${hour}, '${date}', ${stat._sum.amount})`
-      )
-      .join(",");
-
-    await tx.$executeRawUnsafe(
-      `
-      INSERT INTO "HourlyExecutionRewards" ("address", "hour", "date", "amount")
-      VALUES ${values}
-      ON CONFLICT ("address", "hour", "date")
-      DO UPDATE SET "amount" = "HourlyExecutionRewards"."amount" + EXCLUDED."amount"
-      `
-    );
-  }
 }
 
 export async function removeProcessedHourlyStatsRecords(
@@ -142,7 +123,7 @@ export async function summarizeAtomicTransaction(
   date: Date,
   logger: CustomLogger
 ) {
-  const BATCH_SIZE = 5000;
+  const BATCH_SIZE = 100000;
 
   await prisma.$transaction(
     async (tx) => {
@@ -160,6 +141,7 @@ export async function summarizeAtomicTransaction(
             inactivity: stat._sum.inactivity || null,
             attestationsMissed: stat._sum.attestationsMissed || null,
             syncCommittee: stat._sum.syncCommittee || null,
+            blockReward: stat._sum.blockReward || null,
           })),
         });
       }
@@ -187,7 +169,7 @@ export async function summarizeAtomicTransaction(
         await removeProcessedExecutionRewards(tx, date, logger);
       }
     },
-    { timeout: ms("10m") } //
+    { timeout: ms("5m") }
   );
 
   logger.info("Done.");

@@ -28,6 +28,8 @@ import { Committee, User, Validator, WithdrawalAddress } from "@prisma/client";
 import { CustomLogger } from "@/src/lib/pino.js";
 import { notifyUnderPerformance } from "@/src/scheduler/tasks/notifyUnderPerformance.js";
 import { notifyInactiveValidators } from "@/src/scheduler/tasks/notifyInactiveValidators.js";
+import memoizee from "memoizee";
+import ms from "ms";
 
 const prisma = getPrisma();
 const scale = BigInt(10) ** BigInt(18);
@@ -53,19 +55,13 @@ interface UserStats {
   apy?: number;
   rewards: {
     daily?: {
-      performance: number;
+      apy: number;
       consensus: number;
       execution: number;
       usd: number;
     };
     weekly?: {
-      performance: number;
-      consensus: number;
-      execution: number;
-      usd: number;
-    };
-    monthly?: {
-      performance: number;
+      apy: number;
       consensus: number;
       execution: number;
       usd: number;
@@ -99,37 +95,6 @@ async function getUser(userId: bigint) {
     where: { userId },
     include: { validators: true, withdrawalAddresses: true },
   });
-}
-
-export async function notifyUserStatsMessage(
-  userId: bigint,
-  logger: CustomLogger
-): Promise<number | undefined> {
-  const { headSlot, maxSlotToQuery, syncing } = await slotsInfo();
-
-  logger.info(`db full user`);
-  const user = await getUser(userId);
-  logger.info(`db full user done`);
-
-  const stats = await getUserAllStats(syncing, maxSlotToQuery, user, logger);
-
-  // TODO: check null values.
-  if (!syncing) {
-    await notifyUnderPerformance(user, stats.performance1h);
-    await notifyInactiveValidators(user, stats.validatorStats.inactiveIds);
-  }
-
-  // send message to the user
-  const message = formatStatsMessage(stats, {
-    syncing,
-    headSlot,
-    maxSlotToQuery,
-  });
-  return await updateOrSendMessage(
-    Number(user.chatId),
-    Number(user.messageId),
-    message
-  );
 }
 
 function getValidatorStatuses(
@@ -275,183 +240,6 @@ function getUserBalance(validators: Validator[]) {
   };
 }
 
-async function calculateTableStats(
-  user: User & { validators: Validator[] },
-  logger: CustomLogger
-): Promise<UserStats["rewards"]> {
-  const validatorStatsDailyQuery = `
-    SELECT 
-      COALESCE(SUM(head), 0) as head,
-      COALESCE(SUM(target), 0) as target,
-      COALESCE(SUM(source), 0) as source,
-      COALESCE(SUM(inactivity), 0) as inactivity,
-      COALESCE(SUM("attestationsMissed"), 0) as "attestationsMissed",
-      COALESCE(SUM("syncCommittee"), 0) as "syncCommittee",
-      COALESCE(SUM("blockReward"), 0) as "blockReward"
-    FROM "HourlyValidatorStats" hvs
-    JOIN "_UserToValidator" uv ON uv."B" = hvs."validatorIndex"
-    JOIN "Validator" v ON v.id = uv."B"
-    WHERE uv."A" = $1
-      AND v.status IN (2, 3)
-      AND (
-        -- Today's records up to current hour
-        (hvs.date = CURRENT_DATE AND hvs.hour <= EXTRACT(HOUR FROM NOW()))
-        OR
-        -- Yesterday's records after current hour
-        (hvs.date = CURRENT_DATE - INTERVAL '1 day' AND hvs.hour > EXTRACT(HOUR FROM NOW()))
-      )`;
-
-  const executionRewardsDailyQuery = `
-    SELECT 
-      COALESCE(SUM(her.amount), 0) as total
-    FROM "HourlyExecutionRewards" her
-    JOIN "_FeeRewardAddressToUser" fra ON fra."A" ilike her.address
-    WHERE fra."B" = $1
-      AND her.date >= NOW() - INTERVAL '24 hours'`;
-
-  logger.info(`1d stats`);
-  const [validatorStats, executionRewards] = await Promise.all([
-    prisma.$queryRawUnsafe<
-      {
-        head: string;
-        target: string;
-        source: string;
-        inactivity: string;
-        syncCommittee: string;
-        blockReward: string;
-
-        attestationsMissed: BigInt;
-      }[]
-    >(validatorStatsDailyQuery, user.id),
-    prisma.$queryRawUnsafe<
-      {
-        total: string;
-      }[]
-    >(executionRewardsDailyQuery, user.id),
-  ]);
-  logger.info(`1d stats done`);
-  if (!validatorStats.length) return null;
-
-  const totalDailyConsensus =
-    BigInt(validatorStats[0].head) +
-    BigInt(validatorStats[0].target) +
-    BigInt(validatorStats[0].source) +
-    BigInt(validatorStats[0].inactivity) +
-    BigInt(validatorStats[0].syncCommittee) +
-    BigInt(validatorStats[0].blockReward);
-
-  const totalDailyConsensusInWei =
-    (BigInt(totalDailyConsensus) * scale) / tokenUnit;
-
-  const totalDailyConsensusEth = Number(
-    formatEther(totalDailyConsensusInWei.toString())
-  );
-
-  const totalDailyExecution = Number(
-    formatEther(executionRewards[0].total.toString())
-  );
-
-  const totalUsd =
-    totalDailyConsensusEth * tokenPrice +
-    (FEE_REWARDS_IN_STABLE
-      ? totalDailyExecution
-      : totalDailyExecution * tokenPrice);
-
-  const performance =
-    100 *
-    (1 -
-      Number(validatorStats[0].attestationsMissed) /
-        (epochsInDay * user.validators.length));
-
-  return {
-    daily: {
-      performance: performance,
-      consensus: totalDailyConsensusEth,
-      execution: totalDailyExecution,
-      usd: totalUsd,
-    },
-  };
-}
-
-function calculateAPY_monthly(
-  totalBalance: number,
-  monthlyRewards: number
-): number {
-  if (!totalBalance || !monthlyRewards) return 0;
-  return (
-    ((1 + monthlyRewards / totalBalance) ** (DAYS_IN_YEAR / DAYS_IN_MONTH) -
-      1) *
-    100
-  );
-}
-
-function calculateAPY_daily(
-  totalBalance: number,
-  dailyRewards: number
-): number {
-  return ((1 + dailyRewards / totalBalance) ** DAYS_IN_YEAR - 1) * 100;
-}
-
-function formatStatsMessage(
-  stats: UserStats,
-  status: {
-    syncing: boolean;
-    headSlot: number;
-    maxSlotToQuery: number;
-  }
-): string {
-  const {
-    performance1h: performance,
-    balance,
-    withdrawable,
-    validatorStats,
-  } = stats;
-
-  const syncStatus = status.syncing
-    ? `⚠️ ${status.headSlot - status.maxSlotToQuery} slots behind ⚠️`
-    : null;
-
-  // Define message sections
-  const validatorStatus = status.syncing
-    ? `⚪️ ${validatorStats.activeIds.length + validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`
-    : `🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`;
-
-  const mainStats = [
-    `Last 1h perf: ${performance == null ? "-" : `${performance.toFixed(2)}%`}`,
-    `Bal: ${balance.total} ${TOKEN_SYMBOL} $${balance.value}`,
-    `APY: ${calculateAPY_daily(
-      Number(balance.total),
-      stats.rewards.daily.consensus
-    ).toFixed(2)}%`,
-    `Claimable: ${withdrawable.total} ${TOKEN_SYMBOL} $${withdrawable.value}`,
-  ].join("\n");
-
-  const rewardsSection = [
-    `Stats:`,
-    `---------------------------`,
-    `   perf%  ${TOKEN_SYMBOL}   ${FEE_REWARDS_SYMBOL}  Total`,
-    `d: ${formatNumber(stats.rewards.daily.performance, 4)}  ${formatNumber(stats.rewards.daily.consensus, 3)}  ${formatNumber(stats.rewards.daily.execution, 3)}  ${formatNumber(stats.rewards.daily.usd, 4, "$")}`,
-    `w:            🔜`,
-    `m:            🔜`,
-  ].join("\n");
-
-  const footer = [
-    `${TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}`,
-    `Updated: ${format(new Date(), "MM/dd hh:mmaaa")} UTC`,
-  ].join("\n");
-
-  // Combine all sections
-  return `\`${[
-    ...(status.syncing ? [syncStatus, "", validatorStatus] : [validatorStatus]),
-    "", // empty line
-    mainStats,
-    "", // empty line
-    rewardsSection,
-    "", // empty line
-    footer,
-  ].join("\n")}\``;
-}
-
 async function getMissedAttestations(
   userId: number,
   maxSlotToQuery: number
@@ -482,6 +270,318 @@ async function getMissedAttestations(
     ) c ON true
     ORDER BY c.slot DESC
   `;
+}
+
+// Memoized version of getDailyValidatorStats
+const getDailyValidatorStatsMemoized = memoizee(
+  async (userId: number) => {
+    // Query to get validator stats for the last 24 hours
+    const query = `
+      SELECT 
+        COALESCE(SUM(head), 0) as head,
+        COALESCE(SUM(target), 0) as target,
+        COALESCE(SUM(source), 0) as source,
+        COALESCE(SUM(inactivity), 0) as inactivity,
+        COALESCE(SUM("attestationsMissed"), 0) as "attestationsMissed",
+        COALESCE(SUM("syncCommittee"), 0) as "syncCommittee",
+        COALESCE(SUM("blockReward"), 0) as "blockReward"
+      FROM "HourlyValidatorStats" hvs
+      JOIN "_UserToValidator" uv ON uv."B" = hvs."validatorIndex"
+      JOIN "Validator" v ON v.id = uv."B"
+      WHERE uv."A" = $1
+        AND v.status IN (2, 3)
+        AND (
+          -- Today's records up to current hour
+          (hvs.date = CURRENT_DATE AND hvs.hour <= EXTRACT(HOUR FROM NOW()))
+          OR
+          -- Yesterday's records after current hour
+          (hvs.date = CURRENT_DATE - INTERVAL '1 day' AND hvs.hour > EXTRACT(HOUR FROM NOW()))
+        )`;
+
+    return await prisma.$queryRawUnsafe<
+      {
+        head: string;
+        target: string;
+        source: string;
+        inactivity: string;
+        syncCommittee: string;
+        blockReward: string;
+        attestationsMissed: BigInt;
+      }[]
+    >(query, userId);
+  },
+  { promise: true, maxAge: ms("15m") }
+);
+
+// Memoized version of getDailyExecutionRewards
+const getDailyExecutionRewardsMemoized = memoizee(
+  async (userId: number) => {
+    // Query to get execution rewards for the last 24 hours
+    const query = `
+      SELECT 
+        COALESCE(SUM(her.amount), 0) as total
+      FROM "HourlyExecutionRewards" her
+      JOIN "_FeeRewardAddressToUser" fra ON fra."A" ilike her.address
+      WHERE fra."B" = $1
+        AND her.date >= NOW() - INTERVAL '24 hours'`;
+
+    return await prisma.$queryRawUnsafe<
+      {
+        total: string;
+      }[]
+    >(query, userId);
+  },
+  { promise: true, maxAge: ms("15m") }
+);
+
+// Memoized version of getWeeklyValidatorStats
+const getWeeklyValidatorStatsMemoized = memoizee(
+  async (userId: number) => {
+    const query = `
+      WITH last_date AS (
+        SELECT MAX(date) as max_date
+        FROM "DailyValidatorStats"
+      )
+      SELECT 
+        COALESCE(SUM(head), 0) as head,
+        COALESCE(SUM(target), 0) as target,
+        COALESCE(SUM(source), 0) as source,
+        COALESCE(SUM(inactivity), 0) as inactivity,
+        COALESCE(SUM("attestationsMissed"), 0) as "attestationsMissed",
+        COALESCE(SUM("syncCommittee"), 0) as "syncCommittee",
+        COALESCE(SUM("blockReward"), 0) as "blockReward"
+      FROM "DailyValidatorStats" dvs
+      JOIN "_UserToValidator" uv ON uv."B" = dvs."validatorIndex"
+      JOIN "Validator" v ON v.id = uv."B"
+      CROSS JOIN last_date ld
+      WHERE uv."A" = $1
+        AND v.status IN (2, 3)
+        AND dvs.date <= ld.max_date
+        AND dvs.date > ld.max_date - INTERVAL '7 days'`;
+
+    return await prisma.$queryRawUnsafe<
+      {
+        head: string;
+        target: string;
+        source: string;
+        inactivity: string;
+        syncCommittee: string;
+        blockReward: string;
+        attestationsMissed: BigInt;
+      }[]
+    >(query, userId);
+  },
+  { promise: true, maxAge: ms("1h") }
+);
+
+// Memoized version of getWeeklyExecutionRewards
+const getWeeklyExecutionRewardsMemoized = memoizee(
+  async (userId: number) => {
+    const query = `
+      WITH last_date AS (
+        SELECT MAX(date) as max_date
+        FROM "DailyExecutionRewards"
+      )
+      SELECT 
+        COALESCE(SUM(der.amount), 0) as total
+      FROM "DailyExecutionRewards" der
+      JOIN "_FeeRewardAddressToUser" fra ON fra."A" ilike der.address
+      CROSS JOIN last_date ld
+      WHERE fra."B" = $1
+        AND der.date <= ld.max_date
+        AND der.date > ld.max_date - INTERVAL '7 days'`;
+
+    return await prisma.$queryRawUnsafe<
+      {
+        total: string;
+      }[]
+    >(query, userId);
+  },
+  { promise: true, maxAge: ms("1h") }
+);
+
+// Update calculateTableStats to include weekly stats
+async function calculateTableStats(
+  user: User & { validators: Validator[] },
+  logger: CustomLogger
+): Promise<UserStats["rewards"]> {
+  logger.info(`stats`);
+  const [
+    dailyValidatorStats,
+    dailyExecutionRewards,
+    weeklyValidatorStats,
+    weeklyExecutionRewards,
+  ] = await Promise.all([
+    getDailyValidatorStatsMemoized(Number(user.id)),
+    getDailyExecutionRewardsMemoized(Number(user.id)),
+    getWeeklyValidatorStatsMemoized(Number(user.id)),
+    getWeeklyExecutionRewardsMemoized(Number(user.id)),
+  ]);
+  logger.info(`stats done`);
+
+  if (!dailyValidatorStats.length) return null;
+
+  // Calculate daily stats (existing code)
+  const totalDailyConsensus =
+    BigInt(dailyValidatorStats[0].head) +
+    BigInt(dailyValidatorStats[0].target) +
+    BigInt(dailyValidatorStats[0].source) +
+    BigInt(dailyValidatorStats[0].inactivity) +
+    BigInt(dailyValidatorStats[0].syncCommittee) +
+    BigInt(dailyValidatorStats[0].blockReward);
+
+  const totalDailyConsensusInWei =
+    (BigInt(totalDailyConsensus) * scale) / tokenUnit;
+  const totalDailyConsensusEth = Number(
+    formatEther(totalDailyConsensusInWei.toString())
+  );
+  const totalDailyExecution = Number(
+    formatEther(dailyExecutionRewards[0].total.toString())
+  );
+  const totalDailyUsd =
+    totalDailyConsensusEth * tokenPrice +
+    (FEE_REWARDS_IN_STABLE
+      ? totalDailyExecution
+      : totalDailyExecution * tokenPrice);
+
+  // Calculate weekly stats
+  const totalWeeklyConsensus =
+    BigInt(weeklyValidatorStats[0].head) +
+    BigInt(weeklyValidatorStats[0].target) +
+    BigInt(weeklyValidatorStats[0].source) +
+    BigInt(weeklyValidatorStats[0].inactivity) +
+    BigInt(weeklyValidatorStats[0].syncCommittee) +
+    BigInt(weeklyValidatorStats[0].blockReward);
+
+  const totalWeeklyConsensusInWei =
+    (BigInt(totalWeeklyConsensus) * scale) / tokenUnit;
+  const totalWeeklyConsensusEth = Number(
+    formatEther(totalWeeklyConsensusInWei.toString())
+  );
+  const totalWeeklyExecution = Number(
+    formatEther(weeklyExecutionRewards[0].total.toString())
+  );
+  const totalWeeklyUsd =
+    totalWeeklyConsensusEth * tokenPrice +
+    (FEE_REWARDS_IN_STABLE
+      ? totalWeeklyExecution
+      : totalWeeklyExecution * tokenPrice);
+
+  const totalBalance =
+    Number(
+      user.validators.reduce(
+        (acc, validator) => acc + BigInt(validator.balance.toString()),
+        BigInt(0)
+      )
+    ) / Number(tokenUnit);
+
+  // Calculate APY
+  const dailyApy = calculateAPY_daily(
+    totalBalance,
+    totalDailyConsensusEth + totalDailyExecution
+  );
+
+  const weeklyApy = calculateAPY_weekly(
+    totalBalance,
+    totalWeeklyConsensusEth + totalWeeklyExecution // Pasamos el total semanal directamente
+  );
+
+  return {
+    daily: {
+      apy: dailyApy,
+      consensus: totalDailyConsensusEth,
+      execution: totalDailyExecution,
+      usd: totalDailyUsd,
+    },
+    weekly: {
+      apy: weeklyApy,
+      consensus: totalWeeklyConsensusEth,
+      execution: totalWeeklyExecution,
+      usd: totalWeeklyUsd,
+    },
+  };
+}
+
+function calculateAPY_daily(
+  totalBalance: number,
+  dailyRewards: number
+): number {
+  if (!totalBalance || !dailyRewards) return 0;
+  return ((1 + dailyRewards / totalBalance) ** DAYS_IN_YEAR - 1) * 100;
+}
+
+function calculateAPY_weekly(
+  totalBalance: number,
+  weeklyRewards: number
+): number {
+  if (!totalBalance || !weeklyRewards) return 0;
+  return ((1 + weeklyRewards / totalBalance) ** (DAYS_IN_YEAR / 7) - 1) * 100;
+}
+
+function formatStatsMessage(
+  stats: UserStats,
+  status: {
+    syncing: boolean;
+    headSlot: number;
+    maxSlotToQuery: number;
+  }
+): string {
+  const {
+    performance1h: performance,
+    balance,
+    withdrawable,
+    validatorStats,
+  } = stats;
+
+  const syncStatus = status.syncing
+    ? `⚠️ ${status.headSlot - status.maxSlotToQuery} slots behind ⚠️`
+    : null;
+
+  // Define message sections
+  const validatorStatus = status.syncing
+    ? `⚪️ ${validatorStats.activeIds.length + validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`
+    : `🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`;
+
+  const dailyApy = calculateAPY_daily(
+    Number(balance.total),
+    stats.rewards.daily.consensus
+  ).toFixed(2);
+
+  const weeklyApy = calculateAPY_weekly(
+    Number(balance.total),
+    stats.rewards.weekly.consensus
+  ).toFixed(2);
+
+  const mainStats = [
+    `Last 1h perf: ${performance == null ? "-" : `${performance.toFixed(2)}%`}`,
+    `Bal: ${balance.total} ${TOKEN_SYMBOL} $${balance.value}`,
+    `Claimable: ${withdrawable.total} ${TOKEN_SYMBOL} $${withdrawable.value}`,
+  ].join("\n");
+
+  const rewardsSection = [
+    `Stats:`,
+    `---------------------------`,
+    `   APY%  ${TOKEN_SYMBOL}   ${FEE_REWARDS_SYMBOL}  Total`,
+    `d: ${dailyApy}  ${formatNumber(stats.rewards.daily.consensus, 3)}  ${formatNumber(stats.rewards.daily.execution, 3)}  ${formatNumber(stats.rewards.daily.usd, 4, "$")}`,
+    `w: ${weeklyApy}  ${formatNumber(stats.rewards.weekly.consensus, 3)}  ${formatNumber(stats.rewards.weekly.execution, 3)}  ${formatNumber(stats.rewards.weekly.usd, 4, "$")}`,
+    `m:            🔜`,
+  ].join("\n");
+
+  const footer = [
+    `${TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}`,
+    `Updated: ${format(new Date(), "MM/dd hh:mmaaa")} UTC`,
+  ].join("\n");
+
+  // Combine all sections
+  return `\`${[
+    ...(status.syncing ? [syncStatus, "", validatorStatus] : [validatorStatus]),
+    "", // empty line
+    mainStats,
+    "", // empty line
+    rewardsSection,
+    "", // empty line
+    footer,
+  ].join("\n")}\``;
 }
 
 async function updateOrSendMessage(
@@ -515,4 +615,35 @@ async function updateOrSendMessage(
       error
     );
   }
+}
+
+export async function notifyUserStatsMessage(
+  userId: bigint,
+  logger: CustomLogger
+): Promise<number | undefined> {
+  const { headSlot, maxSlotToQuery, syncing } = await slotsInfo();
+
+  logger.info(`db full user`);
+  const user = await getUser(userId);
+  logger.info(`db full user done`);
+
+  const stats = await getUserAllStats(syncing, maxSlotToQuery, user, logger);
+
+  // TODO: check null values.
+  if (!syncing) {
+    await notifyUnderPerformance(user, stats.performance1h);
+    await notifyInactiveValidators(user, stats.validatorStats.inactiveIds);
+  }
+
+  // send message to the user
+  const message = formatStatsMessage(stats, {
+    syncing,
+    headSlot,
+    maxSlotToQuery,
+  });
+  return await updateOrSendMessage(
+    Number(user.chatId),
+    Number(user.messageId),
+    message
+  );
 }

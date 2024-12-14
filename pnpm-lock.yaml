@@ -197,6 +197,9 @@ importers:
       '@types/lodash':
         specifier: ^4.14.200
         version: 4.17.7
+      '@types/memoizee':
+        specifier: ^0.4.11
+        version: 0.4.11
       '@types/nedb':
         specifier: ^1.8.16
         version: 1.8.16
@@ -836,6 +839,9 @@ packages:
 
   '@types/lodash@4.17.7':
     resolution: {integrity: sha512-8wTvZawATi/lsmNu10/j2hk1KEP0IvjubqPE3cu1Xz7xfXXt5oCq3SNUz4fMIP4XGF9Ky+Ue2tBA3hcS7LSBlA==}
+
+  '@types/memoizee@0.4.11':
+    resolution: {integrity: sha512-2gyorIBZu8GoDr9pYjROkxWWcFtHCquF7TVbN2I+/OvgZhnIGQS0vX5KJz4lXNKb8XOSfxFOSG5OLru1ESqLUg==}
 
   '@types/minimatch@5.1.2':
     resolution: {integrity: sha512-K0VQKziLUWkVKiRVrx4a40iPaxTUefQmjtkQofBkYRcoaaL/8rhwDWww9qWbrgicNOgnpIsMxyNIUM4+n6dUIA==}
@@ -3860,6 +3866,8 @@ snapshots:
       pretty-format: 29.7.0
 
   '@types/lodash@4.17.7': {}
+
+  '@types/memoizee@0.4.11': {}
 
   '@types/minimatch@5.1.2': {}
 
