@@ -323,7 +323,13 @@ const getDailyExecutionRewardsMemoized = memoizee(
       FROM "HourlyExecutionRewards" her
       JOIN "_FeeRewardAddressToUser" fra ON fra."A" ilike her.address
       WHERE fra."B" = $1
-        AND her.date >= NOW() - INTERVAL '24 hours'`;
+      AND (
+          -- Today's records up to current hour
+          (her.date = CURRENT_DATE AND her.hour <= EXTRACT(HOUR FROM NOW()))
+          OR
+          -- Yesterday's records after current hour
+          (her.date = CURRENT_DATE - INTERVAL '1 day' AND her.hour > EXTRACT(HOUR FROM NOW()))
+      )`;
 
     return await prisma.$queryRawUnsafe<
       {
