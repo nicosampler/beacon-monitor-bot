@@ -1,9 +1,10 @@
 import { getPrisma } from "@/src/lib/prisma.js";
 import { Prisma, LastSummaryUpdate } from "@prisma/client";
 import { VALIDATOR_STATUS } from "@/src/constants/index.js";
-import memoize from "memoize";
+import memoizee from "memoizee";
 import ms from "ms";
 import { env } from "@/src/env.js";
+import { getBlockRewards, getSyncCommitteeRewards } from "@/src/beacon/endpoints.js";
 
 const prisma = getPrisma();
 
@@ -153,7 +154,7 @@ async function fetchValidatorsBatch(
 }
 
 // TODO: invalidate cache if we detect a new validator.
-export const getActiveValidators = memoize(
+export const getActiveValidators = memoizee(
   async function (): Promise<number[]> {
     const batchSize = 200000;
     let allValidators: number[] = [];

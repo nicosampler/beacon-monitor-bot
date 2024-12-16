@@ -7,6 +7,8 @@ import { CustomLogger } from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import chunk from "lodash/chunk.js";
 import { addDays, addHours } from "date-fns";
+import { getEpochFromSlot } from "@/src/beacon/utils/misc.js";
+import { env } from "@/src/env.js";
 
 export type AggregateHourlyStats = Awaited<
   ReturnType<typeof aggregateHourlyStats>
@@ -25,27 +27,32 @@ export function calculateSlotRange(startTime: Date, endTime: Date) {
 }
 
 export async function hasAllHourlyStats(date: Date): Promise<boolean> {
-  // Check if we have the first hour (0) of the next day
-  // If we have hour 0 of next day, it means we have all hours from previous day
-  const hasLastHour = await prisma.hourlyValidatorStats.findFirst({
+  const nextDay = addDays(date, 1);
+  const nextDaySlot =
+    getSlotNumberFromTimestamp(nextDay.getTime()) + env.BEACON_SLOTS_PER_EPOCH;
+
+  console.log(">>> SLOT", nextDaySlot);
+  console.log(">>> EPOCH", getEpochFromSlot(nextDaySlot));
+
+  const beaconRewardsFetched = await prisma.epoch.findUnique({
     where: {
-      hour: 0,
-      date: addDays(date, 1),
-      head: {
-        // Set by beacon rewards
-        not: null,
-      },
-      syncCommittee: {
-        // Set by sync committee rewards
-        not: null,
-      },
-      blockReward: {
-        // Set by block rewards
-        not: null,
-      },
+      epoch: getEpochFromSlot(nextDaySlot),
+      rewardsFetched: true,
     },
   });
-  return hasLastHour != null;
+
+  if (!beaconRewardsFetched) {
+    return false;
+  }
+
+  const syncCommitteeAndBlockRewardsFetched = await prisma.slot.findFirst({
+    where: {
+      slot: nextDaySlot,
+      blockAndSyncRewardsFetched: true,
+    },
+  });
+
+  return syncCommitteeAndBlockRewardsFetched != null;
 }
 
 export async function hasAllExecutionRewards(date: Date): Promise<boolean> {

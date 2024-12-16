@@ -25,6 +25,7 @@ const createLogger = (
   initialContext: string | null,
   enabled: boolean = true
 ) => {
+  const _initialContext = initialContext;
   // Add context state that can be modified
   let currentContext = initialContext;
 
@@ -46,7 +47,7 @@ const createLogger = (
     // Add method to update context
     addContext: (extraContext: string) => {
       currentContext = currentContext
-        ? `${currentContext} - ${extraContext}`
+        ? `${_initialContext} - ${extraContext}`
         : extraContext;
     },
     info: (message: string, ...args: any[]) =>

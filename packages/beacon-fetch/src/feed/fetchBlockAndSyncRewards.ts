@@ -13,15 +13,27 @@ const prisma = getPrisma();
 
 export const fetchBlockAndSyncRewards = async (
   slot: number,
+  maxSlotToFetch: number,
   logger: CustomLogger
 ) => {
   try {
     logger.info("api call sync & block rewards");
-    const [syncCommitteeRewards, blockRewards] = await Promise.all([
+
+    // Current slot requests
+    const currentSlotRequests = Promise.all([
       getSyncCommitteeRewards(slot, []),
       getBlockRewards(slot),
     ]);
-    logger.info("done.");
+
+    // Just fire the requests for future slots - memoizee will handle deduplication
+    for (let i = 1; i <= 10; i++) {
+      const futureSlot = slot + i;
+      if (futureSlot > maxSlotToFetch) break;
+      getSyncCommitteeRewards(futureSlot, []);
+      getBlockRewards(futureSlot);
+    }
+
+    const [syncCommitteeRewards, blockRewards] = await currentSlotRequests;
 
     const timestamp = getTimestampFromSlotNumber(slot);
     const { date, hour } = convertToUTC(timestamp);
@@ -45,6 +57,7 @@ export const fetchBlockAndSyncRewards = async (
       return;
     }
 
+    logger.info(`Saving rewards`);
     await prisma.$transaction(
       async (tx) => {
         // Sync rewards
@@ -70,7 +83,7 @@ export const fetchBlockAndSyncRewards = async (
         // Block rewards
         if (blockRewards !== "SLOT MISSED") {
           const blockRewardValue = `(${Number(blockRewards.data.proposer_index)}, ${hour}, '${date}', ${BigInt(blockRewards.data.total)})`;
-          
+
           await tx.$executeRaw`
             INSERT INTO "HourlyValidatorStats" ("validatorIndex", "hour", "date", "blockReward")
             VALUES ${Prisma.raw(blockRewardValue)}

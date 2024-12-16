@@ -12,6 +12,8 @@ import {
 import { env } from "@/src/env.js";
 import { AxiosError } from "axios";
 import pRetry from "p-retry";
+import memoizee from "memoizee";
+import ms from "ms";
 
 // Helper function to check for missed slot errors
 function _isSlotMissedError(error: unknown): boolean {
@@ -33,7 +35,7 @@ async function makeBeaconRequest<T>(
   for (const url of [env.BEACON_API_URL, env.BEACON_API_BKP_URL]) {
     try {
       const result = await pRetry(() => requestBuilder(url), {
-        retries: 3,
+        retries: 2,
         minTimeout: 1000,
       });
       return result;
@@ -126,27 +128,38 @@ export async function getAttestationRewards(
   });
 }
 
-export async function getBlockRewards(slot: number) {
-  return makeBeaconRequest<BlockRewards | "SLOT MISSED">(
-    async (url) => {
-      const res = await instance.get<BlockRewards>(
-        `${url}/eth/v1/beacon/rewards/blocks/${slot}`
+export const getBlockRewards = memoizee(
+  async function getBlockRewards(slot: number) {
+    return makeBeaconRequest<BlockRewards | "SLOT MISSED">(
+      async (url) => {
+        const res = await instance.get<BlockRewards>(
+          `${url}/eth/v1/beacon/rewards/blocks/${slot}`
+        );
+        return res.data;
+      },
+      (error) => (_isSlotMissedError(error) ? "SLOT MISSED" : undefined)
+    );
+  },
+  {
+    promise: true,
+    maxAge: ms("10m"),
+    primitive: true,
+  }
+);
+
+export const getSyncCommitteeRewards = memoizee(
+  async function getSyncCommitteeRewards(slot: number, validatorIds: string[]) {
+    return makeBeaconRequest<SyncCommitteeRewards>(async (url) => {
+      const res = await instance.post<SyncCommitteeRewards>(
+        `${url}/eth/v1/beacon/rewards/sync_committee/${slot}`,
+        validatorIds
       );
       return res.data;
-    },
-    (error) => (_isSlotMissedError(error) ? "SLOT MISSED" : undefined)
-  );
-}
-
-export async function getSyncCommitteeRewards(
-  slot: number,
-  validatorIds: string[]
-) {
-  return makeBeaconRequest<SyncCommitteeRewards>(async (url) => {
-    const res = await instance.post<SyncCommitteeRewards>(
-      `${url}/eth/v1/beacon/rewards/sync_committee/${slot}`,
-      validatorIds
-    );
-    return res.data;
-  });
-}
+    });
+  },
+  {
+    promise: true,
+    maxAge: ms("10m"),
+    primitive: true,
+  }
+);
