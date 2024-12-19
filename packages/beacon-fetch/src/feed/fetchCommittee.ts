@@ -88,10 +88,10 @@ async function executeEpochTransaction(
   committeeUpserts: CommitteeUpsert[]
 ) {
   await prisma.$executeRaw`
-      INSERT INTO "Slot" (slot, "attestationsFetched")
-      SELECT unnest(${uniqueSlots}::integer[]), false
-      ON CONFLICT (slot) DO NOTHING
-    `;
+    INSERT INTO "Slot" (slot, "attestationsFetched")
+    SELECT unnest(${uniqueSlots}::integer[]), false
+    ON CONFLICT (slot) DO NOTHING
+  `;
 
   // Second transaction: Insert committees in batches
   const batchSize = 10000;
@@ -122,12 +122,12 @@ async function processAndSaveCommittees(
 // New function to handle parallel fetching
 export async function fetchCommittee(
   logger: CustomLogger,
-  slotToFetchEpoch: number,
+  epochToFetch: number,
   lastSlotInCommittee: number
 ): Promise<void> {
   let committees: GetCommittees["data"];
   try {
-    committees = await getCommittees(slotToFetchEpoch);
+    committees = await getCommittees(epochToFetch);
   } catch (e) {
     throw {
       message: e.message,

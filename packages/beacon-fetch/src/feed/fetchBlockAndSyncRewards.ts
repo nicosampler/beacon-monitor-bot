@@ -52,7 +52,11 @@ export const fetchBlockAndSyncRewards = async (
       select: { blockAndSyncRewardsFetched: true },
     });
 
-    if (slotRecord.blockAndSyncRewardsFetched) {
+    if (!slotRecord) {
+      return;
+    }
+
+    if (slotRecord?.blockAndSyncRewardsFetched) {
       logger.warn(`Already fetched`);
       return;
     }

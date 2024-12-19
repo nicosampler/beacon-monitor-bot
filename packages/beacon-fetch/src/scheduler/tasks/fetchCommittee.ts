@@ -20,20 +20,21 @@ async function fetchNewCommittees(logger: CustomLogger) {
   const headSlot = getSlotNumberFromTimestamp(now.getTime());
   const headEpoch = getEpochFromSlot(headSlot);
 
-  const oldestLookbackSlot = getOldestLookbackSlot();
   const lastSlotInCommittee = await db_getLastSlotInCommittee();
+
   const slotToFetch = lastSlotInCommittee
     ? lastSlotInCommittee.slot + 1
-    : oldestLookbackSlot;
-  const slotToFetchEpoch = getEpochFromSlot(slotToFetch);
+    : getOldestLookbackSlot();
+  const epochToFetch = getEpochFromSlot(slotToFetch);
 
   logger.addContext(
-    `epoch ${slotToFetchEpoch} - HeadEpoch:${headEpoch} HeadSlot:${headSlot}`
+    `Slot: ${slotToFetch}/${headSlot} - Epoch: ${epochToFetch}/${headEpoch}`
   );
+  logger.info("");
 
   // Skip if the committee does not exist yet
-  if (slotToFetchEpoch > headEpoch + 1) {
-    logger.info(`Skipping, epoch ${slotToFetchEpoch} is too far in the future`);
+  if (slotToFetch > headSlot + env.BEACON_SLOTS_PER_EPOCH) {
+    logger.info(`Skipping, epoch ${epochToFetch} is too far in the future`);
     return null;
   }
 
@@ -50,11 +51,7 @@ async function fetchNewCommittees(logger: CustomLogger) {
   // Logging the context
   logger.info("");
 
-  await fetchCommittee(
-    logger,
-    slotToFetchEpoch,
-    lastSlotInCommittee?.slot || -1
-  );
+  await fetchCommittee(logger, epochToFetch, lastSlotInCommittee?.slot || -1);
 
   logger.info(`Done!`);
 }

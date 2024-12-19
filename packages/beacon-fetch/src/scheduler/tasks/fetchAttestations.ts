@@ -3,7 +3,7 @@ import { AsyncTask, SimpleIntervalJob } from "toad-scheduler";
 import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { fetchAttestation as _fetchAttestations } from "@/src/feed/fetchAttestations.js";
-import createLogger from "@/src/lib/pino.js";
+import createLogger, { CustomLogger } from "@/src/lib/pino.js";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { env } from "@/src/env.js";
 import {
@@ -11,8 +11,9 @@ import {
   db_getLastSlotWithAttestations,
 } from "@/src/feed/utils.js";
 import { scheduler } from "@/src/lib/scheduler.js";
+import { TaskOptions } from "@/src/scheduler/tasks/types.js";
 
-export const fetchAttestations = async (ID: string, logsEnabled: boolean) => {
+export const fetchAttestations = async (logger: CustomLogger) => {
   const now = new Date();
   const currentSlot = getSlotNumberFromTimestamp(now.getTime());
   const maxSlotToFetch = currentSlot - env.BEACON_DELAY_SLOTS_TO_HEAD;
@@ -26,7 +27,7 @@ export const fetchAttestations = async (ID: string, logsEnabled: boolean) => {
       ? lastProcessedSlot.slot + 1
       : oldestLookbackSlot;
 
-    const logger = createLogger(`${ID} for slot ${slotToFetch}`, logsEnabled);
+    logger.addContext(`for slot ${slotToFetch}`)
 
     if (slotToFetch > maxSlotToFetch) {
       logger.info(
@@ -46,26 +47,27 @@ export const fetchAttestations = async (ID: string, logsEnabled: boolean) => {
 };
 
 export function scheduleFetchAttestations({
+  id,
   logsEnabled,
-  interval,
-  ID,
-}: {
-  logsEnabled: boolean;
-  interval: number;
-  ID: string;
-}) {
+  intervalMs,
+  runImmediately,
+  preventOverrun,
+}: TaskOptions) {
+  const logger = createLogger(id, logsEnabled);
+
+  const task = new AsyncTask(`${id}_task`, () => {
+    return fetchAttestations(logger).catch((e) =>
+      logger.error("TASK-CATCH", e)
+    );
+  });
+
   scheduler.addSimpleIntervalJob(
     new SimpleIntervalJob(
-      { milliseconds: interval, runImmediately: true },
-      new AsyncTask(`${ID}_task`, () => {
-        const logger = createLogger(ID);
-        return fetchAttestations(ID, logsEnabled).catch((e) =>
-          logger.error("TASK-CATCH", e)
-        );
-      }),
+      { milliseconds: intervalMs, runImmediately: runImmediately },
+      task,
       {
-        id: ID,
-        preventOverrun: true,
+        id,
+        preventOverrun,
       }
     )
   );

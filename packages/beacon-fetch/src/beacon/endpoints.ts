@@ -62,8 +62,7 @@ export async function getCommittees(
 ): Promise<GetCommittees["data"]> {
   return makeBeaconRequest(async (url) => {
     const res = await instance.get<GetCommittees>(
-      `${url}/eth/v1/beacon/states/${stateId}/committees`,
-      { params: { epoch } }
+      `${url}/eth/v1/beacon/states/${stateId}/committees?epoch=${epoch}`
     );
     return res.data.data;
   });

@@ -4,8 +4,6 @@ import { VALIDATOR_STATUS } from "@/src/constants/index.js";
 import memoizee from "memoizee";
 import ms from "ms";
 import { env } from "@/src/env.js";
-import { getBlockRewards, getSyncCommitteeRewards } from "@/src/beacon/endpoints.js";
-
 const prisma = getPrisma();
 
 export const db_getLastSlot = async () =>

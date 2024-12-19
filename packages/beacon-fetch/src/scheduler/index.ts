@@ -15,16 +15,18 @@ import { scheduler } from "@/src/lib/scheduler.js";
 export function scheduleTasks() {
   scheduleFetchCommittee({
     id: "FetchCommittee",
-    logsEnabled: false,
+    logsEnabled: true,
     intervalMs: ms("5s"),
     runImmediately: true,
     preventOverrun: true,
   });
 
   scheduleFetchAttestations({
-    logsEnabled: false,
-    interval: ms("2s"),
-    ID: "FetchAttestations",
+    id: "FetchAttestations",
+    logsEnabled: true,
+    intervalMs: ms("2s"),
+    runImmediately: true,
+    preventOverrun: true,
   });
 
   scheduleFetchExecutionRewards({
@@ -46,21 +48,20 @@ export function scheduleTasks() {
   });
 
   scheduleFetchValidatorsBalances({
-    logsEnabled: true,
+    logsEnabled: false,
     interval: ms("10m"),
     ID: "FetchValidatorsBalances",
   });
 
   scheduleFetchValidatorsInfo({
-    logsEnabled: true,
+    logsEnabled: false,
     interval: ms("10m"),
     ID: "FetchValidatorsInfo",
   });
 
-  //  Summarize hourly attestation and rewards
   scheduler.addSimpleIntervalJob(summarizeHourlyJob);
-  // Summarize daily attestation and rewards
+
   scheduler.addSimpleIntervalJob(summarizeDailyJob);
-  // Maintenance tasks
+
   scheduler.addSimpleIntervalJob(cleanupCommitteeJob);
 }
