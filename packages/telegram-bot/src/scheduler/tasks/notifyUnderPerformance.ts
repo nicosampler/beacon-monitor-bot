@@ -6,8 +6,6 @@ import { ALERT_REPEAT_INTERVAL_MINUTES } from "@/src/constants/index.js";
 import { User } from "@prisma/client";
 
 export async function notifyUnderPerformance(user: User, performance: number) {
-  if (user.username !== "nfd_87") return;
-
   const { performanceNotif, performanceThreshold } = user;
 
   if (!performanceThreshold || performance > performanceThreshold) {

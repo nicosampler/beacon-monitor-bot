@@ -30,6 +30,7 @@ import { notifyUnderPerformance } from "@/src/scheduler/tasks/notifyUnderPerform
 import { notifyInactiveValidators } from "@/src/scheduler/tasks/notifyInactiveValidators.js";
 import memoizee from "memoizee";
 import ms from "ms";
+import { env } from "@/src/env.js";
 
 const prisma = getPrisma();
 const scale = BigInt(10) ** BigInt(18);
@@ -72,22 +73,29 @@ interface UserStats {
 
 async function slotsInfo() {
   const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+
   const headSlot = currentSlot - Number(process.env.BEACON_DELAY_SLOTS_TO_HEAD);
+  const headEpoch = getEpochFromSlot(headSlot);
+  const headEpochSlots = getEpochSlots(headEpoch);
+
+  const maxSlotToQuery =
+    headEpochSlots.startSlot - 1 - env.BEACON_SLOTS_PER_EPOCH;
+
   const lastSlotProcessed = await prisma.slot.findFirst({
     where: { attestationsFetched: true },
     orderBy: { slot: "desc" },
   });
-  const epochFromLastSlotProcessed = getEpochFromSlot(lastSlotProcessed.slot);
-  const maxSlotToQuery =
-    getEpochSlots(epochFromLastSlotProcessed).startSlot - 1;
 
-  // Bot is syncing if the last slot processed is one slot behind the max slot to query
-  let syncing = false;
-  if (headSlot - maxSlotToQuery > Number(process.env.BEACON_SLOTS_PER_EPOCH)) {
-    syncing = true;
-  }
+  // The bot is syncing if the last slot processed is less than
+  // one complete epoch behind the head epoch
+  const syncing = lastSlotProcessed.slot < maxSlotToQuery;
 
-  return { headSlot, maxSlotToQuery, syncing };
+  return {
+    headSlot,
+    maxSlotToQuery,
+    maxEpochToQuery: getEpochFromSlot(maxSlotToQuery),
+    syncing,
+  };
 }
 
 async function getUser(userId: bigint) {
@@ -101,18 +109,20 @@ function getValidatorStatuses(
   user: User & { validators: Validator[] },
   beaconActiveValidators: Validator[],
   userMissedAttestations: Committee[],
-  maxSlotToQuery: number
+  maxEpochToQuery: number
 ): ValidatorByStatus {
-  const lastEpoch = getEpochFromSlot(maxSlotToQuery);
-
   const inactiveIds: number[] = [];
   for (const validator of beaconActiveValidators) {
-    // get the last missed attestations for this validator
+    // get the last missed attestations for each validator
     const recentMissed = userMissedAttestations
       .filter((entry) => entry.validatorIndex === validator.id)
       .slice(0, user.inactiveOnMissedAttestations)
       .map((entry) => getEpochFromSlot(entry.slot))
-      .filter((slot) => slot > lastEpoch - user.inactiveOnMissedAttestations);
+      .filter(
+        // Get the last N epochs where N is the user's inactivity threshold.
+        // Each validator attest once per epoch.
+        (epoch) => epoch > maxEpochToQuery - user.inactiveOnMissedAttestations
+      );
 
     // Skip if not enough missed attestations
     if (recentMissed.length < user.inactiveOnMissedAttestations) {
@@ -149,6 +159,7 @@ function getValidatorStatuses(
 async function getUserAllStats(
   syncing: boolean,
   maxSlotToQuery: number,
+  maxEpochToQuery: number,
   user: User & {
     validators: Validator[];
     withdrawalAddresses: WithdrawalAddress[];
@@ -160,14 +171,11 @@ async function getUserAllStats(
       v.status === VALIDATOR_STATUS.active_ongoing ||
       v.status === VALIDATOR_STATUS.active_exiting
   );
-  logger.info(`beacon active validators: ${beaconActiveValidators.length}`);
 
-  logger.info(`get missed attestations`);
   const missedAttestations = await getMissedAttestations(
     Number(user.id),
     maxSlotToQuery
   );
-  logger.info(`get missed attestations done`);
 
   const [
     validatorStatuses,
@@ -180,7 +188,7 @@ async function getUserAllStats(
       user,
       beaconActiveValidators,
       missedAttestations,
-      maxSlotToQuery
+      maxEpochToQuery
     ),
     get1hPerformance(
       syncing,
@@ -240,6 +248,7 @@ function getUserBalance(validators: Validator[]) {
   };
 }
 
+// Get all the missed attestations in the last hour for the user's validators
 async function getMissedAttestations(
   userId: number,
   maxSlotToQuery: number
@@ -627,13 +636,20 @@ export async function notifyUserStatsMessage(
   userId: bigint,
   logger: CustomLogger
 ): Promise<number | undefined> {
-  const { headSlot, maxSlotToQuery, syncing } = await slotsInfo();
+  const { headSlot, maxSlotToQuery, maxEpochToQuery, syncing } =
+    await slotsInfo();
 
   logger.info(`db full user`);
   const user = await getUser(userId);
   logger.info(`db full user done`);
 
-  const stats = await getUserAllStats(syncing, maxSlotToQuery, user, logger);
+  const stats = await getUserAllStats(
+    syncing,
+    maxSlotToQuery,
+    maxEpochToQuery,
+    user,
+    logger
+  );
 
   // TODO: check null values.
   if (!syncing) {
