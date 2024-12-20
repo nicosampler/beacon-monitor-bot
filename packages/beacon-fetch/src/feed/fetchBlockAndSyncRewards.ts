@@ -17,6 +17,16 @@ export const fetchBlockAndSyncRewards = async (
   logger: CustomLogger
 ) => {
   try {
+    const dbSlot = await prisma.slot.findUnique({
+      where: { slot },
+      select: { blockAndSyncRewardsFetched: true },
+    });
+
+    if (!dbSlot) {
+      logger.warn(`Slot ${slot} not found in database`);
+      return;
+    }
+
     logger.info("api call sync & block rewards");
 
     // Current slot requests
