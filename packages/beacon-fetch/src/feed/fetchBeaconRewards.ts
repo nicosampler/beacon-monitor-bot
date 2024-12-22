@@ -76,7 +76,8 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
             "target" = "HourlyValidatorStats"."target" + EXCLUDED."target",
             "source" = "HourlyValidatorStats"."source" + EXCLUDED."source",
             "inactivity" = "HourlyValidatorStats"."inactivity" + EXCLUDED."inactivity",
-            "syncCommittee" = COALESCE("HourlyValidatorStats"."syncCommittee", 0)
+            "syncCommittee" = COALESCE("HourlyValidatorStats"."syncCommittee", 0),
+            "blockReward" = COALESCE("HourlyValidatorStats"."blockReward", 0)
         `;
 
         // check if rewards was fetched for this epoch

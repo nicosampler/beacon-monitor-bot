@@ -91,6 +91,7 @@ export const fetchBlockAndSyncRewards = async (
             "target" = COALESCE("HourlyValidatorStats"."target", 0),
             "source" = COALESCE("HourlyValidatorStats"."source", 0),
             "inactivity" = COALESCE("HourlyValidatorStats"."inactivity", 0),
+            "blockReward" = COALESCE("HourlyValidatorStats"."blockReward", 0),
             "syncCommittee" = COALESCE("HourlyValidatorStats"."syncCommittee", 0) + EXCLUDED."syncCommittee"
         `;
 
@@ -103,12 +104,12 @@ export const fetchBlockAndSyncRewards = async (
             VALUES ${Prisma.raw(blockRewardValue)}
             ON CONFLICT ("validatorIndex", "hour", "date") 
             DO UPDATE SET
-              "blockReward" = EXCLUDED."blockReward",
               "head" = COALESCE("HourlyValidatorStats"."head", 0),
               "target" = COALESCE("HourlyValidatorStats"."target", 0),
               "source" = COALESCE("HourlyValidatorStats"."source", 0),
               "inactivity" = COALESCE("HourlyValidatorStats"."inactivity", 0),
-              "syncCommittee" = COALESCE("HourlyValidatorStats"."syncCommittee", 0)
+              "syncCommittee" = COALESCE("HourlyValidatorStats"."syncCommittee", 0),
+              "blockReward" = COALESCE("HourlyValidatorStats"."blockReward", 0) + EXCLUDED."blockReward"
           `;
         }
 
