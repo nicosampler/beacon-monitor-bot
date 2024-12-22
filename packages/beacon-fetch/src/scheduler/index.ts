@@ -37,7 +37,7 @@ export function scheduleTasks() {
 
   scheduleFetchBeaconRewards({
     logsEnabled: false,
-    interval: ms("20s"),
+    interval: ms("5s"),
     ID: "FetchBeaconRewards",
   });
 
