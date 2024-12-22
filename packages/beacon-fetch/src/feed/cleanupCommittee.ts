@@ -11,16 +11,18 @@ export async function cleanupCommittee(logger: CustomLogger) {
   try {
     // remove attestations that were summarized in the hourly summary
     const lsu = await prisma.lastSummaryUpdate.findFirst();
+
     if (lsu.hourlyValidatorStats) {
       const maxSlot = getSlotNumberFromTimestamp(
         lsu.hourlyValidatorStats.getTime()
-      );
+      ) - 10; // 10 is some buffer just to be safe
+      logger.info(`Deleting slots lower than ${maxSlot}`);
 
       if (maxSlot) {
-        const result2 = await prisma.$executeRaw`
+        const result = await prisma.$executeRaw`
           DELETE FROM "Committee" 
           WHERE slot < ${maxSlot}`;
-        totalDeleted += result2;
+        totalDeleted += result;
       }
     }
 

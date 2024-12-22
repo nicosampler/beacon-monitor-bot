@@ -5,9 +5,9 @@ import { scheduleFetchValidatorsInfo } from "@/src/scheduler/tasks/fetchValidato
 import { scheduleFetchBeaconRewards } from "@/src/scheduler/tasks/fetchBeaconRewards.js";
 import { scheduleFetchCommittee } from "@/src/scheduler/tasks/fetchCommittee.js";
 import { scheduleFetchBlockAndSyncRewards } from "@/src/scheduler/tasks/fetchBlockAndSyncRewards.js";
-import { job as summarizeHourlyJob } from "@/src/scheduler/tasks/summarizeHourly.js";
+import { scheduleSummarizeHourly } from "@/src/scheduler/tasks/summarizeHourly.js";
 import { job as summarizeDailyJob } from "@/src/scheduler/tasks/summarizeDaily.js";
-import { job as cleanupCommitteeJob } from "@/src/scheduler/tasks/maintainCommittee.js";
+import { job as cleanupCommitteeJob } from "@/src/scheduler/tasks/cleanupCommittee.js";
 import ms from "ms";
 import { scheduler } from "@/src/lib/scheduler.js";
 
@@ -42,7 +42,7 @@ export function scheduleTasks() {
   });
 
   scheduleFetchBlockAndSyncRewards({
-    logsEnabled: true,
+    logsEnabled: false,
     interval: ms("2s"),
     ID: "FetchBlockAndSyncRewards",
   });
@@ -59,7 +59,13 @@ export function scheduleTasks() {
     ID: "FetchValidatorsInfo",
   });
 
-  scheduler.addSimpleIntervalJob(summarizeHourlyJob);
+  scheduleSummarizeHourly({
+    id: "SummarizeHourly",
+    logsEnabled: true,
+    intervalMs: ms("1h"),
+    runImmediately: true,
+    preventOverrun: true,
+  });
 
   scheduler.addSimpleIntervalJob(summarizeDailyJob);
 

@@ -35,7 +35,6 @@ export const fetchAttestation = async (
     // Process all attestations. Separates them by updates and deletes depending on the attestation delay env.BEACON_MAX_ATTESTATION_DELAY.
     const allUpdates: CommitteeUpdate[] = [];
     const allDeletes: CommitteeUpdate[] = [];
-
     for (const attestation of filteredAttestations) {
       const processedAttestations = processAttestation(slotNumber, attestation);
       allUpdates.push(...processedAttestations.updates);
@@ -63,6 +62,11 @@ export const fetchAttestation = async (
   }
 };
 
+/**
+ * Deduplicates the updates and deletes of the attestations.
+ * Some nodes might be delayed producing we might get attestations for a node indicating different delays.
+ * We give priority to the attestation with the lowest delay.
+ */
 function deduplicateAttestations(
   allUpdates: CommitteeUpdate[],
   allDeletes: CommitteeUpdate[]

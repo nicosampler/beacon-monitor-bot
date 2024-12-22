@@ -1,20 +1,20 @@
 import { summarizeHourly } from "@/src/feed/summarizeHourly.js";
 import { AsyncTask, SimpleIntervalJob } from "toad-scheduler";
-import createLogger from "@/src/lib/pino.js";
+import createLogger, { CustomLogger } from "@/src/lib/pino.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 import { getTimestampFromSlotNumber } from "@/src/beacon/utils/time.js";
 import { addHours, subHours } from "date-fns";
 import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
+import { TaskOptions } from "@/src/scheduler/tasks/types.js";
+import { scheduler } from "@/src/lib/scheduler.js";
 
 const prisma = getPrisma();
-const ID = "Summarize:Hourly";
-const logger = createLogger(ID);
 
 const oldestLookbackSlotDate = new Date(
   getTimestampFromSlotNumber(getOldestLookbackSlot())
 );
 
-async function summarizeHourlyTask() {
+async function summarizeHourlyTask(logger: CustomLogger) {
   const summary = await prisma.lastSummaryUpdate.findFirst();
 
   const lastSummaryDate =
@@ -24,23 +24,18 @@ async function summarizeHourlyTask() {
   const now = new Date();
   const oneHourBefore = subHours(now, 1);
 
-  logger.info(
+  logger.addContext(
     `lastSummaryDate: ${lastSummaryDate}, nextSummaryDate: ${nextSummaryDate}, oneHourBefore: ${oneHourBefore}`
   );
 
-  // We should only summarize data that is older than 1 hour
-  // Examples:
-  // Case 1 - Skip:
-  //   now = 12:00
-  //   nowMinus1h = 11:00
-  //   nextSummaryDate = 11:00
-  //   Skip because we can't process data from 11:00 yet
-  //
-  // Case 2 - Process:
-  //   now = 12:00
-  //   nowMinus1h = 11:00
-  //   nextSummaryDate = 10:00
-  //   Process because 10:00 is older than 11:00 (data is complete)
+  // We need to wait for a full hour of data before summarizing
+  // because we use this data to calculate:
+  // 1. The last hour's performance metrics
+  // 2. The number of missed validators in the last hour
+  // 
+  // For example, if current time is 12:00, we can only safely
+  // process and summarize data up to 11:00, since we need
+  // complete data for the entire hour (11:00-12:00) of data
   if (nextSummaryDate > oneHourBefore) {
     logger.info("Skipping, data is too recent (less than 1 hour old)");
     return;
@@ -51,13 +46,29 @@ async function summarizeHourlyTask() {
   logger.info("Done.");
 }
 
-export const job = new SimpleIntervalJob(
-  { minutes: 10, runImmediately: true },
-  new AsyncTask(`${ID}_task`, () =>
-    summarizeHourlyTask().catch((e) => logger.error("TASK-CATCH", e.message))
-  ),
-  {
-    id: ID,
-    preventOverrun: true,
-  }
-);
+export function scheduleSummarizeHourly({
+  id,
+  logsEnabled,
+  intervalMs,
+  runImmediately,
+  preventOverrun,
+}: TaskOptions) {
+  const logger = createLogger(id, logsEnabled);
+
+  const task = new AsyncTask(`${id}_task`, () =>
+    summarizeHourlyTask(logger).catch((e) => {
+      logger.error("TASK-CATCH", e);
+    })
+  );
+
+  const job = new SimpleIntervalJob(
+    { milliseconds: intervalMs, runImmediately: runImmediately },
+    task,
+    {
+      id: id,
+      preventOverrun: preventOverrun,
+    }
+  );
+
+  scheduler.addSimpleIntervalJob(job);
+}
