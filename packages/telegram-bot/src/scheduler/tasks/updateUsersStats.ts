@@ -7,7 +7,7 @@ import {
 import { handleError } from "@/src/utils/errors/handleError.js";
 import { AsyncTask } from "toad-scheduler";
 import createLogger from "@/src/lib/pino.js";
-import { notifyUserStatsMessage } from "@/src/scheduler/tasks/notifyUserStatsMessage.js";
+import { fetchUserValidatorsData } from "@/src/scheduler/tasks/utils/fetchUserValidatorsData.js";
 
 export async function updateUsersStatsImp(userId?: number) {
   const users = await getAllUserIds_db(userId);
@@ -19,7 +19,7 @@ export async function updateUsersStatsImp(userId?: number) {
       currentChunk.map(async (user) => {
         const logger = createLogger(`notify user: ${user.username}`);
         try {
-          const messageIdStats = await notifyUserStatsMessage(
+          const messageIdStats = await fetchUserValidatorsData(
             user.userId,
             logger
           );

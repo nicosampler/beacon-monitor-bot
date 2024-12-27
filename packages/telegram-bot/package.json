@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "dotenv -e ../../.env npx tsx src/index.ts",
-    "start": "tsc --noEmit && npx tsx src/index.ts"
+    "start": "tsc --noEmit && npx tsx src/index.ts",
+    "test": "vitest"
   },
   "dependencies": {
     "@grammyjs/conversations": "^1.2.0",
@@ -31,15 +32,23 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "@types/jest": "^29.5.13",
     "@types/lodash": "^4.14.200",
     "@types/memoizee": "^0.4.11",
     "@types/nedb": "^1.8.16",
     "@types/node": "^20.8.4",
+    "@vitest/coverage-c8": "^0.33.0",
     "dotenv-cli": "^7.4.2",
+    "jest": "^29.7.0",
+    "jest-environment-node": "^29.7.0",
+    "jest-esm-transformer": "^1.0.0",
     "prisma": "5.15.0",
     "ts-node": "10.9.2",
     "tsconfig-paths": "^4.2.0",
     "tscpaths": "^0.0.9",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^2.1.8"
   }
 }

@@ -6,7 +6,6 @@ import { tokenPrice } from "@/src/scheduler/tasks/tokenPriceTask.js";
 import { sendMessage } from "@/src/telegram/utils/messaging.js";
 import {
   epochsIn1h,
-  epochsInDay,
   formatNumber,
   getEpochFromSlot,
   getEpochSlots,
@@ -21,16 +20,21 @@ import {
   FEE_REWARDS_IN_STABLE,
   FEE_REWARDS_SYMBOL,
   TG_ERROR_SAME_MESSAGE,
-  DAYS_IN_YEAR,
-  DAYS_IN_MONTH,
 } from "@/src/constants/index.js";
-import { Committee, User, Validator, WithdrawalAddress } from "@prisma/client";
+import { Committee, User, Validator } from "@prisma/client";
 import { CustomLogger } from "@/src/lib/pino.js";
-import { notifyUnderPerformance } from "@/src/scheduler/tasks/notifyUnderPerformance.js";
-import { notifyInactiveValidators } from "@/src/scheduler/tasks/notifyInactiveValidators.js";
+import { processUserPerformance } from "@/src/scheduler/tasks/utils/processUserPerformance.js";
+import { processUserInactiveValidators } from "@/src/scheduler/tasks/utils/processUserInactiveValidators.js";
 import memoizee from "memoizee";
 import ms from "ms";
 import { env } from "@/src/env.js";
+import { BigNumber } from "ethers";
+import {
+  calculateAPY_daily,
+  calculateAPY_weekly,
+} from "@/src/scheduler/tasks/utils/apy.js";
+import { getLastSlotWithAttestations_db } from "@/src/prisma/slot.js";
+import { getSlotInfo } from "@/src/scheduler/tasks/utils/getSlotInfo.js";
 
 const prisma = getPrisma();
 const scale = BigInt(10) ** BigInt(18);
@@ -38,7 +42,7 @@ const tokenUnit = BigInt(32000000000); // TODO: move this to a env var. For ETH,
 
 interface ValidatorByStatus {
   activeIds: number[];
-  inactiveIds: number[];
+  inactiveIds: { validatorId: number; slot: number }[];
   slashedIds: number[];
   exitedIds: number[];
 }
@@ -49,11 +53,7 @@ interface UserStats {
     total: string;
     value: string;
   };
-  withdrawable: {
-    total: string;
-    value: string;
-  };
-  apy?: number;
+  withdrawable: BigNumber;
   rewards: {
     daily?: {
       apy: number;
@@ -68,34 +68,7 @@ interface UserStats {
       usd: number;
     };
   } | null;
-  validatorStats: ValidatorByStatus;
-}
-
-async function slotsInfo() {
-  const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
-
-  const headSlot = currentSlot - Number(process.env.BEACON_DELAY_SLOTS_TO_HEAD);
-  const headEpoch = getEpochFromSlot(headSlot);
-  const headEpochSlots = getEpochSlots(headEpoch);
-
-  const maxSlotToQuery =
-    headEpochSlots.startSlot - 1 - env.BEACON_SLOTS_PER_EPOCH;
-
-  const lastSlotProcessed = await prisma.slot.findFirst({
-    where: { attestationsFetched: true },
-    orderBy: { slot: "desc" },
-  });
-
-  // The bot is syncing if the last slot processed is less than
-  // one complete epoch behind the head epoch
-  const syncing = lastSlotProcessed.slot < maxSlotToQuery;
-
-  return {
-    headSlot,
-    maxSlotToQuery,
-    maxEpochToQuery: getEpochFromSlot(maxSlotToQuery),
-    syncing,
-  };
+  validatorStatuses: ValidatorByStatus;
 }
 
 async function getUser(userId: bigint) {
@@ -111,17 +84,21 @@ function getValidatorStatuses(
   userMissedAttestations: Committee[],
   maxEpochToQuery: number
 ): ValidatorByStatus {
-  const inactiveIds: number[] = [];
+  const inactiveIds: Array<{ validatorId: number; slot: number }> = [];
   for (const validator of beaconActiveValidators) {
     // get the last missed attestations for each validator
     const recentMissed = userMissedAttestations
       .filter((entry) => entry.validatorIndex === validator.id)
       .slice(0, user.inactiveOnMissedAttestations)
-      .map((entry) => getEpochFromSlot(entry.slot))
+      .map((entry) => ({
+        epoch: getEpochFromSlot(entry.slot),
+        slot: entry.slot,
+      }))
       .filter(
         // Get the last N epochs where N is the user's inactivity threshold.
         // Each validator attest once per epoch.
-        (epoch) => epoch > maxEpochToQuery - user.inactiveOnMissedAttestations
+        (entry) =>
+          entry.epoch > maxEpochToQuery - user.inactiveOnMissedAttestations
       );
 
     // Skip if not enough missed attestations
@@ -129,11 +106,16 @@ function getValidatorStatuses(
       continue;
     }
 
-    inactiveIds.push(validator.id);
+    inactiveIds.push({
+      validatorId: validator.id,
+      slot: recentMissed[recentMissed.length - 1].slot, // Use the earliest slot where inactivity started
+    });
   }
 
   const activeIds = beaconActiveValidators
-    .filter((v) => !inactiveIds.includes(v.id))
+    .filter(
+      (v) => !inactiveIds.some((inactive) => inactive.validatorId === v.id)
+    )
     .map((v) => v.id);
 
   return {
@@ -153,66 +135,6 @@ function getValidatorStatuses(
           v.status === VALIDATOR_STATUS.withdrawal_done
       )
       .map((v) => v.id),
-  };
-}
-
-async function getUserAllStats(
-  syncing: boolean,
-  maxSlotToQuery: number,
-  maxEpochToQuery: number,
-  user: User & {
-    validators: Validator[];
-    withdrawalAddresses: WithdrawalAddress[];
-  },
-  logger: CustomLogger
-): Promise<UserStats> {
-  const beaconActiveValidators = user.validators.filter(
-    (v) =>
-      v.status === VALIDATOR_STATUS.active_ongoing ||
-      v.status === VALIDATOR_STATUS.active_exiting
-  );
-
-  const missedAttestations = await getMissedAttestations(
-    Number(user.id),
-    maxSlotToQuery
-  );
-
-  const [
-    validatorStatuses,
-    performance1h,
-    balanceStats,
-    tableStats,
-    withdrawable,
-  ] = await Promise.all([
-    getValidatorStatuses(
-      user,
-      beaconActiveValidators,
-      missedAttestations,
-      maxEpochToQuery
-    ),
-    get1hPerformance(
-      syncing,
-      missedAttestations,
-      beaconActiveValidators.length
-    ),
-    getUserBalance(user.validators),
-    calculateTableStats(user, logger),
-    getWithdrawableAmountByUserId(Number(user.id)),
-  ]);
-
-  return {
-    performance1h,
-    validatorStats: validatorStatuses,
-    balance: {
-      total: balanceStats.total,
-      value: balanceStats.value,
-    },
-    withdrawable: {
-      total: withdrawable.toFixed(2),
-      value: (withdrawable * tokenPrice).toFixed(0),
-    },
-    apy: 0,
-    rewards: tableStats,
   };
 }
 
@@ -517,68 +439,59 @@ async function calculateTableStats(
   };
 }
 
-function calculateAPY_daily(
-  totalBalance: number,
-  dailyRewards: number
-): number {
-  if (!totalBalance || !dailyRewards) return 0;
-  return ((1 + dailyRewards / totalBalance) ** DAYS_IN_YEAR - 1) * 100;
-}
-
-function calculateAPY_weekly(
-  totalBalance: number,
-  weeklyRewards: number
-): number {
-  if (!totalBalance || !weeklyRewards) return 0;
-  return ((1 + weeklyRewards / totalBalance) ** (DAYS_IN_YEAR / 7) - 1) * 100;
-}
-
-function formatStatsMessage(
-  stats: UserStats,
-  status: {
-    syncing: boolean;
-    headSlot: number;
-    maxSlotToQuery: number;
-  }
-): string {
-  const {
-    performance1h: performance,
-    balance,
-    withdrawable,
-    validatorStats,
-  } = stats;
-
-  const syncStatus = status.syncing
-    ? `⚠️ ${status.headSlot - status.maxSlotToQuery} slots behind ⚠️`
+function formatStatsMessage({
+  performance1h,
+  balance,
+  withdrawable,
+  rewards,
+  validatorStatuses,
+  syncing,
+  headSlot,
+  maxSlotToQuery,
+}: {
+  performance1h: number | null;
+  balance: UserStats["balance"];
+  withdrawable: UserStats["withdrawable"];
+  rewards: UserStats["rewards"];
+  validatorStatuses: ValidatorByStatus;
+  syncing: boolean;
+  headSlot: number;
+  maxSlotToQuery: number;
+}): string {
+  const syncStatus = syncing
+    ? `⚠️ ${headSlot - maxSlotToQuery} slots behind ⚠️`
     : null;
 
   // Define message sections
-  const validatorStatus = status.syncing
-    ? `⚪️ ${validatorStats.activeIds.length + validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`
-    : `🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`;
+  const validatorStatus = syncing
+    ? `⚪️ ${validatorStatuses.activeIds.length + validatorStatuses.inactiveIds.length} | 🚫 ${validatorStatuses.slashedIds.length} | 🔚 ${validatorStatuses.exitedIds.length}`
+    : `🟢 ${validatorStatuses.activeIds.length} | 🟡 ${validatorStatuses.inactiveIds.length} | 🚫 ${validatorStatuses.slashedIds.length} | 🔚 ${validatorStatuses.exitedIds.length}`;
 
   const dailyApy = calculateAPY_daily(
     Number(balance.total),
-    stats.rewards.daily.consensus
+    rewards.daily.consensus
   ).toFixed(2);
 
   const weeklyApy = calculateAPY_weekly(
     Number(balance.total),
-    stats.rewards.weekly.consensus
+    rewards.weekly.consensus
   ).toFixed(2);
 
+  const withdrawableDecimal = Number(formatEther(withdrawable.toString()));
+  const withdrawableUsd = withdrawableDecimal * tokenPrice;
+
   const mainStats = [
-    `Last 1h perf: ${performance == null ? "-" : `${performance.toFixed(2)}%`}`,
+    `Last 1h perf: ${performance1h == null ? "-" : `${performance1h.toFixed(2)}%`}`,
     `Bal: ${balance.total} ${TOKEN_SYMBOL} $${balance.value}`,
-    `Claimable: ${withdrawable.total} ${TOKEN_SYMBOL} $${withdrawable.value}`,
+    `Claimable: ${withdrawableDecimal.toFixed(2)} ${TOKEN_SYMBOL} $${withdrawableUsd}`,
   ].join("\n");
 
   const rewardsSection = [
     `Stats:`,
     `---------------------------`,
     `   APY%  ${TOKEN_SYMBOL}   ${FEE_REWARDS_SYMBOL}  Total`,
-    `d: ${dailyApy}  ${formatNumber(stats.rewards.daily.consensus, 3)}  ${formatNumber(stats.rewards.daily.execution, 3)}  ${formatNumber(stats.rewards.daily.usd, 4, "$")}`,
-    `w: ${weeklyApy}  ${formatNumber(stats.rewards.weekly.consensus, 3)}  ${formatNumber(stats.rewards.weekly.execution, 3)}  ${formatNumber(stats.rewards.weekly.usd, 4, "$")}`,
+    `d: ${dailyApy}  ${formatNumber(rewards.daily.consensus, 3)}  ${formatNumber(rewards.daily.execution, 3)}  ${formatNumber(rewards.daily.usd, 4, "$")}`,
+    `w: ${weeklyApy}  ${formatNumber(rewards.weekly.consensus, 3)}  ${formatNumber(rewards.weekly.execution, 3)}  ${formatNumber(rewards.weekly.usd, 4, "$")}`,
     `m:            🔜`,
   ].join("\n");
 
@@ -589,7 +502,7 @@ function formatStatsMessage(
 
   // Combine all sections
   return `\`${[
-    ...(status.syncing ? [syncStatus, "", validatorStatus] : [validatorStatus]),
+    ...(syncing ? [syncStatus, "", validatorStatus] : [validatorStatus]),
     "", // empty line
     mainStats,
     "", // empty line
@@ -632,37 +545,63 @@ async function updateOrSendMessage(
   }
 }
 
-export async function notifyUserStatsMessage(
+export async function fetchUserValidatorsData(
   userId: bigint,
   logger: CustomLogger
 ): Promise<number | undefined> {
   const { headSlot, maxSlotToQuery, maxEpochToQuery, syncing } =
-    await slotsInfo();
+    await getSlotInfo();
 
   logger.info(`db full user`);
   const user = await getUser(userId);
   logger.info(`db full user done`);
 
-  const stats = await getUserAllStats(
-    syncing,
-    maxSlotToQuery,
-    maxEpochToQuery,
-    user,
-    logger
+  const beaconActiveValidators = user.validators.filter(
+    (v) =>
+      v.status === VALIDATOR_STATUS.active_ongoing ||
+      v.status === VALIDATOR_STATUS.active_exiting
   );
 
-  // TODO: check null values.
+  const missedAttestations = await getMissedAttestations(
+    Number(user.id),
+    maxSlotToQuery
+  );
+
+  const [validatorStatuses, performance1h, balance, tableStats, withdrawable] =
+    await Promise.all([
+      getValidatorStatuses(
+        user,
+        beaconActiveValidators,
+        missedAttestations,
+        maxEpochToQuery
+      ),
+      get1hPerformance(
+        syncing,
+        missedAttestations,
+        beaconActiveValidators.length
+      ),
+      getUserBalance(user.validators),
+      calculateTableStats(user, logger),
+      getWithdrawableAmountByUserId(Number(user.id)),
+    ]);
+
   if (!syncing) {
-    await notifyUnderPerformance(user, stats.performance1h);
-    await notifyInactiveValidators(user, stats.validatorStats.inactiveIds);
+    // TODO: syncing move to each function, so incidences can be closed.
+    await processUserPerformance(user, performance1h);
+    await processUserInactiveValidators(user, validatorStatuses.inactiveIds);
   }
 
-  // send message to the user
-  const message = formatStatsMessage(stats, {
+  const message = formatStatsMessage({
+    performance1h,
+    balance,
+    withdrawable,
+    rewards: tableStats,
+    validatorStatuses,
     syncing,
     headSlot,
     maxSlotToQuery,
   });
+
   return await updateOrSendMessage(
     Number(user.chatId),
     Number(user.messageId),

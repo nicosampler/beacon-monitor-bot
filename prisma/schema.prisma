@@ -126,6 +126,7 @@ model User {
   userId        BigInt    @unique
   chatId        BigInt    @unique
   username      String    @unique
+  internalId    String    @unique @default(uuid())
   messageId     BigInt?
   lastClaimed   DateTime?
   hasBlockedBot Boolean   @default(false)
@@ -139,6 +140,7 @@ model User {
   feeRewardAddresses  FeeRewardAddress[]  @relation("FeeRewardAddressToUser")
   validators          Validator[]         @relation("UserToValidator")
   withdrawalAddresses WithdrawalAddress[] @relation("UserToWithdrawalAddress")
+  incidents           Incident[]
 }
 
 model WithdrawalAddress {
@@ -149,4 +151,18 @@ model WithdrawalAddress {
 model FeeRewardAddress {
   address String @id
   users   User[] @relation("FeeRewardAddressToUser")
+}
+
+model Incident {
+  id           Int       @id @default(autoincrement())
+  internalId   String
+  startTime    DateTime
+  resolvedTime DateTime?
+  type         String
+  data         Json
+  user         User      @relation(fields: [internalId], references: [internalId])
+
+  @@index([internalId])
+  @@index([type])
+  @@index([startTime])
 }

@@ -13,6 +13,7 @@ import { formatEther } from "ethers/lib/utils.js";
 import chunk from "lodash/chunk.js";
 import memoizee from "memoizee";
 import ms from "ms";
+import { ZERO_BN } from "@/src/constants/index.js";
 
 const fetchWithdrawableAmount = async (userId: number) => {
   try {
@@ -31,19 +32,19 @@ const fetchWithdrawableAmount = async (userId: number) => {
     }
     multicallProvider.isMulticallEnabled = false;
 
-    const totalAmount = amounts.reduce(
+    return amounts.reduce(
       (acc, amount) => acc.add(amount),
       ethers.constants.Zero
     );
-
-    return +formatEther(totalAmount.toString());
   } catch (error) {
     console.error("getWithdrawableAmount", error);
-    return 0;
+    return ZERO_BN;
   }
 };
 
-export const getWithdrawableAmountByUserId: (userId: number) => Promise<number> = memoizee(fetchWithdrawableAmount, {
+export const getWithdrawableAmountByUserId: (
+  userId: number
+) => Promise<BigNumber> = memoizee(fetchWithdrawableAmount, {
   promise: true,
   maxAge: ms("5m"),
   primitive: true,
