@@ -13,15 +13,22 @@ import { User } from "@prisma/client";
 import { IncidentType, PerformanceIncidentData } from "@/src/types.js";
 
 export async function processUserPerformance(user: User, performance: number) {
-  const { performanceNotif, performanceThreshold, internalId } = user;
+  const {
+    performanceNotif,
+    performanceThreshold: _performanceThreshold,
+    internalId,
+  } = user;
 
-  // Check if there's an open incident to close
+  const performanceThreshold = _performanceThreshold || 90;
+
+  // Check if there's an open incident
   const openIncident = await getOpenIncident_db(
     internalId,
     IncidentType.PERFORMANCE
   );
 
-  if (!performanceThreshold || performance >= performanceThreshold) {
+  // if performance is above threshold, close incident
+  if (performance >= performanceThreshold) {
     if (openIncident) {
       await closeIncident_db(openIncident.id);
     }
