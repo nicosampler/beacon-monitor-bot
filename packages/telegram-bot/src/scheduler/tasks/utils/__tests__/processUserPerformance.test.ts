@@ -76,7 +76,10 @@ describe("processUserPerformance", () => {
   });
 
   it("should update incident if performance < performanceThreshold and open incident with higher currentPerformance", async () => {
-    const openIncident = { id: 1, data: { currentPerformance: 70 } };
+    const openIncident = {
+      id: 1,
+      data: { currentPerformance: user.performanceThreshold - 30 },
+    };
     (getOpenIncident_db as any).mockResolvedValue(openIncident);
     const performance = openIncident.data.currentPerformance - 5;
 
@@ -89,28 +92,31 @@ describe("processUserPerformance", () => {
   });
 
   it("should not update incident if performance < performanceThreshold and open incident with lower currentPerformance", async () => {
-    const openIncident = { id: 1, data: { currentPerformance: 80 } };
+    const openIncident = {
+      id: 1,
+      data: { currentPerformance: user.performanceThreshold - 20 },
+    };
     (getOpenIncident_db as any).mockResolvedValue(openIncident);
 
     await processUserPerformance(
       user,
       openIncident.data.currentPerformance + 5
     );
-    
+
     expect(updateIncidentData_db).not.toHaveBeenCalled();
   });
 
   it("should not send notification if not allowed", async () => {
     (isNotificationAllowed as any).mockReturnValue(false);
-    await processUserPerformance(user, 85);
+    await processUserPerformance(user, user.performanceThreshold - 10);
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
   it("should send notification if allowed", async () => {
     (isNotificationAllowed as any).mockReturnValue(true);
 
-    await processUserPerformance(user, 85);
-    
+    await processUserPerformance(user, user.performanceThreshold - 20);
+
     expect(sendMessage).toHaveBeenCalledWith(
       user.chatId.toString(),
       `⚠️ Your validators performance has fallen below the threshold of ${user.performanceThreshold}%!`,
