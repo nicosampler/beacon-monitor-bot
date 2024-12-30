@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// 1. First declare vi mock implementations
+// mocks
 vi.mock("@/src/env.js", () => ({
   env: {
-    BEACON_DELAY_SLOTS_TO_HEAD: 4,
-    BEACON_SLOTS_PER_EPOCH: 32,
+    BEACON_DELAY_SLOTS_TO_HEAD: 2,
+    BEACON_MAX_ATTESTATION_DELAY: 5,
   },
 }));
 
@@ -16,12 +16,11 @@ vi.mock("@/src/utils/time.js", () => ({
   getSlotNumberFromTimestamp: vi.fn().mockReturnValue(1_000_000),
 }));
 
-// 2. Then import everything else
+// imports
 import { getSlotInfo } from "../getSlotInfo.js";
 import { getLastSlotWithAttestations_db } from "@/src/prisma/slot.js";
 import { env } from "@/src/env.js";
 
-// 3. Constants can go here
 const currentSlot = 1_000_000;
 
 describe("getSlotInfo", () => {
@@ -34,55 +33,56 @@ describe("getSlotInfo", () => {
   });
 
   it("should return syncing=true when far behind", async () => {
-    // Simulate being 100 slots behind
+    const delay = 8;
     mockedGetLastSlotWithAttestations.mockResolvedValue({
-      slot: currentSlot - 100,
+      slot: currentSlot - delay,
+      attestationsFetched: true,
+      blockAndSyncRewardsFetched: true,
+    });
+
+    const result = await getSlotInfo();
+    expect(result.syncing).toEqual(true);
+  });
+
+  it("should return syncing=false when not far behind", async () => {
+    const delay = 7;
+    mockedGetLastSlotWithAttestations.mockResolvedValue({
+      slot: currentSlot - delay,
+      attestationsFetched: true,
+      blockAndSyncRewardsFetched: true,
+    });
+
+    const result = await getSlotInfo();
+    expect(result.syncing).toEqual(false);
+  });
+
+  it("should return the correct maxSlotToQuery", async () => {
+    const delay = 8;
+    mockedGetLastSlotWithAttestations.mockResolvedValue({
+      slot: currentSlot - delay,
       attestationsFetched: true,
       blockAndSyncRewardsFetched: true,
     });
 
     const result = await getSlotInfo();
 
-    expect(result.headSlot).toEqual(
-      currentSlot - env.BEACON_DELAY_SLOTS_TO_HEAD
-    );
     expect(result.maxSlotToQuery).toEqual(
-      currentSlot - env.BEACON_DELAY_SLOTS_TO_HEAD - env.BEACON_SLOTS_PER_EPOCH
+      currentSlot -
+        env.BEACON_DELAY_SLOTS_TO_HEAD -
+        env.BEACON_MAX_ATTESTATION_DELAY
     );
-    expect(result.syncing).toEqual(true);
   });
 
-  // it("should return syncing=false when up to date", async () => {
-  //   mockedGetLastSlotWithAttestations.mockResolvedValue({
-  //     slot: expectedMaxSlotToQuery,
-  //     attestationsFetched: true,
-  //     blockAndSyncRewardsFetched: true,
-  //   });
+  it("should return the correct delay value", async () => {
+    const delay = 12;
+    mockedGetLastSlotWithAttestations.mockResolvedValue({
+      slot: currentSlot - delay,
+      attestationsFetched: true,
+      blockAndSyncRewardsFetched: true,
+    });
 
-  //   const result = await getSlotInfo();
+    const result = await getSlotInfo();
 
-  //   expect(result).toEqual({
-  //     headSlot: expectedMaxSlotToQuery,
-  //     maxSlotToQuery: expectedMaxSlotToQuery,
-  //     maxEpochToQuery: Math.floor(expectedMaxSlotToQuery / 32),
-  //     syncing: false,
-  //   });
-  // });
-
-  // it("should return syncing=false when ahead", async () => {
-  //   mockedGetLastSlotWithAttestations.mockResolvedValue({
-  //     slot: expectedMaxSlotToQuery + 10,
-  //     attestationsFetched: true,
-  //     blockAndSyncRewardsFetched: true,
-  //   });
-
-  //   const result = await getSlotInfo();
-
-  //   expect(result).toEqual({
-  //     headSlot: expectedMaxSlotToQuery,
-  //     maxSlotToQuery: expectedMaxSlotToQuery,
-  //     maxEpochToQuery: Math.floor(expectedMaxSlotToQuery / 32),
-  //     syncing: false,
-  //   });
-  // });
+    expect(result.delay).toEqual(currentSlot - (currentSlot - delay));
+  });
 });
