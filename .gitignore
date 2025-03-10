@@ -1,4 +1,4 @@
-db
+/db/
 
 dist
 /node_modules
@@ -10,3 +10,5 @@ migration_lock.toml
 test.ts
 
 .env
+.env.prod
+.env.test

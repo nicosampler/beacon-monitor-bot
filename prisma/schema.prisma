@@ -8,72 +8,149 @@ datasource db {
 }
 
 model Epoch {
-  epoch            Int      @id
-  processed        Boolean // Whether the attestations for this epoch have been processed
-  missedValidators String[]
+  epoch          Int     @id
+  rewardsFetched Boolean // Whether the rewards for this epoch have been fetched
 }
 
 model Slot {
-  slot                Int         @id
-  attestationsFetched Boolean // Whether the attestations for this slot have been fetched
-  commitee            Committee[]
+  slot      Int         @id
+  committee Committee[]
+
+  attestationsFetched        Boolean @default(false) // Whether the attestations for this slot have been fetched
+  blockAndSyncRewardsFetched Boolean @default(false) // Whether the sync rewards for this slot have been fetched 
+
+  @@index([attestationsFetched, slot])
 }
 
+// Committee is a list of validators that were assigned to a slot.
+// It hold at least the last 1h missed attestations.
+// Then it is summarized into HourlyValidatorStats.
 model Committee {
-  slot         Int
-  index        Int
-  validators   String[]
-  attestations Attestations[]
+  slot                 Int
+  index                Int // indicates what position in the epoch this slot is in
+  aggregationBitsIndex Int // indicates what position in the aggregation bits this validator was assigned to
+  validatorIndex       Int // TODO: should be a relation?
+  attestationDelay     Int?
+  slot_relation        Slot @relation(fields: [slot], references: [slot], onDelete: Cascade)
 
-  slot_relation Slot @relation(fields: [slot], references: [slot], onDelete: Cascade)
-
-  @@id([slot, index])
+  @@id([slot, index, aggregationBitsIndex])
+  @@index([slot, validatorIndex])
+  @@index([slot, attestationDelay])
+  @@index([validatorIndex, slot])
 }
 
-model Attestations {
-  id              BigInt    @id @default(autoincrement())
-  slot            Int
-  index           Int
-  aggregationBits String
-  commitee        Committee @relation(fields: [slot, index], references: [slot, index], onDelete: Cascade)
+model Validator {
+  id                Int     @id
+  status            Int?
+  balance           Decimal @db.Decimal(78, 0)
+  withdrawalAddress String?
+  users             User[]  @relation("UserToValidator")
+
+  @@index([withdrawalAddress])
+  @@index([status])
+}
+
+model ExecutionRewards {
+  address     String
+  timestamp   DateTime
+  amount      Decimal  @db.Decimal(78, 0)
+  blockNumber Int      @id
+
+  @@index([timestamp])
 }
 
 model HourlyValidatorStats {
-  validatorIndex   Int      @id
-  executionRewards BigInt
-  beaconRewards    BigInt
-  performance      Float
-  timestamp        DateTime
+  validatorIndex Int
+  hour           Int // 0-23
+  date           DateTime @db.Date // dd-mm-yyyy
+
+  blockReward   BigInt? // Reward for proposing a block
+  syncCommittee BigInt? // Rewarded for participating in the sync committee
+  head          BigInt? // Reward for attesting
+  target        BigInt? // Reward for attesting
+  source        BigInt? // Reward for attesting
+  inactivity    BigInt? // Reward for attesting
+
+  attestationsMissed Int?
+
+  @@id([validatorIndex, date, hour])
+  @@index([date, hour])
+}
+
+model HourlyExecutionRewards {
+  address String
+  amount  Decimal  @db.Decimal(78, 0)
+  hour    Int // 0-23
+  date    DateTime @db.Date // dd-mm-yyyy
+
+  @@id([address, date, hour])
+  @@index([date, hour])
+  @@index([date])
 }
 
 model DailyValidatorStats {
-  validatorIndex   Int      @id
-  executionRewards BigInt
-  beaconRewards    BigInt
-  performance      Float
-  timestamp        DateTime
+  validatorIndex Int
+  date           DateTime @db.Date
+
+  head          BigInt?
+  target        BigInt?
+  source        BigInt?
+  inactivity    BigInt?
+  syncCommittee BigInt?
+  blockReward   BigInt?
+
+  attestationsMissed Int?
+
+  @@id([validatorIndex, date])
+  @@index([date])
 }
 
-model WeeklyValidatorStats {
-  validatorIndex   Int      @id
-  executionRewards BigInt
-  beaconRewards    BigInt
-  performance      Float
-  timestamp        DateTime
+model DailyExecutionRewards {
+  address String
+  amount  Decimal  @db.Decimal(78, 0)
+  day     Int // 1-31
+  date    DateTime @db.Date
+
+  @@id([address, date])
+  @@index([date])
 }
 
-model MonthlyValidatorStats {
-  validatorIndex   Int      @id
-  executionRewards BigInt
-  beaconRewards    BigInt
-  performance      Float
-  timestamp        DateTime
+model LastSummaryUpdate {
+  id                    Int       @id @default(autoincrement())
+  hourlyValidatorStats  DateTime?
+  dailyValidatorStats   DateTime? @db.Date
+  weeklyValidatorStats  DateTime?
+  monthlyValidatorStats DateTime?
+  yearlyValidatorStats  DateTime?
 }
 
-model YearlyValidatorStats {
-  validatorIndex   String @id
-  executionRewards BigInt
-  beaconRewards    BigInt
-  performance      Float
-  year             Int
+model User {
+  id            BigInt    @id
+  loginId       String    @unique @default(nanoid())
+  userId        BigInt    @unique
+  chatId        BigInt    @unique
+  username      String    @unique
+  messageId     BigInt?
+  lastClaimed   DateTime?
+  hasBlockedBot Boolean   @default(false)
+
+  performanceNotif     DateTime?
+  performanceThreshold Int       @default(90)
+
+  inactiveNotif                DateTime?
+  inactiveOnMissedAttestations Int       @default(3)
+
+  feeRewardAddresses  FeeRewardAddress[]  @relation("FeeRewardAddressToUser")
+  validators          Validator[]         @relation("UserToValidator")
+  withdrawalAddresses WithdrawalAddress[] @relation("UserToWithdrawalAddress")
+}
+
+model WithdrawalAddress {
+  address String @id
+  users   User[] @relation("UserToWithdrawalAddress")
+}
+
+model FeeRewardAddress {
+  address String @id
+  users   User[] @relation("FeeRewardAddressToUser")
 }

@@ -1,0 +1,77 @@
+import { instance } from "@/src/execution/utils/instance.js";
+import {
+  Blockscout_Blocks,
+  Etherscan_BlockReward,
+} from "@/src/execution/types.js";
+import { env } from "@/src/env.js";
+import pRetry from "p-retry";
+import { AxiosResponse } from "axios";
+import { Decimal } from "@prisma/client/runtime/library";
+
+export type BlockResponse = {
+  address: string;
+  timestamp: Date;
+  amount: Decimal;
+  blockNumber: number;
+};
+
+export async function getBlock(blockNumber: number): Promise<BlockResponse> {
+  let lastError: any;
+
+  // First endpoint is blockscout, second is etherscan
+  const endpoints = [
+    {
+      url: `${env.EXECUTION_API_URL}/api/v2/blocks/${blockNumber}`,
+      process: (response: AxiosResponse<Blockscout_Blocks>) => {
+        const blockInfo = response.data;
+        const minerReward = blockInfo.rewards.find(
+          (r) => r.type === "Miner Reward"
+        );
+
+        const result: BlockResponse = {
+          address: blockInfo.miner.hash,
+          timestamp: new Date(blockInfo.timestamp),
+          amount: minerReward
+            ? new Decimal(minerReward.reward)
+            : new Decimal(0),
+          blockNumber: blockInfo.height,
+        };
+        return result;
+      },
+    },
+    {
+      url: `${env.EXECUTION_API_BKP_URL}/api?module=block&action=getblockreward&blockno=${blockNumber}&apikey=${env.EXECUTION_API_BKP_KEY}`,
+      process: (response: AxiosResponse<Etherscan_BlockReward>) => {
+        const blockInfo = response.data;
+        const result: BlockResponse = {
+          address: blockInfo.result.blockMiner,
+          timestamp: new Date(Number(blockInfo.result.timeStamp) * 1000),
+          amount: new Decimal(blockInfo.result.blockReward),
+          blockNumber: Number(blockInfo.result.blockNumber),
+        };
+        return result;
+      },
+    },
+  ];
+
+  // Try each endpoint
+  for (const endpoint of endpoints) {
+    try {
+      return await pRetry(
+        async () => {
+          const response = await instance.get(endpoint.url);
+          return endpoint.process(response);
+        },
+        {
+          retries: 2,
+          minTimeout: 1000,
+        }
+      );
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  // If all endpoints fail, throw the last error
+  throw lastError;
+}
