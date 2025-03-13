@@ -66,17 +66,21 @@ export const db_getLastUnfetchedSlot = async () => {
   return res[0];
 };
 
-export const db_getExistingCommittees = async (
-  slotIndex: { slot: number; index: number }[]
-) => {
-  return prisma.committee
-    .count({
-      where: {
-        AND: slotIndex,
-      },
-    })
-    .then((d) => d > 0);
-};
+export const db_getLastProcessedEpoch = async () =>
+  prisma.epoch.findFirst({
+    where: {
+      rewardsFetched: true,
+    },
+    orderBy: { epoch: "desc" },
+    select: { epoch: true },
+  });
+
+export const createEpoch = async (epoch: number) =>
+  await prisma.epoch.upsert({
+    where: { epoch },
+    create: { epoch, rewardsFetched: false },
+    update: {},
+  });
 
 export const db_getUnprocessedSlots = async ({
   minSlot,

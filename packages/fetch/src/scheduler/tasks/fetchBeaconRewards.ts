@@ -6,6 +6,7 @@ import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
 import { env } from "@/src/env.js";
 import { fetchBeaconRewards } from "@/src/feed/fetchBeaconRewards.js"; // Assuming this function exists
 import { scheduler } from "@/src/lib/scheduler.js";
+import { db_getLastProcessedEpoch } from "@/src/feed/utils.js";
 
 const prisma = getPrisma();
 
@@ -19,30 +20,24 @@ const prisma = getPrisma();
 async function fetchBeaconRewardsTask(ID: string, logsEnabled: boolean) {
   const now = new Date();
   const currentEpoch = getEpochNumberFromTimestamp(now.getTime());
-  const headEpoch = currentEpoch - 2; // Give some buffer to avoid so many 404
+  const maxEpoch = currentEpoch - 2; // Give some buffer to avoid so many 404
   const oldestLookbackEpoch = Math.floor(
     getOldestLookbackSlot() / env.BEACON_SLOTS_PER_EPOCH
   );
 
-  const lastProcessedEpoch = await prisma.epoch.findFirst({
-    where: {
-      rewardsFetched: true,
-    },
-    orderBy: { epoch: "desc" },
-    select: { epoch: true },
-  });
-
-  if (lastProcessedEpoch?.epoch + 1 > headEpoch) {
+  const lastProcessedEpoch = await db_getLastProcessedEpoch();
+  
+  if (lastProcessedEpoch?.epoch + 1 > maxEpoch) {
     createLogger(ID).info(`No new epochs to fetch`);
     return;
   }
 
   const epochToFetch = lastProcessedEpoch
-    ? Math.min(lastProcessedEpoch.epoch + 1, headEpoch)
+    ? Math.min(lastProcessedEpoch.epoch + 1, maxEpoch)
     : oldestLookbackEpoch;
 
   const logger = createLogger(`${ID} Epoch: ${epochToFetch}`, logsEnabled);
-  logger.info(`Fetching. HeadEpoch: ${headEpoch}.`);
+  logger.info(`Fetching. HeadEpoch: ${maxEpoch}.`);
 
   await fetchBeaconRewards(epochToFetch, logger);
 }

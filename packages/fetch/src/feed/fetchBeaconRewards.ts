@@ -3,10 +3,7 @@ import { Prisma } from "@prisma/client";
 
 import { getAttestationRewards } from "@/src/beacon/endpoints.js";
 import { CustomLogger } from "@/src/lib/pino.js";
-import {
-  getActiveValidators,
-  getHighestValidatorId,
-} from "@/src/feed/utils.js";
+import { createEpoch } from "@/src/feed/utils.js";
 import chunk from "lodash/chunk.js";
 import { getPrisma } from "@/src/lib/prisma.js";
 
@@ -17,19 +14,18 @@ const prisma = getPrisma();
 
 export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
   try {
-    // Create epoch record in db if it doesn't exist
-    await prisma.epoch.upsert({
-      where: { epoch },
-      create: { epoch, rewardsFetched: false },
-      update: {}, // no update needed, just create if doesn't exist
-    });
+    logger.info(`Processing epoch ${epoch}`);
 
+    // Create epoch record in db if it doesn't exist
+    await createEpoch(epoch);
+
+    // fetch beacon node to get the attestation rewards for all the validators
     const response = await getAttestationRewards(epoch, []);
 
-    logger.info(`Processing epoch ${epoch}`);
     const epochTimestamp = getTimestampFromEpochNumber(epoch);
     const { date, hour } = convertToUTC(epochTimestamp);
-    // Concatenate all rewards data for this epoch
+
+    // Process rewards data
     const rewardsData = response.data.total_rewards.map((validatorInfo) => ({
       validatorIndex: Number(validatorInfo.validator_index),
       epoch: epoch,
@@ -39,16 +35,16 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
       inactivity: BigInt(validatorInfo.inactivity || "0"),
     }));
 
-    // Process database operations for this epoch
     await prisma.$transaction(
       async (tx) => {
-        //logger.info(`Creating temporary table`);
+        // Create temporary table to store rewards data
         await tx.$executeRaw`
           CREATE TEMPORARY TABLE temp_validator_stats (
             LIKE "HourlyValidatorStats" INCLUDING ALL
           ) ON COMMIT DROP
         `;
 
+        // Insert rewards data into temporary table in batches
         const batches = chunk(rewardsData, 250000);
         const batchPromises = batches.map((batch) => {
           const values = batch
@@ -63,10 +59,8 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
           `;
         });
         await Promise.all(batchPromises);
-        logger.info(`Inserting done`);
 
-        // Merge con la tabla principal
-        logger.info(`Merging with main table`);
+        // merge temporary table with main table
         await tx.$executeRaw`
           INSERT INTO "HourlyValidatorStats"
           SELECT * FROM temp_validator_stats
@@ -80,15 +74,18 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
             "blockReward" = COALESCE("HourlyValidatorStats"."blockReward", 0)
         `;
 
-        // check if rewards was fetched for this epoch
-        const dbEpoch = await tx.epoch.findUnique({
-          where: { epoch },
-        });
+        // TODO: This seems to be unnecessary.
+        // was added to do some debugging and seems it was forgotten to be removed.
 
-        if (dbEpoch.rewardsFetched) {
-          logger.warn(`Rewards already fetched for epoch ${epoch}`);
-          return;
-        }
+        // check if rewards was fetched for this epoch
+        // const dbEpoch = await tx.epoch.findUnique({
+        //   where: { epoch },
+        // });
+
+        // if (dbEpoch.rewardsFetched) {
+        //   logger.warn(`Rewards already fetched for epoch ${epoch}`);
+        //   return;
+        // }
 
         // Update epoch status
         await tx.epoch.update({
@@ -102,10 +99,11 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
     );
     logger.info(`Done.`);
   } catch (error) {
-    if (error.message.includes("404 - Aborting")) {
-      logger.error(error.message, error);
-      return;
-    }
+    // TODO: this seems to be unnecessary.
+    // if (error.message.includes("404 - Aborting")) {
+    //   logger.error(error.message, error);
+    //   return;
+    // }
     logger.error(
       `Error fetching or inserting beacon rewards for epoch ${epoch}`,
       error
