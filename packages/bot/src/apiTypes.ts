@@ -15,8 +15,8 @@ export type ActiveUsersValidators = {
 
 // New types for health endpoint
 export type HealthResponse = {
-  status: "healthy" | "unhealthy";
-  database: "connected" | "disconnected";
+  status: 'healthy' | 'unhealthy';
+  database: 'connected' | 'disconnected';
   timestamp: string;
 };
 

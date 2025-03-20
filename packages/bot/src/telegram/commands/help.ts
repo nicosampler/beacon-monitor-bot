@@ -1,4 +1,4 @@
-import { CommandContext, Context } from "grammy";
+import { CommandContext, Context } from 'grammy';
 
 export async function help(ctx: CommandContext<Context>) {
   const message = `Welcome to the gnosis.node-sentinel.xyz bot!

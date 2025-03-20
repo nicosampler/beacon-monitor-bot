@@ -1,4 +1,4 @@
-import { getPrisma } from "@/src/lib/prisma.js";
+import { getPrisma } from '@/src/lib/prisma.js';
 
 export type UserValidatorsResult = {
   id: string;
@@ -14,8 +14,8 @@ export type UserValidatorsResult = {
 };
 
 export async function getUserValidators_db(
-  loginId: string
-): Promise<UserValidatorsResult> {
+  loginId: string,
+): Promise<UserValidatorsResult | undefined> {
   const prisma = getPrisma();
 
   const res = await prisma.$queryRaw<UserValidatorsResult[]>`

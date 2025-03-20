@@ -9,7 +9,9 @@
     "dev:test": "dotenv -e ../../.env.local npx tsx src/test.ts",
     "start": "tsc --noEmit && npx tsx src/index.ts",
     "show-logs": "tail -n 50 -f logs/$(date +\"%d-%m-%Y\").log",
-    "has-log-errors": "grep -Ei 'error' \"./logs/$(date +'%d-%m-%Y').log\""
+    "has-log-errors": "grep -Ei 'error' \"./logs/$(date +'%d-%m-%Y').log\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@prisma/client": "5.15.0",
@@ -31,6 +33,7 @@
     "pino-tee": "^0.3.0",
     "rate-limiter-flexible": "^5.0.3",
     "toad-scheduler": "^3.0.1",
+    "viem": "^2.23.13",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -38,6 +41,8 @@
     "@tsconfig/node20": "^20.1.4",
     "@types/jest": "^29.5.13",
     "@types/lodash": "^4.14.200",
+    "@types/memoizee": "^0.4.11",
+    "@types/ms": "^2.1.0",
     "@types/node": "^20.14.2",
     "@typescript-eslint/eslint-plugin": "^8.5.0",
     "dotenv-cli": "^7.4.2",

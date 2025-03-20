@@ -1,17 +1,17 @@
-import { Prisma } from "@prisma/client";
-import ms from "ms";
+import { Prisma } from '@prisma/client';
+import chunk from 'lodash/chunk.js';
+import ms from 'ms';
 
-import { env } from "@/src/env.js";
 import {
   getEpochNumberFromTimestamp,
   getSlotNumberFromTimestamp,
   getTimestampFromSlotNumber,
-} from "@/src/beacon/utils/time.js";
-import { updateLastSummaryUpdate } from "@/src/feed/utils.js";
-import { CustomLogger } from "@/src/lib/pino.js";
-import { getPrisma } from "@/src/lib/prisma.js";
-import chunk from "lodash/chunk.js";
-import { convertToUTC } from "@/src/utils/date/index.js";
+} from '@/src/beacon/utils/time.js';
+import { env } from '@/src/env.js';
+import { updateLastSummaryUpdate } from '@/src/feed/utils.js';
+import { CustomLogger } from '@/src/lib/pino.js';
+import { getPrisma } from '@/src/lib/prisma.js';
+import { convertToUTC } from '@/src/utils/date/index.js';
 
 const prisma = getPrisma();
 
@@ -38,9 +38,7 @@ export async function hasUnprocessedSlots(endSlot: number): Promise<boolean> {
   return slot == null;
 }
 
-export async function hasUnprocessedExecutionRewards(
-  endTime: Date
-): Promise<boolean> {
+export async function hasUnprocessedExecutionRewards(endTime: Date): Promise<boolean> {
   // We need at least one execution reward after the endTime because
   // We will remove all the execution rewards before the endTime and
   // if the table is empty, fetching restarts from env.EXECUTION_BLOCK_LOOKBACK
@@ -52,9 +50,7 @@ export async function hasUnprocessedExecutionRewards(
   return executionRewards == null;
 }
 
-export async function hasUnprocessedBeaconRewards(
-  endSlot: number
-): Promise<boolean> {
+export async function hasUnprocessedBeaconRewards(endSlot: number): Promise<boolean> {
   const endSlotTime = getTimestampFromSlotNumber(endSlot);
   const endEpoch = getEpochNumberFromTimestamp(endSlotTime);
 
@@ -67,12 +63,9 @@ export async function hasUnprocessedBeaconRewards(
   return beaconRewards == null;
 }
 
-export async function aggregateMissedAttestations(
-  startSlot: number,
-  endSlot: number
-) {
+export async function aggregateMissedAttestations(startSlot: number, endSlot: number) {
   return prisma.committee.groupBy({
-    by: ["validatorIndex"],
+    by: ['validatorIndex'],
     where: {
       AND: [
         { slot: { gte: startSlot, lte: endSlot } },
@@ -93,12 +86,9 @@ export type ValidatorMissedAttestations = Awaited<
   ReturnType<typeof aggregateMissedAttestations>
 >[number];
 
-export async function aggregateExecutionRewards(
-  startDate: Date,
-  endDate: Date
-) {
+export async function aggregateExecutionRewards(startDate: Date, endDate: Date) {
   return prisma.executionRewards.groupBy({
-    by: ["address"],
+    by: ['address'],
     where: {
       timestamp: { gte: startDate, lte: endDate },
     },
@@ -115,14 +105,11 @@ async function processCommitteeValidatorsBatch(
   tx: Prisma.TransactionClient,
   batch: ValidatorMissedAttestations[],
   hour: number,
-  date: string
+  date: string,
 ) {
   const values = batch
-    .map(
-      (stat) =>
-        `(${stat.validatorIndex}, ${hour}, '${date}', ${stat._count.validatorIndex})`
-    )
-    .join(",");
+    .map((stat) => `(${stat.validatorIndex}, ${hour}, '${date}', ${stat._count.validatorIndex})`)
+    .join(',');
 
   // if a validator haven't had rewards, the row won't exist
   await tx.$executeRawUnsafe(`
@@ -137,7 +124,7 @@ export async function processExecutionRewardsBatch(
   tx: Prisma.TransactionClient,
   executionRewards: ValidatorExecutionRewards[],
   hour: number,
-  date: string
+  date: string,
 ) {
   const batches = chunk(executionRewards, 5000);
 
@@ -159,7 +146,7 @@ export async function processExecutionRewardsBatch(
 export async function removeProcessedExecutionRewards(
   tx: Prisma.TransactionClient,
   endTime: Date,
-  logger: CustomLogger
+  logger: CustomLogger,
 ) {
   logger.info(`Removing processed execution rewards before ${endTime}`);
   await tx.executionRewards.deleteMany({
@@ -174,23 +161,16 @@ export async function summarizeAtomicTransaction(
   executionRewards: ValidatorExecutionRewards[],
   hour: number,
   date: string,
-  endSlot: number,
   endTime: Date,
-  logger: CustomLogger
+  logger: CustomLogger,
 ) {
   const BATCH_SIZE = 5000;
 
   await prisma.$transaction(
     async (tx) => {
-      if (
-        validatorsMissedAttestations.length > 0 &&
-        executionRewards.length > 0
-      ) {
+      if (validatorsMissedAttestations.length > 0 && executionRewards.length > 0) {
         // Process missed attestations in batches
-        const missedAttestationBatches = chunk(
-          validatorsMissedAttestations,
-          BATCH_SIZE
-        );
+        const missedAttestationBatches = chunk(validatorsMissedAttestations, BATCH_SIZE);
         for (const batch of missedAttestationBatches) {
           await processCommitteeValidatorsBatch(tx, batch, hour, date);
         }
@@ -201,24 +181,22 @@ export async function summarizeAtomicTransaction(
           await processExecutionRewardsBatch(tx, batch, hour, date);
         }
 
-        await updateLastSummaryUpdate("hourlyValidatorStats", endTime, tx);
+        await updateLastSummaryUpdate('hourlyValidatorStats', endTime, tx);
         // await removeProcessedCommitteeRecords(tx, endSlot, logger);
         // TODO: move cleanup to a separate task
         await removeProcessedExecutionRewards(tx, endTime, logger);
       } else {
-        logger.warn(
-          "ABORT: No committee validators or execution rewards to process"
-        );
+        logger.warn('ABORT: No committee validators or execution rewards to process');
       }
     },
-    { timeout: ms("10m") }
+    { timeout: ms('10m') },
   );
 }
 
 export async function summarizeHourly(
   startTime: Date,
   endTime: Date,
-  logger: CustomLogger
+  logger: CustomLogger,
 ): Promise<void> {
   const { startSlot, endSlot } = calculateSlotRange(startTime, endTime);
 
@@ -226,17 +204,14 @@ export async function summarizeHourly(
 
   const unprocessedSlots = await hasUnprocessedSlots(endSlot);
   if (unprocessedSlots) {
-    logger.info(
-      `Some slots before ${endSlot} are not fully processed. Skipping summarization.`
-    );
+    logger.info(`Some slots before ${endSlot} are not fully processed. Skipping summarization.`);
     return;
   }
 
-  const unprocessedExecutionRewards =
-    await hasUnprocessedExecutionRewards(endTime);
+  const unprocessedExecutionRewards = await hasUnprocessedExecutionRewards(endTime);
   if (unprocessedExecutionRewards) {
     logger.info(
-      `Some execution rewards before ${endTime} are not fully processed. Skipping summarization.`
+      `Some execution rewards before ${endTime} are not fully processed. Skipping summarization.`,
     );
     return;
   }
@@ -244,16 +219,13 @@ export async function summarizeHourly(
   const unprocessedBeaconRewards = await hasUnprocessedBeaconRewards(endSlot);
   if (unprocessedBeaconRewards) {
     logger.info(
-      `Some beacon rewards before slot ${endSlot} are not fully processed. Skipping summarization.`
+      `Some beacon rewards before slot ${endSlot} are not fully processed. Skipping summarization.`,
     );
     return;
   }
 
   // Missed attestations
-  const validatorsMissedAttestations = await aggregateMissedAttestations(
-    startSlot,
-    endSlot
-  );
+  const validatorsMissedAttestations = await aggregateMissedAttestations(startSlot, endSlot);
 
   // Execution rewards
   const executionRewards = await aggregateExecutionRewards(startTime, endTime);
@@ -269,8 +241,7 @@ export async function summarizeHourly(
     executionRewards,
     hour,
     date,
-    endSlot,
     endTime,
-    logger
+    logger,
   );
 }

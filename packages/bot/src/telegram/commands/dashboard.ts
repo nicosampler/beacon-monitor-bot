@@ -1,10 +1,11 @@
-import { getDataFromContext } from "../utils/getUserIdFromCtx.js";
-import { updateUsersStatsImp } from "@/src/scheduler/tasks/updateUsersStats.js";
-import { handleError } from "@/src/utils/errors/handleError.js";
-import { MyContext } from "@/src/config/session.js";
-import { getWithdrawalAddresses_db } from "@/src/prisma/withdrawalAddresses.js";
-import { sendMessage } from "@/src/telegram/utils/messaging.js";
-import { getPrisma } from "@/src/config/prisma.js";
+import { getDataFromContext } from '../utils/getUserIdFromCtx.js';
+
+import { getPrisma } from '@/src/config/prisma.js';
+import { MyContext } from '@/src/config/session.js';
+import { getWithdrawalAddresses_db } from '@/src/prisma/withdrawalAddresses.js';
+import { updateUsersStatsImp } from '@/src/scheduler/tasks/updateUsersStats.js';
+import { sendMessage } from '@/src/telegram/utils/messaging.js';
+import { handleError } from '@/src/utils/errors/handleError.js';
 
 const prisma = getPrisma();
 
@@ -18,7 +19,7 @@ export async function dashboard(ctx: MyContext) {
         userId,
         `You haven't added any withdrawal address yet. Please add one first.
       
-You can add one in: /menu > Validators management > Add withdrawal address.`
+You can add one in: /menu > Validators management > Add withdrawal address.`,
       );
       return;
     }

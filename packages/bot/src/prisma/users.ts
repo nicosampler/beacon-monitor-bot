@@ -1,5 +1,5 @@
-import { getPrisma } from "@/src/config/prisma.js";
-import { AppError } from "@/src/utils/errors/AppError.js";
+import { getPrisma } from '@/src/config/prisma.js';
+import { AppError } from '@/src/utils/errors/AppError.js';
 
 const prisma = getPrisma();
 
@@ -9,7 +9,7 @@ export function getUser_db(userId: number) {
       where: { id: userId },
     })
     .catch((error) => {
-      throw new AppError("Error getting user", "BD_ERROR", error);
+      throw new AppError('Error getting user', 'BD_ERROR', error);
     });
 }
 
@@ -23,7 +23,7 @@ export function getUsers_db() {
       },
     })
     .catch((error) => {
-      throw new AppError("Error getting users", "BD_ERROR", error);
+      throw new AppError('Error getting users', 'BD_ERROR', error);
     });
 }
 
@@ -60,7 +60,7 @@ export function getFullUsers_db(userId?: number) {
 
 export function countUsers_db() {
   return prisma.user.count().catch((error) => {
-    throw new AppError("Error counting users", "BD_ERROR", error);
+    throw new AppError('Error counting users', 'BD_ERROR', error);
   });
 }
 
@@ -75,11 +75,7 @@ export function getUserWithWithdrawalAddresses_db(userId: number) {
       },
     })
     .catch((error) => {
-      throw new AppError(
-        "Error getting user with withdrawal addresses",
-        "BD_ERROR",
-        error
-      );
+      throw new AppError('Error getting user with withdrawal addresses', 'BD_ERROR', error);
     });
 }
 
@@ -96,7 +92,7 @@ export async function deleteUser_db(userId: number) {
       }),
     ]);
   } catch (error) {
-    throw new AppError("Error deleting user", "BD_ERROR", error);
+    throw new AppError('Error deleting user', 'BD_ERROR', error);
   }
 }
 
@@ -111,7 +107,7 @@ export async function clearAlertDelay_db(userId: number) {
 }
 
 type UpdateArgs = Parameters<typeof prisma.user.update>;
-export function updateUserById_db(userId: number, data: UpdateArgs[0]["data"]) {
+export function updateUserById_db(userId: number, data: UpdateArgs[0]['data']) {
   return prisma.user
     .update({
       where: {
@@ -120,15 +116,15 @@ export function updateUserById_db(userId: number, data: UpdateArgs[0]["data"]) {
       data,
     })
     .catch((error) => {
-      throw new AppError("Error updating user", "BD_ERROR", error);
+      throw new AppError('Error updating user', 'BD_ERROR', error);
     });
 }
 
 type UpsertArgs = Parameters<typeof prisma.user.upsert>;
 export function upsertUser_db(
   userId: number,
-  update: UpsertArgs[0]["update"],
-  create: UpsertArgs[0]["create"]
+  update: UpsertArgs[0]['update'],
+  create: UpsertArgs[0]['create'],
 ) {
   return prisma.user
     .upsert({
@@ -137,13 +133,13 @@ export function upsertUser_db(
       create,
     })
     .catch((error) => {
-      throw new AppError("Error upserting user", "BD_ERROR", error);
+      throw new AppError('Error upserting user', 'BD_ERROR', error);
     });
 }
 
 export async function getAllUsers_db() {
   return prisma.user.findMany().catch((error) => {
-    throw new AppError("Error getting all users", "BD_ERROR", error);
+    throw new AppError('Error getting all users', 'BD_ERROR', error);
   });
 }
 
@@ -158,7 +154,7 @@ export function updateUserMessageId_db(userId: number, messageId: number) {
       },
     })
     .catch((error) => {
-      throw new AppError("Error updating user message id", "BD_ERROR", error);
+      throw new AppError('Error updating user message id', 'BD_ERROR', error);
     });
 }
 
@@ -180,7 +176,7 @@ export function deleteAddress(userId: number, address: string) {
       },
     })
     .catch((error) => {
-      throw new AppError("Error removing address from user", "BD_ERROR", error);
+      throw new AppError('Error removing address from user', 'BD_ERROR', error);
     });
 }
 

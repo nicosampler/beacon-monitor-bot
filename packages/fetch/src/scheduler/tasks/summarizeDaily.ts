@@ -1,21 +1,18 @@
-import { AsyncTask, SimpleIntervalJob } from "toad-scheduler";
-import createLogger, { CustomLogger } from "@/src/lib/pino.js";
-import { getPrisma } from "@/src/lib/prisma.js";
-import { getTimestampFromSlotNumber } from "@/src/beacon/utils/time.js";
-import { addDays, subDays } from "date-fns";
-import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
-import { summarizeDaily } from "@/src/feed/summarizeDaily.js";
-import { convertToUTC } from "@/src/utils/date/index.js";
-import { TaskOptions } from "@/src/scheduler/tasks/types.js";
-import { scheduler } from "@/src/lib/scheduler.js";
+import { addDays, subDays } from 'date-fns';
+import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
+
+import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
+import { getTimestampFromSlotNumber } from '@/src/beacon/utils/time.js';
+import { summarizeDaily } from '@/src/feed/summarizeDaily.js';
+import createLogger, { CustomLogger } from '@/src/lib/pino.js';
+import { getPrisma } from '@/src/lib/prisma.js';
+import { scheduler } from '@/src/lib/scheduler.js';
+import { TaskOptions } from '@/src/scheduler/tasks/types.js';
+import { convertToUTC } from '@/src/utils/date/index.js';
 
 const prisma = getPrisma();
-const ID = "Summarize:Daily";
-const logger = createLogger(ID, true);
 
-const oldestLookbackSlotDate = new Date(
-  getTimestampFromSlotNumber(getOldestLookbackSlot())
-);
+const oldestLookbackSlotDate = new Date(getTimestampFromSlotNumber(getOldestLookbackSlot()));
 
 async function summarizeDailyTask(logger: CustomLogger) {
   try {
@@ -23,21 +20,20 @@ async function summarizeDailyTask(logger: CustomLogger) {
     const summary = await prisma.lastSummaryUpdate.findFirst();
 
     // If the last summary is not in the db, use the oldest lookback slot
-    const lastSummaryDate =
-      summary?.dailyValidatorStats ?? oldestLookbackSlotDate;
+    const lastSummaryDate = summary?.dailyValidatorStats ?? oldestLookbackSlotDate;
     const nextSummaryDate = addDays(lastSummaryDate, 1);
 
     const now = new Date();
     const oneDayBefore = subDays(now, 1);
 
     logger.info(
-      `lastSummaryDate: ${lastSummaryDate}, nextSummaryDate: ${nextSummaryDate}, oneDayBefore: ${oneDayBefore}`
+      `lastSummaryDate: ${lastSummaryDate}, nextSummaryDate: ${nextSummaryDate}, oneDayBefore: ${oneDayBefore}`,
     );
 
     // We should only summarize data that is older than 24 hours
     // to ensure we have all hourly data available
     if (nextSummaryDate > oneDayBefore) {
-      logger.info("Skipping, data is too recent (less than 24 hours old)");
+      logger.info('Skipping, data is too recent (less than 24 hours old)');
       return;
     }
 
@@ -47,9 +43,9 @@ async function summarizeDailyTask(logger: CustomLogger) {
 
     await summarizeDaily(new Date(date), day, logger);
 
-    logger.info("Done.");
+    logger.info('Done.');
   } catch (error) {
-    logger.error("Error in summarizeAttestationsDaily task", error);
+    logger.error('Error in summarizeAttestationsDaily task', error);
   }
 }
 
@@ -64,8 +60,8 @@ export function scheduleSummarizeDaily({
 
   const task = new AsyncTask(`${id}_task`, () =>
     summarizeDailyTask(logger).catch((e) => {
-      logger.error("TASK-CATCH", e);
-    })
+      logger.error('TASK-CATCH', e);
+    }),
   );
 
   const job = new SimpleIntervalJob(
@@ -74,7 +70,7 @@ export function scheduleSummarizeDaily({
     {
       id: id,
       preventOverrun: preventOverrun,
-    }
+    },
   );
 
   scheduler.addSimpleIntervalJob(job);

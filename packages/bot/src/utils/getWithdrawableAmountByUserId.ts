@@ -4,15 +4,16 @@
  * The function is memoized with a 5-minute cache duration to prevent excessive blockchain calls.
  */
 
-import { multicallProvider } from "@/src/config/provider.js";
-import depositInstance from "@/src/utils/evm/deposit.js";
-import { sleep } from "@/src/utils/misc.js";
-import { getWithdrawalAddresses_db } from "@/src/prisma/withdrawalAddresses.js";
-import { BigNumber, ethers } from "ethers";
-import { formatEther } from "ethers/lib/utils.js";
-import chunk from "lodash/chunk.js";
-import memoizee from "memoizee";
-import ms from "ms";
+import { BigNumber, ethers } from 'ethers';
+import { formatEther } from 'ethers/lib/utils.js';
+import chunk from 'lodash/chunk.js';
+import memoizee from 'memoizee';
+import ms from 'ms';
+
+import { multicallProvider } from '@/src/config/provider.js';
+import { getWithdrawalAddresses_db } from '@/src/prisma/withdrawalAddresses.js';
+import depositInstance from '@/src/utils/evm/deposit.js';
+import { sleep } from '@/src/utils/misc.js';
 
 const fetchWithdrawableAmount = async (userId: number) => {
   try {
@@ -23,28 +24,26 @@ const fetchWithdrawableAmount = async (userId: number) => {
 
     multicallProvider.isMulticallEnabled = true;
     for (const chunk of withdrawalAddressesChunks) {
-      const promises = chunk.map(({ address }) =>
-        depositInstance.withdrawableAmount(address)
-      );
+      const promises = chunk.map(({ address }) => depositInstance.withdrawableAmount(address));
       amounts.push(...(await Promise.all(promises)));
       await sleep(100);
     }
     multicallProvider.isMulticallEnabled = false;
 
-    const totalAmount = amounts.reduce(
-      (acc, amount) => acc.add(amount),
-      ethers.constants.Zero
-    );
+    const totalAmount = amounts.reduce((acc, amount) => acc.add(amount), ethers.constants.Zero);
 
     return +formatEther(totalAmount.toString());
   } catch (error) {
-    console.error("getWithdrawableAmount", error);
+    console.error('getWithdrawableAmount', error);
     return 0;
   }
 };
 
-export const getWithdrawableAmountByUserId: (userId: number) => Promise<number> = memoizee(fetchWithdrawableAmount, {
-  promise: true,
-  maxAge: ms("5m"),
-  primitive: true,
-});
+export const getWithdrawableAmountByUserId: (userId: number) => Promise<number> = memoizee(
+  fetchWithdrawableAmount,
+  {
+    promise: true,
+    maxAge: ms('5m'),
+    primitive: true,
+  },
+);

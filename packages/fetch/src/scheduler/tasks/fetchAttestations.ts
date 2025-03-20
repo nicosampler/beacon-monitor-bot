@@ -1,17 +1,13 @@
-import { AsyncTask, SimpleIntervalJob } from "toad-scheduler";
+import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
-import { getPrisma } from "@/src/lib/prisma.js";
-import { fetchAttestation as _fetchAttestations } from "@/src/feed/fetchAttestations.js";
-import createLogger, { CustomLogger } from "@/src/lib/pino.js";
-import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
-import { env } from "@/src/env.js";
-import {
-  db_existCommitteeForSlot,
-  db_getLastSlotWithAttestations,
-} from "@/src/feed/utils.js";
-import { scheduler } from "@/src/lib/scheduler.js";
-import { TaskOptions } from "@/src/scheduler/tasks/types.js";
+import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
+import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
+import { env } from '@/src/env.js';
+import { fetchAttestation as _fetchAttestations } from '@/src/feed/fetchAttestations.js';
+import { db_existCommitteeForSlot, db_getLastSlotWithAttestations } from '@/src/feed/utils.js';
+import createLogger, { CustomLogger } from '@/src/lib/pino.js';
+import { scheduler } from '@/src/lib/scheduler.js';
+import { TaskOptions } from '@/src/scheduler/tasks/types.js';
 
 export const fetchAttestations = async (logger: CustomLogger) => {
   const now = new Date();
@@ -23,15 +19,13 @@ export const fetchAttestations = async (logger: CustomLogger) => {
     // Get the last processed slot
     const lastProcessedSlot = await db_getLastSlotWithAttestations();
 
-    const slotToFetch = lastProcessedSlot
-      ? lastProcessedSlot.slot + 1
-      : oldestLookbackSlot;
+    const slotToFetch = lastProcessedSlot ? lastProcessedSlot.slot + 1 : oldestLookbackSlot;
 
-    logger.addContext(`for slot ${slotToFetch}`)
+    logger.addContext(`for slot ${slotToFetch}`);
 
     if (slotToFetch > maxSlotToFetch) {
       logger.info(
-        `Skipping, slot to fetch ${slotToFetch} is greater than max slot to fetch ${maxSlotToFetch}`
+        `Skipping, slot to fetch ${slotToFetch} is greater than max slot to fetch ${maxSlotToFetch}`,
       );
       return;
     }
@@ -43,7 +37,9 @@ export const fetchAttestations = async (logger: CustomLogger) => {
     }
 
     return _fetchAttestations(slotToFetch, logger);
-  } catch (error) {}
+  } catch (error) {
+    logger.error('Error fetching attestations:', error);
+  }
 };
 
 export function scheduleFetchAttestations({
@@ -56,19 +52,13 @@ export function scheduleFetchAttestations({
   const logger = createLogger(id, logsEnabled);
 
   const task = new AsyncTask(`${id}_task`, () => {
-    return fetchAttestations(logger).catch((e) =>
-      logger.error("TASK-CATCH", e)
-    );
+    return fetchAttestations(logger).catch((e) => logger.error('TASK-CATCH', e));
   });
 
   scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob(
-      { milliseconds: intervalMs, runImmediately: runImmediately },
-      task,
-      {
-        id,
-        preventOverrun,
-      }
-    )
+    new SimpleIntervalJob({ milliseconds: intervalMs, runImmediately: runImmediately }, task, {
+      id,
+      preventOverrun,
+    }),
   );
 }

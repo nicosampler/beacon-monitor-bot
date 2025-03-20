@@ -1,7 +1,7 @@
-import { SimpleIntervalJob } from "toad-scheduler";
+import { SimpleIntervalJob } from 'toad-scheduler';
 
-import { allTasks } from "@/src/scheduler/allTasks.js";
-import { scheduler } from "@/src/config/index.js";
+import { scheduler } from '@/src/config/index.js';
+import { allTasks } from '@/src/scheduler/allTasks.js';
 
 export function scheduleUsersTasks() {
   // token price
@@ -9,9 +9,9 @@ export function scheduleUsersTasks() {
     { minutes: 1, runImmediately: true },
     allTasks.tokenPrice.task,
     {
-      id: "tokenPrice",
+      id: 'tokenPrice',
       preventOverrun: true,
-    }
+    },
   );
 
   // user's notifications
@@ -19,9 +19,9 @@ export function scheduleUsersTasks() {
     { minutes: 1, runImmediately: true },
     allTasks.notifyUsers.task,
     {
-      id: "notifyUsers",
+      id: 'notifyUsers',
       preventOverrun: true,
-    }
+    },
   );
 
   scheduler.addSimpleIntervalJob(tokenPriceJob);

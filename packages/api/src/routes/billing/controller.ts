@@ -1,11 +1,12 @@
-import { Request, Response } from "express";
-import { getPrisma } from "../../lib/prisma.js";
-import { calculatePricingDetails } from "../../services/pricing.js";
-import { NodeBillingResponse, ErrorResponse } from "../types.js";
+import { Request, Response } from 'express';
+
+import { getPrisma } from '../../lib/prisma.js';
+import { calculatePricingDetails } from '../../services/pricing.js';
+import { NodeBillingResponse, ErrorResponse } from '../types.js';
 
 export async function billingController(
   _: Request,
-  res: Response<NodeBillingResponse | ErrorResponse>
+  res: Response<NodeBillingResponse | ErrorResponse>,
 ) {
   const prisma = getPrisma();
 
@@ -43,7 +44,7 @@ export async function billingController(
           validatorCount,
           monthlyPrice,
         };
-      })
+      }),
     );
 
     const response: NodeBillingResponse = {
@@ -54,9 +55,9 @@ export async function billingController(
 
     return res.json(response);
   } catch (error) {
-    console.error("Error calculating billing:", error);
+    console.error('Error calculating billing:', error);
     const response: ErrorResponse = {
-      error: "Failed to calculate billing",
+      error: 'Failed to calculate billing',
       timestamp: new Date().toISOString(),
     };
     return res.status(500).json(response);

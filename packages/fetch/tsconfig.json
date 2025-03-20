@@ -1,9 +1,7 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "module": "nodenext",
-    "target": "ES2022",
     "resolveJsonModule": true,
-    "esModuleInterop": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": ".",

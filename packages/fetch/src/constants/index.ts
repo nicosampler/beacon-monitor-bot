@@ -1,6 +1,6 @@
 // 1 because the current slot might be in progress
 
-import { ValidatorStatus } from "@/src/beacon/types.js";
+import { ValidatorStatus } from '@/src/beacon/types.js';
 
 // 1 because attestations for slot n are available in slot n+1
 export const SLOT_DELAY_TO_FETCH = 2;

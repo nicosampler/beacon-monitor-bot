@@ -1,6 +1,7 @@
-import { Router } from "express";
-import { billingController } from "./controller.js";
+import { Router } from 'express';
+
+import { billingController } from './controller.js';
 
 export const billingRouter = Router();
 
-billingRouter.get("/", billingController);
+billingRouter.get('/', billingController);

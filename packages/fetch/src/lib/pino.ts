@@ -1,65 +1,57 @@
-import Pino, { DestinationStream, pino } from "pino";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { env } from "@/src/env.js";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+import Pino, { DestinationStream, pino } from 'pino';
+
+import { env } from '@/src/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Log configuration
-const LOG_OUTPUT = env.LOG_OUTPUT || "console";
-const logsDir = path.join(__dirname, "../../logs");
+const LOG_OUTPUT = env.LOG_OUTPUT || 'console';
+const logsDir = path.join(__dirname, '../../logs');
 
 // Function to get the current day's log file name
 const getCurrentLogFileName = () => {
   const now = new Date();
-  const day = String(now.getDate()).padStart(2, "0");
-  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
   const year = now.getFullYear();
   return `${day}-${month}-${year}.log`;
 };
 
 // Function to create a logger with optional context
-const createLogger = (
-  initialContext: string | null,
-  enabled: boolean = true
-) => {
+const createLogger = (initialContext: string | null, enabled: boolean = true) => {
   const _initialContext = initialContext;
   // Add context state that can be modified
   let currentContext = initialContext;
 
   const logWithContext = (
-    level: "info" | "warn" | "error" | "debug",
+    level: 'info' | 'warn' | 'error' | 'debug',
     message: string,
-    ...args: any[]
+    ...args: unknown[]
   ) => {
     // Only skip logging if enabled is false AND it's not an error
-    if (!enabled && level !== "error") return;
+    if (!enabled && level !== 'error') return;
 
-    const logObject = currentContext
-      ? { context: currentContext, ...args }
-      : args;
+    const logObject = currentContext ? { context: currentContext, ...args } : args;
     logger[level](logObject, message);
   };
 
   return {
     // Add method to update context
     addContext: (extraContext: string) => {
-      currentContext = currentContext
-        ? `${_initialContext} - ${extraContext}`
-        : extraContext;
+      currentContext = currentContext ? `${_initialContext} - ${extraContext}` : extraContext;
     },
-    info: (message: string, ...args: any[]) =>
-      logWithContext("info", message, ...args),
-    warn: (message: string, ...args: any[]) =>
-      logWithContext("warn", message, ...args),
-    error: (message: string, error: any) => {
+    info: (message: string, ...args: unknown[]) => logWithContext('info', message, ...args),
+    warn: (message: string, ...args: unknown[]) => logWithContext('warn', message, ...args),
+    error: (message: string, error: unknown) => {
       console.error(message, error);
-      logWithContext("error", message, error);
+      logWithContext('error', message, error);
     },
-    debug: (message: string, ...args: any[]) =>
-      logWithContext("debug", message, ...args),
+    debug: (message: string, ...args: unknown[]) => logWithContext('debug', message, ...args),
   };
 };
 
@@ -70,11 +62,11 @@ export type CustomLogger = ReturnType<typeof createLogger>;
 const createPinoLogger = () => {
   let logDestination: DestinationStream | undefined;
   let transport;
-  if (LOG_OUTPUT === "file") {
+  if (LOG_OUTPUT === 'file') {
     const logPath = path.join(logsDir, getCurrentLogFileName());
     logDestination = Pino.destination({ dest: logPath, sync: false });
     transport = {
-      target: "pino-pretty",
+      target: 'pino-pretty',
       options: {
         destination: logPath,
         colorize: false, // Disable colors for file output
@@ -82,7 +74,7 @@ const createPinoLogger = () => {
     };
   } else {
     transport = {
-      target: "pino-pretty",
+      target: 'pino-pretty',
       options: {
         colorize: true,
       },
@@ -91,12 +83,12 @@ const createPinoLogger = () => {
 
   return pino(
     {
-      level: env.LOG_LEVEL || "info",
+      level: env.LOG_LEVEL || 'info',
       timestamp: () => `,"time":"${new Date().toISOString()}"`,
       base: null, // This removes pid and hostname
       transport, // Use the transport configuration here
     },
-    LOG_OUTPUT === "file" ? logDestination : undefined
+    LOG_OUTPUT === 'file' ? logDestination : undefined,
   );
 };
 
@@ -104,7 +96,7 @@ const createPinoLogger = () => {
 let logger = createPinoLogger();
 
 // Ensure the logs directory exists if file output is used
-if (LOG_OUTPUT === "file") {
+if (LOG_OUTPUT === 'file') {
   if (!fs.existsSync(logsDir)) {
     fs.mkdirSync(logsDir, { recursive: true });
   }
@@ -112,21 +104,17 @@ if (LOG_OUTPUT === "file") {
 
 // Function to rotate logs daily
 const rotateLogsDaily = () => {
-  if (LOG_OUTPUT === "file") {
+  if (LOG_OUTPUT === 'file') {
     // Create a new logger instance with the new file
     logger = createPinoLogger();
-    console.log("Log rotated to new file:", getCurrentLogFileName());
+    console.log('Log rotated to new file:', getCurrentLogFileName());
   }
 };
 
 // Calculate milliseconds until midnight
 const msUntilMidnight = () => {
   const now = new Date();
-  const midnight = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() + 1
-  );
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   return midnight.getTime() - now.getTime();
 };
 

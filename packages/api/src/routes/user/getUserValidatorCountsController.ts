@@ -1,11 +1,12 @@
-import { getPrisma } from "@/src/lib/prisma.js";
-import { ActiveUsersValidators } from "@/src/routes/types.js";
-import { VALIDATOR_STATUS } from "@/src/utils/beacon.js";
-import { Request, Response } from "express";
+import { Request, Response } from 'express';
+
+import { getPrisma } from '@/src/lib/prisma.js';
+import { ActiveUsersValidators } from '@/src/routes/types.js';
+import { VALIDATOR_STATUS } from '@/src/utils/beacon.js';
 
 export async function getActiveUsersValidatorsController(
   _: Request,
-  res: Response
+  res: Response,
 ): Promise<Response> {
   const prisma = getPrisma();
 
@@ -31,7 +32,7 @@ export async function getActiveUsersValidatorsController(
         },
       },
       orderBy: {
-        username: "asc",
+        username: 'asc',
       },
     });
 
@@ -41,10 +42,7 @@ export async function getActiveUsersValidatorsController(
     }));
 
     const totalUsers = users.length;
-    const totalValidators = users.reduce(
-      (acc, curr) => acc + curr.activeValidators,
-      0
-    );
+    const totalValidators = users.reduce((acc, curr) => acc + curr.activeValidators, 0);
 
     return res.json({
       users,
@@ -54,7 +52,7 @@ export async function getActiveUsersValidatorsController(
       },
     });
   } catch (error) {
-    console.error("Error fetching validator counts:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error('Error fetching validator counts:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

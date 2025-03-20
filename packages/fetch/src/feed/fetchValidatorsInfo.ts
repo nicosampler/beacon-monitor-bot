@@ -1,11 +1,12 @@
-import { Prisma } from "@prisma/client";
-import { getValidatorsInfo } from "@/src/beacon/endpoints.js";
-import { CustomLogger } from "@/src/lib/pino.js";
-import { getHighestValidatorId } from "@/src/feed/utils.js";
-import chunk from "lodash/chunk.js";
-import { VALIDATOR_STATUS } from "@/src/constants/index.js";
-import { getPrisma } from "@/src/lib/prisma.js";
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
+import chunk from 'lodash/chunk.js';
+
+import { getValidatorsInfo } from '@/src/beacon/endpoints.js';
+import { VALIDATOR_STATUS } from '@/src/constants/index.js';
+import { getHighestValidatorId } from '@/src/feed/utils.js';
+import { CustomLogger } from '@/src/lib/pino.js';
+import { getPrisma } from '@/src/lib/prisma.js';
 
 const prisma = getPrisma();
 
@@ -33,13 +34,10 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
 
     // Create array of all validator IDs and filter out those in final states
     // Using a map for faster access
-    const finalStateValidatorIds = new Set(
-      finalStateValidators.map((v) => v.id)
+    const finalStateValidatorIds = new Set(finalStateValidators.map((v) => v.id));
+    const allValidatorIds = Array.from({ length: highestValidatorId + 1 }, (_, i) => i).filter(
+      (id) => !finalStateValidatorIds.has(id),
     );
-    const allValidatorIds = Array.from(
-      { length: highestValidatorId + 1 },
-      (_, i) => i
-    ).filter((id) => !finalStateValidatorIds.has(id));
 
     // First loop: Fetch all validator info in parallel batches
     logger.info(`Call validators info API`);
@@ -47,7 +45,7 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
     const allValidatorsInfo: Awaited<ReturnType<typeof getValidatorsInfo>> = [];
     try {
       const validatorPromises = apiValidatorBatches.map((validatorIds) =>
-        getValidatorsInfo("head", validatorIds)
+        getValidatorsInfo('head', validatorIds),
       );
 
       const results = await Promise.all(validatorPromises);
@@ -69,15 +67,12 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
                 batch.map(
                   (data) =>
                     Prisma.sql`(${+data.index}, ${
-                      data.validator.withdrawal_credentials.startsWith("0x")
-                        ? "0x" +
-                          data.validator.withdrawal_credentials.slice(-40)
+                      data.validator.withdrawal_credentials.startsWith('0x')
+                        ? '0x' + data.validator.withdrawal_credentials.slice(-40)
                         : null
-                    }, ${VALIDATOR_STATUS[data.status]}, ${new Decimal(
-                      data.balance
-                    )})`
+                    }, ${VALIDATOR_STATUS[data.status]}, ${new Decimal(data.balance)})`,
                 ),
-                ", "
+                ', ',
               )}
               ON CONFLICT (id) DO UPDATE SET
                 "withdrawalAddress" = EXCLUDED."withdrawalAddress",

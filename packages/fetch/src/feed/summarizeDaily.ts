@@ -1,18 +1,15 @@
-import ms from "ms";
+import { Prisma } from '@prisma/client';
+import { addDays } from 'date-fns';
+import ms from 'ms';
 
-import { Prisma } from "@prisma/client";
-import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
-import { updateLastSummaryUpdate } from "@/src/feed/utils.js";
-import { CustomLogger } from "@/src/lib/pino.js";
-import { getPrisma } from "@/src/lib/prisma.js";
-import chunk from "lodash/chunk.js";
-import { addDays, addHours } from "date-fns";
-import { getEpochFromSlot } from "@/src/beacon/utils/misc.js";
-import { env } from "@/src/env.js";
+import { getEpochFromSlot } from '@/src/beacon/utils/misc.js';
+import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
+import { env } from '@/src/env.js';
+import { updateLastSummaryUpdate } from '@/src/feed/utils.js';
+import { CustomLogger } from '@/src/lib/pino.js';
+import { getPrisma } from '@/src/lib/prisma.js';
 
-export type AggregateHourlyStats = Awaited<
-  ReturnType<typeof aggregateHourlyStats>
->[number];
+export type AggregateHourlyStats = Awaited<ReturnType<typeof aggregateHourlyStats>>[number];
 
 export type AggregateExecutionRewards = Awaited<
   ReturnType<typeof aggregateExecutionRewards>
@@ -28,11 +25,10 @@ export function calculateSlotRange(startTime: Date, endTime: Date) {
 
 export async function hasAllHourlyStats(date: Date): Promise<boolean> {
   const nextDay = addDays(date, 1);
-  const nextDaySlot =
-    getSlotNumberFromTimestamp(nextDay.getTime()) + env.BEACON_SLOTS_PER_EPOCH;
+  const nextDaySlot = getSlotNumberFromTimestamp(nextDay.getTime()) + env.BEACON_SLOTS_PER_EPOCH;
 
-  console.log(">>> SLOT", nextDaySlot);
-  console.log(">>> EPOCH", getEpochFromSlot(nextDaySlot));
+  console.log('>>> SLOT', nextDaySlot);
+  console.log('>>> EPOCH', getEpochFromSlot(nextDaySlot));
 
   const beaconRewardsFetched = await prisma.epoch.findUnique({
     where: {
@@ -68,7 +64,7 @@ export async function hasAllExecutionRewards(date: Date): Promise<boolean> {
 
 export async function aggregateHourlyStats(date: Date) {
   return prisma.hourlyValidatorStats.groupBy({
-    by: ["validatorIndex"],
+    by: ['validatorIndex'],
     where: {
       date,
     },
@@ -86,7 +82,7 @@ export async function aggregateHourlyStats(date: Date) {
 
 export async function aggregateExecutionRewards(date: Date) {
   return prisma.hourlyExecutionRewards.groupBy({
-    by: ["address"],
+    by: ['address'],
     where: {
       date,
     },
@@ -99,7 +95,7 @@ export async function aggregateExecutionRewards(date: Date) {
 export async function removeProcessedHourlyStatsRecords(
   tx: Prisma.TransactionClient,
   date: Date,
-  logger: CustomLogger
+  logger: CustomLogger,
 ) {
   logger.info(`Removing processed HourlyStats for ${date}`);
 
@@ -113,7 +109,7 @@ export async function removeProcessedHourlyStatsRecords(
 export async function removeProcessedExecutionRewards(
   tx: Prisma.TransactionClient,
   date: Date,
-  logger: CustomLogger
+  logger: CustomLogger,
 ) {
   logger.info(`Removing processed ExecutionRewards for ${date}`);
   await tx.hourlyExecutionRewards.deleteMany({
@@ -128,7 +124,7 @@ export async function summarizeAtomicTransaction(
   executionRewards: AggregateExecutionRewards[],
   day: number,
   date: Date,
-  logger: CustomLogger
+  logger: CustomLogger,
 ) {
   const BATCH_SIZE = 100000;
 
@@ -167,27 +163,19 @@ export async function summarizeAtomicTransaction(
       }
 
       if (hasAllHourlyStats.length > 0 || hasAllExecutionRewards.length > 0) {
-        await updateLastSummaryUpdate(
-          "dailyValidatorStats",
-          addDays(date, 1),
-          tx
-        );
+        await updateLastSummaryUpdate('dailyValidatorStats', addDays(date, 1), tx);
         await removeProcessedHourlyStatsRecords(tx, date, logger);
         await removeProcessedExecutionRewards(tx, date, logger);
       }
     },
-    { timeout: ms("5m") }
+    { timeout: ms('5m') },
   );
 
-  logger.info("Done.");
+  logger.info('Done.');
 }
 
 // TODO: add explanation about the requirements for the daily stats to run.
-export async function summarizeDaily(
-  date: Date,
-  day: number,
-  logger: CustomLogger
-): Promise<void> {
+export async function summarizeDaily(date: Date, day: number, logger: CustomLogger): Promise<void> {
   if (!(await hasAllHourlyStats(date))) {
     logger.info(`Missing hourly stats for ${date}, skipping`);
     return;
@@ -203,11 +191,5 @@ export async function summarizeDaily(
   const executionRewards = await aggregateExecutionRewards(date);
 
   // update the daily validator stats
-  await summarizeAtomicTransaction(
-    hourlyStats,
-    executionRewards,
-    day,
-    date,
-    logger
-  );
+  await summarizeAtomicTransaction(hourlyStats, executionRewards, day, date, logger);
 }

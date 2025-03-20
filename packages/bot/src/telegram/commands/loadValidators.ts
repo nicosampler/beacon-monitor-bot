@@ -1,33 +1,29 @@
-import { isAddress } from "ethers/lib/utils.js";
-import { Conversation } from "@grammyjs/conversations";
-import { MyContext } from "@/src/config/session.js";
-import { handleError } from "@/src/utils/errors/handleError.js";
-import { editMessageText } from "@/src/telegram/utils/messaging.js";
-import { getDataFromContext } from "@/src/telegram/utils/getUserIdFromCtx.js";
-import { getPrisma } from "@/src/config/prisma.js";
+import { Conversation } from '@grammyjs/conversations';
+import { isAddress } from 'ethers/lib/utils.js';
+
+import { getPrisma } from '@/src/config/prisma.js';
+import { MyContext } from '@/src/config/session.js';
+import { getDataFromContext } from '@/src/telegram/utils/getUserIdFromCtx.js';
+import { editMessageText } from '@/src/telegram/utils/messaging.js';
+import { handleError } from '@/src/utils/errors/handleError.js';
 
 const prisma = getPrisma();
 
-async function _waitForWithdrawalAddress(
-  conversation: LoadValidatorsConversation,
-  ctx: MyContext
-) {
+async function _waitForWithdrawalAddress(conversation: LoadValidatorsConversation, ctx: MyContext) {
   let validAddressEntered = false;
-  let withdrawalAddress: string = "";
+  let withdrawalAddress: string = '';
 
   while (!validAddressEntered) {
     const { message } = await conversation.wait();
-    const input = message?.text?.trim() ?? "";
+    const input = message?.text?.trim() ?? '';
 
-    if (input.toLowerCase() === "exit") {
+    if (input.toLowerCase() === 'exit') {
       return;
     }
 
     // check if it is a valid eth address
     if (!isAddress(input)) {
-      await ctx.reply(
-        `Invalid address! Please try again. (type "exit" to abort)`
-      );
+      await ctx.reply(`Invalid address! Please try again. (type "exit" to abort)`);
       continue;
     } else {
       validAddressEntered = true;
@@ -38,30 +34,15 @@ async function _waitForWithdrawalAddress(
   return withdrawalAddress;
 }
 
-async function _checkValidatorsLimits(ctx: MyContext) {
-  return 600;
-  // const totalValidators = await countAllValidatorsLoaded();
-  // if (totalValidators >= MAX_VALIDATORS_SUPPORTED) {
-  //   throw new AppError(
-  //     `The bot has reached the maximum number of validators (${MAX_VALIDATORS_SUPPORTED}).`,
-  //     "BOT_LIMIT_REACHED"
-  //   );
-  // }
-  // return totalValidators;
-}
-
 type LoadValidatorsConversation = Conversation<MyContext>;
-export async function loadValidators(
-  conversation: LoadValidatorsConversation,
-  ctx: MyContext
-) {
+export async function loadValidators(conversation: LoadValidatorsConversation, ctx: MyContext) {
   try {
     //const loadedValidatorsCount = await _checkValidatorsLimits(ctx);
     //const availableValidatorsSpotsCount = 600;
     //MAX_VALIDATORS_SUPPORTED - loadedValidatorsCount;
 
     if (!ctx.from?.username) {
-      await ctx.reply("Please set a username first.");
+      await ctx.reply('Please set a username first.');
       return;
     }
 
@@ -69,11 +50,8 @@ export async function loadValidators(
     const { userId, username } = await getDataFromContext(ctx);
 
     // ask for the withdrawal address
-    await ctx.reply("Enter your withdrawal address.");
-    const withdrawalAddress = await _waitForWithdrawalAddress(
-      conversation,
-      ctx
-    );
+    await ctx.reply('Enter your withdrawal address.');
+    const withdrawalAddress = await _waitForWithdrawalAddress(conversation, ctx);
 
     // check if the user has aborted the process
     if (withdrawalAddress == undefined) {
@@ -81,7 +59,7 @@ export async function loadValidators(
     }
 
     // Loading validators message
-    let tmpReply = await ctx.reply(`🔄 Loading validators...!`);
+    const tmpReply = await ctx.reply(`🔄 Loading validators...!`);
 
     // recover user data from the database
     // const userDB = await getFullUsers_db(userId);
@@ -177,7 +155,7 @@ export async function loadValidators(
       tmpReply.chat.id,
       tmpReply.message_id,
       `${result} validators were added to your account 💪!
-- It will take some minutes to start providing stats -`
+- It will take some minutes to start providing stats -`,
     );
 
     //await dashboard(ctx);

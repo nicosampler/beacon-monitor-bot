@@ -1,20 +1,18 @@
-import {
-  getBlockRewards,
-  getSyncCommitteeRewards,
-} from "@/src/beacon/endpoints.js";
-import { CustomLogger } from "@/src/lib/pino.js";
-import { getPrisma } from "@/src/lib/prisma.js";
-import { Prisma } from "@prisma/client";
-import ms from "ms";
-import { convertToUTC } from "@/src/utils/date/index.js";
-import { getTimestampFromSlotNumber } from "@/src/beacon/utils/time.js";
+import { Prisma } from '@prisma/client';
+import ms from 'ms';
+
+import { getBlockRewards, getSyncCommitteeRewards } from '@/src/beacon/endpoints.js';
+import { getTimestampFromSlotNumber } from '@/src/beacon/utils/time.js';
+import { CustomLogger } from '@/src/lib/pino.js';
+import { getPrisma } from '@/src/lib/prisma.js';
+import { convertToUTC } from '@/src/utils/date/index.js';
 
 const prisma = getPrisma();
 
 export const fetchBlockAndSyncRewards = async (
   slot: number,
   maxSlotToFetch: number,
-  logger: CustomLogger
+  logger: CustomLogger,
 ) => {
   try {
     const dbSlot = await prisma.slot.findUnique({
@@ -27,7 +25,7 @@ export const fetchBlockAndSyncRewards = async (
       return;
     }
 
-    logger.info("api call sync & block rewards");
+    logger.info('api call sync & block rewards');
 
     // Current slot requests
     const currentSlotRequests = Promise.all([
@@ -78,9 +76,9 @@ export const fetchBlockAndSyncRewards = async (
         const values = rewardsData
           .map(
             (syncReward) =>
-              `(${syncReward.validatorIndex}, ${hour}, '${date}', ${syncReward.reward})`
+              `(${syncReward.validatorIndex}, ${hour}, '${date}', ${syncReward.reward})`,
           )
-          .join(",");
+          .join(',');
 
         await tx.$executeRaw`
           INSERT INTO "HourlyValidatorStats" ("validatorIndex", "hour", "date", "syncCommittee")
@@ -96,7 +94,7 @@ export const fetchBlockAndSyncRewards = async (
         `;
 
         // Block rewards
-        if (blockRewards !== "SLOT MISSED") {
+        if (blockRewards !== 'SLOT MISSED') {
           const blockRewardValue = `(${Number(blockRewards.data.proposer_index)}, ${hour}, '${date}', ${BigInt(blockRewards.data.total)})`;
 
           await tx.$executeRaw`
@@ -120,13 +118,13 @@ export const fetchBlockAndSyncRewards = async (
         });
       },
       {
-        timeout: ms("5m"),
-      }
+        timeout: ms('5m'),
+      },
     );
 
     logger.info(`Done.`);
   } catch (error) {
-    if (error.message.includes("404")) {
+    if (error instanceof Error && error.message.includes('404')) {
       logger.warn(`skipped`);
       await prisma.slot.update({
         where: { slot },

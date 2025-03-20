@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "dotenv -e ../../.env npx tsx src/index.ts",
     "start": "npx tsx src/index.ts",
-    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@prisma/client": "5.15.0",

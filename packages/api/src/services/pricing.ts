@@ -1,4 +1,4 @@
-import { getTokenPrice } from "./tokenPrice.js";
+import { getTokenPrice } from './tokenPrice.js';
 
 const YEARLY_DISCOUNT_PERCENTAGE = 20;
 const tokensPerValidator = 1;
@@ -48,8 +48,7 @@ function calculateYearlyPrice(monthlyPrice: number): {
   yearlySavings: number;
 } {
   const yearlyPriceWithoutDiscount = monthlyPrice * 12;
-  const discount =
-    (yearlyPriceWithoutDiscount * YEARLY_DISCOUNT_PERCENTAGE) / 100;
+  const discount = (yearlyPriceWithoutDiscount * YEARLY_DISCOUNT_PERCENTAGE) / 100;
   return {
     yearlyPrice: yearlyPriceWithoutDiscount - discount,
     yearlySavings: discount,
@@ -57,11 +56,10 @@ function calculateYearlyPrice(monthlyPrice: number): {
 }
 
 export async function calculatePricingDetails(
-  validatorCount: number
+  validatorCount: number,
 ): Promise<PricingDetails | null> {
   const tier = PRICING_TIERS.find(
-    (t) =>
-      validatorCount >= t.minValidators && validatorCount <= t.maxValidators
+    (t) => validatorCount >= t.minValidators && validatorCount <= t.maxValidators,
   );
 
   if (!tier) return null;
@@ -101,8 +99,7 @@ export async function getAllPricingTiers(): Promise<PricingDetails[]> {
       const pricePerValidator = tier.priceUSD / tier.maxValidators;
 
       // Calculate total value staked and subscription percentage
-      const totalStakedValue =
-        tier.maxValidators * tokenPrice * tokensPerValidator;
+      const totalStakedValue = tier.maxValidators * tokenPrice * tokensPerValidator;
       const subscriptionPercentage = (tier.priceUSD / totalStakedValue) * 100;
 
       // Calculate monthly price
@@ -121,6 +118,6 @@ export async function getAllPricingTiers(): Promise<PricingDetails[]> {
         yearlyDiscount: YEARLY_DISCOUNT_PERCENTAGE,
         yearlySavings,
       };
-    })
+    }),
   );
 }

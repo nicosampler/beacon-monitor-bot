@@ -1,8 +1,9 @@
-import { SimpleIntervalJob, AsyncTask } from "toad-scheduler";
-import createLogger from "@/src/lib/pino.js";
-import { cleanupCommittee } from "@/src/feed/cleanupCommittee.js";
-import { TaskOptions } from "@/src/scheduler/tasks/types.js";
-import { scheduler } from "@/src/lib/scheduler.js";
+import { SimpleIntervalJob, AsyncTask } from 'toad-scheduler';
+
+import { cleanupCommittee } from '@/src/feed/cleanupCommittee.js';
+import createLogger from '@/src/lib/pino.js';
+import { scheduler } from '@/src/lib/scheduler.js';
+import { TaskOptions } from '@/src/scheduler/tasks/types.js';
 
 export function scheduleCleanupCommittee({
   id,
@@ -15,8 +16,8 @@ export function scheduleCleanupCommittee({
 
   const task = new AsyncTask(`${id}_task`, () =>
     cleanupCommittee(logger).catch((e) => {
-      logger.error("TASK-CATCH", e);
-    })
+      logger.error('TASK-CATCH', e);
+    }),
   );
 
   const job = new SimpleIntervalJob(
@@ -25,7 +26,7 @@ export function scheduleCleanupCommittee({
     {
       id: id,
       preventOverrun: preventOverrun,
-    }
+    },
   );
 
   scheduler.addSimpleIntervalJob(job);

@@ -15,8 +15,8 @@ export type ActiveUsersValidators = {
 
 // New types for health endpoint
 export type HealthResponse = {
-  status: "healthy" | "unhealthy";
-  database: "connected" | "disconnected";
+  status: 'healthy' | 'unhealthy';
+  database: 'connected' | 'disconnected';
   timestamp: string;
 };
 
@@ -89,7 +89,7 @@ export type ValidatorStatusesByWithdrawal = {
 export type ValidatorInfo = {
   withdrawal_address: string | null;
   validator_id: number;
-  attestation_status: "active" | "inactive" | "slashed" | "exited";
+  attestation_status: 'active' | 'inactive' | 'slashed' | 'exited';
 };
 
 export type UserInfo = {

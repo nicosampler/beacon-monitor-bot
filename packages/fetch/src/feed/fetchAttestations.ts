@@ -1,24 +1,17 @@
-import ms from "ms";
-import chunk from "lodash/chunk.js";
+import { Prisma } from '@prisma/client';
+import chunk from 'lodash/chunk.js';
+import ms from 'ms';
 
-import { getAttestations } from "@/src/beacon/endpoints.js";
-import {
-  convertBitsToString,
-  convertHexStringToByteArray,
-} from "@/src/beacon/utils/bitlist.js";
-import { db_existCommitteeForSlot } from "@/src/feed/utils.js";
-import { CustomLogger } from "@/src/lib/pino.js";
-import { getPrisma } from "@/src/lib/prisma.js";
-import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
-import { Prisma } from "@prisma/client";
-import { env } from "@/src/env.js";
+import { getAttestations } from '@/src/beacon/endpoints.js';
+import { convertBitsToString, convertHexStringToByteArray } from '@/src/beacon/utils/bitlist.js';
+import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
+import { env } from '@/src/env.js';
+import { CustomLogger } from '@/src/lib/pino.js';
+import { getPrisma } from '@/src/lib/prisma.js';
 
 const prisma = getPrisma();
 
-export const fetchAttestation = async (
-  slotNumber: number,
-  logger: CustomLogger
-) => {
+export const fetchAttestation = async (slotNumber: number, logger: CustomLogger) => {
   try {
     logger.info(`start.`);
 
@@ -29,7 +22,7 @@ export const fetchAttestation = async (
 
     // Filter out attestations that are older than the oldest lookback slot
     const filteredAttestations = fetchedAttestations.filter(
-      (attestation) => +attestation.data.slot >= getOldestLookbackSlot()
+      (attestation) => +attestation.data.slot >= getOldestLookbackSlot(),
     );
 
     // Process all attestations. Separates them by updates and deletes depending on the attestation delay env.BEACON_MAX_ATTESTATION_DELAY.
@@ -42,8 +35,10 @@ export const fetchAttestation = async (
     }
 
     // Deduplicate and prioritize deletes over updates
-    const { updates: uniqueUpdates, deletes: uniqueDeletes } =
-      deduplicateAttestations(allUpdates, allDeletes);
+    const { updates: uniqueUpdates, deletes: uniqueDeletes } = deduplicateAttestations(
+      allUpdates,
+      allDeletes,
+    );
 
     // Update or delete the validators from the committee table
     await updateAndDeleteValidatorAttestations(
@@ -52,12 +47,12 @@ export const fetchAttestation = async (
         deletes: uniqueDeletes,
       },
       slotNumber,
-      logger
+      logger,
     );
 
     logger.info(`Done for slot ${slotNumber}.`);
   } catch (error) {
-    logger.error("There was an error.", error);
+    logger.error('There was an error.', error);
     throw error;
   }
 };
@@ -69,7 +64,7 @@ export const fetchAttestation = async (
  */
 function deduplicateAttestations(
   allUpdates: CommitteeUpdate[],
-  allDeletes: CommitteeUpdate[]
+  allDeletes: CommitteeUpdate[],
 ): AttestationResult {
   // Helper function to check if entry exists
   const entryExists = (arr: CommitteeUpdate[], value: CommitteeUpdate) => {
@@ -77,7 +72,7 @@ function deduplicateAttestations(
       (entry) =>
         entry.slot === value.slot &&
         entry.index === value.index &&
-        entry.aggregationBitsIndex === value.aggregationBitsIndex
+        entry.aggregationBitsIndex === value.aggregationBitsIndex,
     );
   };
 
@@ -88,8 +83,8 @@ function deduplicateAttestations(
         (d) =>
           d.slot === del.slot &&
           d.index === del.index &&
-          d.aggregationBitsIndex === del.aggregationBitsIndex
-      ) === index
+          d.aggregationBitsIndex === del.aggregationBitsIndex,
+      ) === index,
   );
 
   // Filter updates: remove duplicates and any that exist in deletes
@@ -100,10 +95,10 @@ function deduplicateAttestations(
         (u) =>
           u.slot === update.slot &&
           u.index === update.index &&
-          u.aggregationBitsIndex === update.aggregationBitsIndex
+          u.aggregationBitsIndex === update.aggregationBitsIndex,
       ) === index &&
       // Remove if exists in deletes (deletes take precedence)
-      !entryExists(uniqueDeletes, update)
+      !entryExists(uniqueDeletes, update),
   );
 
   return {
@@ -115,7 +110,7 @@ function deduplicateAttestations(
 async function getAttestation(slot: number, logger: CustomLogger) {
   const fetchedAttestations = await getAttestations(slot + 1);
 
-  if (fetchedAttestations === "SLOT MISSED") {
+  if (fetchedAttestations === 'SLOT MISSED') {
     await prisma.slot.update({
       where: { slot: slot },
       data: { attestationsFetched: true },
@@ -126,9 +121,7 @@ async function getAttestation(slot: number, logger: CustomLogger) {
 
   return fetchedAttestations;
 }
-type Attestation = NonNullable<
-  Awaited<ReturnType<typeof getAttestation>>
->[number];
+type Attestation = NonNullable<Awaited<ReturnType<typeof getAttestation>>>[number];
 
 interface CommitteeUpdate {
   slot: number;
@@ -143,19 +136,16 @@ interface AttestationResult {
   deletes: CommitteeUpdate[];
 }
 
-function processAttestation(
-  slotNumber: number,
-  attestation: Attestation
-): AttestationResult {
+function processAttestation(slotNumber: number, attestation: Attestation): AttestationResult {
   const aggregationBits = convertBitsToString(
-    convertHexStringToByteArray(attestation.aggregation_bits)
+    convertHexStringToByteArray(attestation.aggregation_bits),
   );
 
   const updates: CommitteeUpdate[] = [];
   const deletes: CommitteeUpdate[] = [];
 
   for (let i = 0; i < aggregationBits.length; i++) {
-    if (aggregationBits[i] === "1") {
+    if (aggregationBits[i] === '1') {
       const attestationDelay = slotNumber - Number(attestation.data.slot);
       const attestationInfo = {
         slot: +attestation.data.slot,
@@ -184,12 +174,12 @@ function processAttestation(
 async function updateAndDeleteValidatorAttestations(
   attestations: AttestationResult,
   slotNumber: number,
-  logger: CustomLogger
+  logger: CustomLogger,
 ): Promise<void> {
   const prismaBatchSize = 5000;
 
   logger.info(
-    `Processing ${attestations.updates.length} updates and ${attestations.deletes.length} deletes.`
+    `Processing ${attestations.updates.length} updates and ${attestations.deletes.length} deletes.`,
   );
 
   await prisma.$transaction(
@@ -205,8 +195,8 @@ async function updateAndDeleteValidatorAttestations(
               ${Prisma.join(
                 batchUpdates.map(
                   (u) =>
-                    Prisma.sql`(${u.slot}, ${u.index}, ${u.aggregationBitsIndex}, ${u.attestationDelay})`
-                )
+                    Prisma.sql`(${u.slot}, ${u.index}, ${u.aggregationBitsIndex}, ${u.attestationDelay})`,
+                ),
               )}
             ) AS v(slot, index, "aggregationBitsIndex", delay)
             WHERE c.slot = v.slot 
@@ -229,9 +219,8 @@ async function updateAndDeleteValidatorAttestations(
               INNER JOIN (
                 VALUES ${Prisma.join(
                   batchDeletes.map(
-                    (d) =>
-                      Prisma.sql`(${d.slot}, ${d.index}, ${d.aggregationBitsIndex})`
-                  )
+                    (d) => Prisma.sql`(${d.slot}, ${d.index}, ${d.aggregationBitsIndex})`,
+                  ),
                 )}
               ) AS t(slot, index, "aggregationBitsIndex")
               ON c.slot = t.slot
@@ -245,16 +234,16 @@ async function updateAndDeleteValidatorAttestations(
               AND "Committee"."aggregationBitsIndex" = rows_to_delete."aggregationBitsIndex";
           `;
 
-          const deletedCount = await tx.$executeRaw(deleteQuery);
+          await tx.$executeRaw(deleteQuery);
         }
       }
 
       // Update slot
-      await tx.slot.update({
+      return tx.slot.update({
         where: { slot: slotNumber },
         data: { attestationsFetched: true },
       });
     },
-    { timeout: ms("1m") }
+    { timeout: ms('1m') },
   );
 }

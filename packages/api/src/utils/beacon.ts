@@ -1,4 +1,4 @@
-import { env } from "@/src/env.js";
+import { env } from '@/src/env.js';
 
 // -- STAKING --
 //  pending_initialized
@@ -63,23 +63,13 @@ const SLOT_DURATION_MS = Number(env.BEACON_SLOT_DURATION_IN_SECONDS) * 1000;
 
 export const slotsIn1h = 3600 / env.BEACON_SLOT_DURATION_IN_SECONDS;
 export const slotsInDay = (24 * 3600) / env.BEACON_SLOT_DURATION_IN_SECONDS;
-export const slotsInWeek =
-  (7 * 24 * 3600) / env.BEACON_SLOT_DURATION_IN_SECONDS;
-export const slotsInMonth =
-  (30 * 24 * 3600) / env.BEACON_SLOT_DURATION_IN_SECONDS;
+export const slotsInWeek = (7 * 24 * 3600) / env.BEACON_SLOT_DURATION_IN_SECONDS;
+export const slotsInMonth = (30 * 24 * 3600) / env.BEACON_SLOT_DURATION_IN_SECONDS;
 
-export const epochsIn1h = Math.floor(
-  slotsIn1h / Number(env.BEACON_SLOTS_PER_EPOCH)
-);
-export const epochsInDay = Math.floor(
-  slotsInDay / Number(env.BEACON_SLOTS_PER_EPOCH)
-);
-export const epochsInWeek = Math.floor(
-  slotsInWeek / Number(env.BEACON_SLOTS_PER_EPOCH)
-);
-export const epochsInMonth = Math.floor(
-  slotsInMonth / Number(env.BEACON_SLOTS_PER_EPOCH)
-);
+export const epochsIn1h = Math.floor(slotsIn1h / Number(env.BEACON_SLOTS_PER_EPOCH));
+export const epochsInDay = Math.floor(slotsInDay / Number(env.BEACON_SLOTS_PER_EPOCH));
+export const epochsInWeek = Math.floor(slotsInWeek / Number(env.BEACON_SLOTS_PER_EPOCH));
+export const epochsInMonth = Math.floor(slotsInMonth / Number(env.BEACON_SLOTS_PER_EPOCH));
 
 export const getEpochFromSlot = (slot: number) => {
   return Math.floor(slot / Number(env.BEACON_SLOTS_PER_EPOCH));
@@ -101,11 +91,9 @@ export const getEpochSlots = (epoch: number) => {
  */
 export function getSlotNumberFromTimestamp(timestamp: number): number {
   if (timestamp < env.BEACON_GENESIS_TIMESTAMP) {
-    throw new Error("Timestamp is before genesis");
+    throw new Error('Timestamp is before genesis');
   }
-  return Math.floor(
-    (timestamp - env.BEACON_GENESIS_TIMESTAMP) / SLOT_DURATION_MS
-  );
+  return Math.floor((timestamp - env.BEACON_GENESIS_TIMESTAMP) / SLOT_DURATION_MS);
 }
 
 /**
@@ -115,7 +103,7 @@ export function getSlotNumberFromTimestamp(timestamp: number): number {
  */
 export function getTimestampFromSlotNumber(slotNumber: number): number {
   if (slotNumber < 0) {
-    throw new Error("Slot number cannot be negative");
+    throw new Error('Slot number cannot be negative');
   }
   return env.BEACON_GENESIS_TIMESTAMP + slotNumber * SLOT_DURATION_MS;
 }
@@ -137,7 +125,7 @@ export function getEpochNumberFromTimestamp(timestamp: number): number {
  */
 export function getTimestampFromEpochNumber(epochNumber: number): number {
   if (epochNumber < 0) {
-    throw new Error("Epoch number cannot be negative");
+    throw new Error('Epoch number cannot be negative');
   }
 
   const slotDuration = SLOT_DURATION_MS * env.BEACON_SLOTS_PER_EPOCH;

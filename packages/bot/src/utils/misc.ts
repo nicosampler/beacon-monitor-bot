@@ -1,40 +1,34 @@
-import { OLD_DATE } from "@/src/constants/index.js";
-import addMinutes from "date-fns/addMinutes";
-import compareAsc from "date-fns/compareAsc";
+import addMinutes from 'date-fns/addMinutes';
+import compareAsc from 'date-fns/compareAsc';
+
+import { OLD_DATE } from '@/src/constants/index.js';
 
 export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function formatNumber(
-  value: number,
-  maxDigits = 5,
-  symbol?: string
-): string {
+export function formatNumber(value: number, maxDigits = 5, symbol?: string): string {
   const integerPart = Math.floor(value);
   const integerPartLength = integerPart.toString().length;
 
   if (integerPartLength >= maxDigits) {
-    return `${symbol ? symbol : ""}${integerPart.toLocaleString()}`;
+    return `${symbol ? symbol : ''}${integerPart.toLocaleString()}`;
   } else {
     const maxDecimalDigits = maxDigits - integerPartLength;
     const roundedValue = value.toFixed(maxDecimalDigits);
     const finalNumber = parseFloat(roundedValue);
     const finalNumberString = finalNumber.toFixed(maxDecimalDigits);
 
-    return `${symbol ? symbol : ""}${finalNumberString}`;
+    return `${symbol ? symbol : ''}${finalNumberString}`;
   }
 }
 
 export function isNotificationAllowed(
   prevNotification: Date | undefined | null,
-  ignoreWithinMinutes: number
+  ignoreWithinMinutes: number,
 ): boolean {
   const now = new Date();
-  const coolDownTime = addMinutes(
-    prevNotification || OLD_DATE,
-    ignoreWithinMinutes
-  );
+  const coolDownTime = addMinutes(prevNotification || OLD_DATE, ignoreWithinMinutes);
 
   return compareAsc(now, coolDownTime) > 0;
 }

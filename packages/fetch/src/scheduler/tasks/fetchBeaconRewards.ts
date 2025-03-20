@@ -1,14 +1,12 @@
-import { AsyncTask, SimpleIntervalJob } from "toad-scheduler";
-import createLogger from "@/src/lib/pino.js";
-import { getPrisma } from "@/src/lib/prisma.js";
-import { getEpochNumberFromTimestamp } from "@/src/beacon/utils/time.js";
-import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
-import { env } from "@/src/env.js";
-import { fetchBeaconRewards } from "@/src/feed/fetchBeaconRewards.js"; // Assuming this function exists
-import { scheduler } from "@/src/lib/scheduler.js";
-import { db_getLastProcessedEpoch } from "@/src/feed/utils.js";
+import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-const prisma = getPrisma();
+import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
+import { getEpochNumberFromTimestamp } from '@/src/beacon/utils/time.js';
+import { env } from '@/src/env.js';
+import { fetchBeaconRewards } from '@/src/feed/fetchBeaconRewards.js'; // Assuming this function exists
+import { db_getLastProcessedEpoch } from '@/src/feed/utils.js';
+import createLogger from '@/src/lib/pino.js';
+import { scheduler } from '@/src/lib/scheduler.js';
 
 /* 
   This task fetches the beacon rewards 
@@ -21,13 +19,11 @@ async function fetchBeaconRewardsTask(ID: string, logsEnabled: boolean) {
   const now = new Date();
   const currentEpoch = getEpochNumberFromTimestamp(now.getTime());
   const maxEpoch = currentEpoch - 2; // Give some buffer to avoid so many 404
-  const oldestLookbackEpoch = Math.floor(
-    getOldestLookbackSlot() / env.BEACON_SLOTS_PER_EPOCH
-  );
+  const oldestLookbackEpoch = Math.floor(getOldestLookbackSlot() / env.BEACON_SLOTS_PER_EPOCH);
 
   const lastProcessedEpoch = await db_getLastProcessedEpoch();
-  
-  if (lastProcessedEpoch?.epoch + 1 > maxEpoch) {
+
+  if (lastProcessedEpoch?.epoch && lastProcessedEpoch.epoch + 1 > maxEpoch) {
     createLogger(ID).info(`No new epochs to fetch`);
     return;
   }
@@ -56,14 +52,12 @@ export function scheduleFetchBeaconRewards({
       { milliseconds: interval, runImmediately: true },
       new AsyncTask(`${ID}_task`, () => {
         const logger = createLogger(ID);
-        return fetchBeaconRewardsTask(ID, logsEnabled).catch((e) =>
-          logger.error("TASK-CATCH", e)
-        );
+        return fetchBeaconRewardsTask(ID, logsEnabled).catch((e) => logger.error('TASK-CATCH', e));
       }),
       {
         id: ID,
         preventOverrun: true,
-      }
-    )
+      },
+    ),
   );
 }

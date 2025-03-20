@@ -1,10 +1,10 @@
-import { createEnv } from "@t3-oss/env-core";
-import { z } from "zod";
+import { createEnv } from '@t3-oss/env-core';
+import { z } from 'zod';
 
 const _env = process.env;
 
 export const env = createEnv({
-  clientPrefix: "FIX_SERVER_ERROR",
+  clientPrefix: 'FIX_SERVER_ERROR',
   client: {},
   server: {
     // Database
@@ -13,12 +13,12 @@ export const env = createEnv({
     API_SECRET_KEY: z.string(),
 
     // Logging
-    LOG_OUTPUT: z.enum(["file", "console"]).optional(),
-    LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).optional(),
+    LOG_OUTPUT: z.enum(['file', 'console']).optional(),
+    LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).optional(),
 
     // Node Sentinel
     NODE_SENTINEL_URL: z.string().url(),
-    NODE_SENTINEL_CHAIN: z.enum(["gnosis", "mainnet"]),
+    NODE_SENTINEL_CHAIN: z.enum(['gnosis', 'mainnet']),
 
     // Beacon
     BEACON_GENESIS_TIMESTAMP: z.number().int().positive(),
@@ -47,27 +47,21 @@ export const env = createEnv({
     ..._env,
 
     // Beacon config
-    BEACON_GENESIS_TIMESTAMP: Number(_env.BEACON_GENESIS_TIMESTAMP),
-    BEACON_SLOT_DURATION_IN_SECONDS: Number(
-      _env.BEACON_SLOT_DURATION_IN_SECONDS
-    ),
-    BEACON_SLOTS_PER_EPOCH: Number(_env.BEACON_SLOTS_PER_EPOCH),
-    BEACON_DELAY_SLOTS_TO_HEAD: Number(_env.BEACON_DELAY_SLOTS_TO_HEAD),
-    BEACON_LOOKBACK_SLOT: Number(_env.BEACON_LOOKBACK_SLOT),
-    BEACON_MAX_ATTESTATION_DELAY: Number(_env.BEACON_MAX_ATTESTATION_DELAY),
+    BEACON_GENESIS_TIMESTAMP: Number(_env['BEACON_GENESIS_TIMESTAMP']),
+    BEACON_SLOT_DURATION_IN_SECONDS: Number(_env['BEACON_SLOT_DURATION_IN_SECONDS']),
+    BEACON_SLOTS_PER_EPOCH: Number(_env['BEACON_SLOTS_PER_EPOCH']),
+    BEACON_DELAY_SLOTS_TO_HEAD: Number(_env['BEACON_DELAY_SLOTS_TO_HEAD']),
+    BEACON_LOOKBACK_SLOT: Number(_env['BEACON_LOOKBACK_SLOT']),
+    BEACON_MAX_ATTESTATION_DELAY: Number(_env['BEACON_MAX_ATTESTATION_DELAY']),
     // Beacon-node API
-    BEACON_API_REQUEST_PER_SECOND: Number(_env.BEACON_API_REQUEST_PER_SECOND),
-    BEACON_API_REQUEST_PER_MINUTE: Number(_env.BEACON_API_REQUEST_PER_MINUTE),
+    BEACON_API_REQUEST_PER_SECOND: Number(_env['BEACON_API_REQUEST_PER_SECOND']),
+    BEACON_API_REQUEST_PER_MINUTE: Number(_env['BEACON_API_REQUEST_PER_MINUTE']),
 
     // Execution config
-    EXECUTION_BLOCK_LOOKBACK: Number(_env.EXECUTION_BLOCK_LOOKBACK),
+    EXECUTION_BLOCK_LOOKBACK: Number(_env['EXECUTION_BLOCK_LOOKBACK']),
     // Execution API
-    EXECUTION_API_REQUEST_PER_SECOND: Number(
-      _env.EXECUTION_API_REQUEST_PER_SECOND
-    ),
-    EXECUTION_API_REQUEST_PER_MINUTE: Number(
-      _env.EXECUTION_API_REQUEST_PER_MINUTE
-    ),
+    EXECUTION_API_REQUEST_PER_SECOND: Number(_env['EXECUTION_API_REQUEST_PER_SECOND']),
+    EXECUTION_API_REQUEST_PER_MINUTE: Number(_env['EXECUTION_API_REQUEST_PER_MINUTE']),
   },
   emptyStringAsUndefined: true,
 });

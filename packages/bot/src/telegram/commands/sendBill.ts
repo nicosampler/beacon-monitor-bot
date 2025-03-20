@@ -1,12 +1,10 @@
-import { getDataFromContext } from "../utils/getUserIdFromCtx.js";
-import { handleError } from "@/src/utils/errors/handleError.js";
-import { MyContext } from "@/src/config/session.js";
-import { getPrisma } from "@/src/config/prisma.js";
-import { env } from "@/src/env.js";
-import { SpecificPricingResponse } from "@/src/apiTypes.js";
-import { sendMessage } from "@/src/telegram/utils/messaging.js";
-import { TG_ADMIN_USER_IDS } from "@/src/constants/index.js";
-import { AppError } from "@/src/utils/errors/AppError.js";
+import { getDataFromContext } from '../utils/getUserIdFromCtx.js';
+
+import { getPrisma } from '@/src/config/prisma.js';
+import { MyContext } from '@/src/config/session.js';
+import { TG_ADMIN_USER_IDS } from '@/src/constants/index.js';
+import { sendMessage } from '@/src/telegram/utils/messaging.js';
+import { AppError } from '@/src/utils/errors/AppError.js';
 
 const prisma = getPrisma();
 
@@ -17,10 +15,7 @@ export async function sendBill(ctx: MyContext) {
 
     // Check if the user is authorized
     if (!TG_ADMIN_USER_IDS.includes(userId)) {
-      throw new AppError(
-        "You are not authorized to use this command.",
-        "UNAUTHORIZED"
-      );
+      throw new AppError('You are not authorized to use this command.', 'UNAUTHORIZED');
     }
 
     // Get all users from database
@@ -77,21 +72,18 @@ Thanks, Nico\\!
       try {
         // Send message to user
         await sendMessage(user.userId.toString(), message, {
-          parse_mode: "MarkdownV2",
+          parse_mode: 'MarkdownV2',
         });
 
         // Add delay between messages to avoid hitting rate limits
         await new Promise((resolve) => setTimeout(resolve, 50));
       } catch (error) {
-        console.error(
-          `Error sending heads_up message to user ${user.userId}:`,
-          error
-        );
+        console.error(`Error sending heads_up message to user ${user.userId}:`, error);
       }
     }
 
-    await ctx.reply("Bills sent to all users successfully.");
+    await ctx.reply('Bills sent to all users successfully.');
   } catch (error) {
-    console.error("Error in sendBill:", error);
+    console.error('Error in sendBill:', error);
   }
 }

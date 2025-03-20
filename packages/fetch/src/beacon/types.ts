@@ -1,15 +1,15 @@
 // TODO: analyze when to use each status to do filtering for the beacon API.
 // https://docs.blockdaemon.com/docs/eth-validator-statuses
 export type ValidatorStatus =
-  | "pending_initialized"
-  | "pending_queued"
-  | "active_ongoing"
-  | "active_exiting"
-  | "active_slashed"
-  | "exited_unslashed"
-  | "exited_slashed"
-  | "withdrawal_possible"
-  | "withdrawal_done";
+  | 'pending_initialized'
+  | 'pending_queued'
+  | 'active_ongoing'
+  | 'active_exiting'
+  | 'active_slashed'
+  | 'exited_unslashed'
+  | 'exited_slashed'
+  | 'withdrawal_possible'
+  | 'withdrawal_done';
 
 export type GetCommittees = {
   execution_optimistic: boolean;

@@ -2,22 +2,23 @@ import {
   createDefaultEsmPreset,
   type JestConfigWithTsJest,
   pathsToModuleNameMapper,
-} from "ts-jest";
-import { compilerOptions } from "./tsconfig.json";
+} from 'ts-jest';
+
+import { compilerOptions } from './tsconfig.json';
 
 const defaultEsmPreset = createDefaultEsmPreset();
 
 const config: JestConfigWithTsJest = {
   ...defaultEsmPreset,
-  extensionsToTreatAsEsm: [".ts"],
-  roots: ["<rootDir>"],
+  extensionsToTreatAsEsm: ['.ts'],
+  roots: ['<rootDir>'],
   modulePaths: [compilerOptions.baseUrl],
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
-    prefix: "<rootDir>/",
+    prefix: '<rootDir>/',
     useESM: true,
   }),
   transform: {
-    "^.+\\.tsx?$": ["ts-jest", { useESM: true }],
+    '^.+\\.tsx?$': ['ts-jest', { useESM: true }],
   },
   clearMocks: true,
 };

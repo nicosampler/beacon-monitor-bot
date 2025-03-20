@@ -1,10 +1,10 @@
-import { DEFAULT_ERROR_MESSAGE } from "@/src/constants/index.js";
-import { AppError } from "@/src/utils/errors/AppError.js";
-import { sendMessage } from "@/src/telegram/utils/messaging.js";
+import { DEFAULT_ERROR_MESSAGE } from '@/src/constants/index.js';
+import { sendMessage } from '@/src/telegram/utils/messaging.js';
+import { AppError } from '@/src/utils/errors/AppError.js';
 
 export async function handleError(
   error: unknown,
-  chatIdOrUsername?: number | string
+  chatIdOrUsername?: number | string,
 ): Promise<void> {
   if (!chatIdOrUsername) {
     console.error(error);

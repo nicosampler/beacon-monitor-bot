@@ -1,4 +1,4 @@
-import { env } from "@/src/env.js";
+import { env } from '@/src/env.js';
 
 const GENESIS_TIMESTAMP = env.BEACON_GENESIS_TIMESTAMP;
 const SLOT_DURATION_MS = env.BEACON_SLOT_DURATION_IN_SECONDS * 1000;
@@ -10,7 +10,7 @@ const SLOTS_PER_EPOCH = env.BEACON_SLOTS_PER_EPOCH;
  */
 export function getSlotNumberFromTimestamp(timestamp: number): number {
   if (timestamp < GENESIS_TIMESTAMP) {
-    throw new Error("Timestamp is before genesis");
+    throw new Error('Timestamp is before genesis');
   }
   return Math.floor((timestamp - GENESIS_TIMESTAMP) / SLOT_DURATION_MS);
 }
@@ -22,7 +22,7 @@ export function getSlotNumberFromTimestamp(timestamp: number): number {
  */
 export function getTimestampFromSlotNumber(slotNumber: number): number {
   if (slotNumber < 0) {
-    throw new Error("Slot number cannot be negative");
+    throw new Error('Slot number cannot be negative');
   }
   return GENESIS_TIMESTAMP + slotNumber * SLOT_DURATION_MS;
 }
@@ -44,7 +44,7 @@ export function getEpochNumberFromTimestamp(timestamp: number): number {
  */
 export function getTimestampFromEpochNumber(epochNumber: number): number {
   if (epochNumber < 0) {
-    throw new Error("Epoch number cannot be negative");
+    throw new Error('Epoch number cannot be negative');
   }
 
   const slotDuration = SLOT_DURATION_MS * SLOTS_PER_EPOCH;

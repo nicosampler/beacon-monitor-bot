@@ -1,5 +1,6 @@
-import { env } from "@/src/env.js";
-import { RateLimiterMemory } from "rate-limiter-flexible";
+import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
+
+import { env } from '@/src/env.js';
 
 // Singleton instance
 let instance: RateLimiterMemory | null = null;
@@ -10,24 +11,22 @@ function getRateLimiter(): RateLimiterMemory {
     instance = new RateLimiterMemory({
       points: env.BEACON_API_REQUEST_PER_SECOND,
       duration: 1, // Per second
-      keyPrefix: "",
+      keyPrefix: '',
     });
   }
   return instance;
 }
 
 // Function to limit requests
-export async function limitRequests<T>(): Promise<T> {
+export async function limitRequests(): Promise<void> {
   const limiter = getRateLimiter();
   try {
     // Consume a point from rate limiter
-    await limiter.consume("");
-  } catch (err: any) {
-    if (err.msBeforeNext) {
+    await limiter.consume('');
+  } catch (err) {
+    if (err instanceof RateLimiterRes && 'msBeforeNext' in err) {
       // Delay the request if it exceeds the limit
-      await new Promise((resolve) =>
-        setTimeout(resolve, err.msBeforeNext + 500)
-      );
+      await new Promise((resolve) => setTimeout(resolve, err.msBeforeNext + 500));
       return limitRequests();
     }
     throw err;

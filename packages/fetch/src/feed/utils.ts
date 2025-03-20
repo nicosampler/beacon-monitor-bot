@@ -1,26 +1,27 @@
-import { getPrisma } from "@/src/lib/prisma.js";
-import { Prisma, LastSummaryUpdate } from "@prisma/client";
-import { VALIDATOR_STATUS } from "@/src/constants/index.js";
-import memoizee from "memoizee";
-import ms from "ms";
-import { env } from "@/src/env.js";
+import { Prisma, LastSummaryUpdate } from '@prisma/client';
+import memoizee from 'memoizee';
+import ms from 'ms';
+
+import { VALIDATOR_STATUS } from '@/src/constants/index.js';
+import { env } from '@/src/env.js';
+import { getPrisma } from '@/src/lib/prisma.js';
 const prisma = getPrisma();
 
 export const db_getLastSlot = async () =>
   await prisma.slot
-    .findFirst({ orderBy: { slot: "desc" }, select: { slot: true } })
+    .findFirst({ orderBy: { slot: 'desc' }, select: { slot: true } })
     .then((d) => d?.slot);
 
 export const db_getLastSlotWithAttestations = async () =>
   await prisma.slot.findFirst({
     where: { attestationsFetched: true },
-    orderBy: { slot: "desc" },
+    orderBy: { slot: 'desc' },
     select: { slot: true },
   });
 
 export const db_getLastSlotInCommittee = async () =>
   await prisma.committee.findFirst({
-    orderBy: { slot: "desc" },
+    orderBy: { slot: 'desc' },
   });
 
 export const db_getSlotsByRange = async (start: number, end: number) => {
@@ -45,7 +46,7 @@ export const db_existCommitteeForSlot = async (slot: number) => {
 export const db_getLastSlotWithSyncRewards = async () =>
   await prisma.slot.findFirst({
     where: { blockAndSyncRewardsFetched: true },
-    orderBy: { slot: "desc" },
+    orderBy: { slot: 'desc' },
     select: { slot: true },
   });
 
@@ -59,8 +60,8 @@ export const db_getSlotByNumbers = async (slots: number[]) => {
 export const db_getLastUnfetchedSlot = async () => {
   const res = await prisma.slot.findMany({
     where: { attestationsFetched: false },
-    distinct: ["slot"],
-    orderBy: { slot: "asc" },
+    distinct: ['slot'],
+    orderBy: { slot: 'asc' },
   });
 
   return res[0];
@@ -71,7 +72,7 @@ export const db_getLastProcessedEpoch = async () =>
     where: {
       rewardsFetched: true,
     },
-    orderBy: { epoch: "desc" },
+    orderBy: { epoch: 'desc' },
     select: { epoch: true },
   });
 
@@ -100,9 +101,11 @@ export const db_getUnprocessedSlots = async ({
     take,
   });
 
-export async function updateLastSummaryUpdate<
-  K extends keyof LastSummaryUpdate,
->(key: K, value: LastSummaryUpdate[K], tx?: Prisma.TransactionClient) {
+export async function updateLastSummaryUpdate<K extends keyof LastSummaryUpdate>(
+  key: K,
+  value: LastSummaryUpdate[K],
+  tx?: Prisma.TransactionClient,
+) {
   const client = tx || prisma;
 
   await client.lastSummaryUpdate.upsert({
@@ -110,32 +113,24 @@ export async function updateLastSummaryUpdate<
     update: { [key]: value },
     create: {
       id: 1,
-      hourlyValidatorStats:
-        key === "hourlyValidatorStats" ? (value as Date) : null,
-      dailyValidatorStats:
-        key === "dailyValidatorStats" ? (value as Date) : null,
-      weeklyValidatorStats:
-        key === "weeklyValidatorStats" ? (value as Date) : null,
-      monthlyValidatorStats:
-        key === "monthlyValidatorStats" ? (value as Date) : null,
-      yearlyValidatorStats:
-        key === "yearlyValidatorStats" ? (value as Date) : null,
+      hourlyValidatorStats: key === 'hourlyValidatorStats' ? (value as Date) : null,
+      dailyValidatorStats: key === 'dailyValidatorStats' ? (value as Date) : null,
+      weeklyValidatorStats: key === 'weeklyValidatorStats' ? (value as Date) : null,
+      monthlyValidatorStats: key === 'monthlyValidatorStats' ? (value as Date) : null,
+      yearlyValidatorStats: key === 'yearlyValidatorStats' ? (value as Date) : null,
     },
   });
 }
 
 export async function getHighestValidatorId(): Promise<number> {
   const highestValidator = await prisma.validator.findFirst({
-    orderBy: { id: "desc" },
+    orderBy: { id: 'desc' },
     select: { id: true },
   });
   return highestValidator?.id ?? -1;
 }
 
-async function fetchValidatorsBatch(
-  skip: number,
-  take: number
-): Promise<number[]> {
+async function fetchValidatorsBatch(skip: number, take: number): Promise<number[]> {
   // Fetch validators with pagination
   const validators = await prisma.validator.findMany({
     where: {
@@ -163,10 +158,7 @@ export const getActiveValidators = memoizee(
     let currentBatch = 0;
 
     while (true) {
-      const validators = await fetchValidatorsBatch(
-        currentBatch * batchSize,
-        batchSize
-      );
+      const validators = await fetchValidatorsBatch(currentBatch * batchSize, batchSize);
 
       allValidators = [...allValidators, ...validators];
 
@@ -177,8 +169,6 @@ export const getActiveValidators = memoizee(
     return allValidators;
   },
   {
-    maxAge: ms(
-      `${env.BEACON_SLOT_DURATION_IN_SECONDS * env.BEACON_SLOTS_PER_EPOCH * 5} seconds`
-    ),
-  }
+    maxAge: ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS * env.BEACON_SLOTS_PER_EPOCH * 5} seconds`),
+  },
 );

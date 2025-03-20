@@ -1,12 +1,10 @@
-import { instance } from "@/src/execution/utils/instance.js";
-import {
-  Blockscout_Blocks,
-  Etherscan_BlockReward,
-} from "@/src/execution/types.js";
-import { env } from "@/src/env.js";
-import pRetry from "p-retry";
-import { AxiosResponse } from "axios";
-import { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from '@prisma/client/runtime/library';
+import { AxiosResponse } from 'axios';
+import pRetry from 'p-retry';
+
+import { env } from '@/src/env.js';
+import { Blockscout_Blocks, Etherscan_BlockReward } from '@/src/execution/types.js';
+import { instance } from '@/src/execution/utils/instance.js';
 
 export type BlockResponse = {
   address: string;
@@ -16,7 +14,7 @@ export type BlockResponse = {
 };
 
 export async function getBlock(blockNumber: number): Promise<BlockResponse> {
-  let lastError: any;
+  let lastError: unknown;
 
   // First endpoint is blockscout, second is etherscan
   const endpoints = [
@@ -24,16 +22,12 @@ export async function getBlock(blockNumber: number): Promise<BlockResponse> {
       url: `${env.EXECUTION_API_URL}/api/v2/blocks/${blockNumber}`,
       process: (response: AxiosResponse<Blockscout_Blocks>) => {
         const blockInfo = response.data;
-        const minerReward = blockInfo.rewards.find(
-          (r) => r.type === "Miner Reward"
-        );
+        const minerReward = blockInfo.rewards.find((r) => r.type === 'Miner Reward');
 
         const result: BlockResponse = {
           address: blockInfo.miner.hash,
           timestamp: new Date(blockInfo.timestamp),
-          amount: minerReward
-            ? new Decimal(minerReward.reward)
-            : new Decimal(0),
+          amount: minerReward ? new Decimal(minerReward.reward) : new Decimal(0),
           blockNumber: blockInfo.height,
         };
         return result;
@@ -65,7 +59,7 @@ export async function getBlock(blockNumber: number): Promise<BlockResponse> {
         {
           retries: 2,
           minTimeout: 1000,
-        }
+        },
       );
     } catch (error) {
       lastError = error;

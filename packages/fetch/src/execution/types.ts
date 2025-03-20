@@ -1,15 +1,15 @@
 export type Blockscout_Miner = {
   ens_domain_name: string | null;
   hash: string; // miner address
-  implementations: any[];
+  implementations: unknown[];
   is_contract: boolean;
   is_verified: boolean;
-  metadata: any | null;
+  metadata: unknown | null;
   name: string | null;
-  private_tags: any[];
+  private_tags: unknown[];
   proxy_type: string | null;
-  public_tags: any[];
-  watchlist_names: any[];
+  public_tags: unknown[];
+  watchlist_names: unknown[];
 };
 
 export type Blockscout_Reward = {

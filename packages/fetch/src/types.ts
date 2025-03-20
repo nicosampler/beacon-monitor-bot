@@ -1,4 +1,4 @@
-export type TimeFrame = "hourly" | "daily" | "weekly" | "monthly" | "yearly";
+export type TimeFrame = 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 declare global {
   namespace PrismaJson {

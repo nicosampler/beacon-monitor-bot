@@ -1,15 +1,16 @@
-import { getMissedAttestations_db } from "@/src/prisma/getMissedAttestations.js";
-import { getUserValidators_db } from "@/src/prisma/getUserValidators.js";
-import { UserInfo, ValidatorStatusesByWithdrawal } from "@/src/routes/types.js";
-import { UserParams } from "@/src/routes/user/schema.js";
-import { getSlotInfo } from "@/src/utils/getSlotInfo.js";
-import { getValidatorStatuses } from "@/src/utils/getValidatorStatuses.js";
-import { Request, Response } from "express";
-import { cache } from "@/src/lib/cache.js";
+import { Request, Response } from 'express';
+
+import { cache } from '@/src/lib/cache.js';
+import { getMissedAttestations_db } from '@/src/prisma/getMissedAttestations.js';
+import { getUserValidators_db } from '@/src/prisma/getUserValidators.js';
+import { UserInfo, ValidatorStatusesByWithdrawal } from '@/src/routes/types.js';
+import { UserParams } from '@/src/routes/user/schema.js';
+import { getSlotInfo } from '@/src/utils/getSlotInfo.js';
+import { getValidatorStatuses } from '@/src/utils/getValidatorStatuses.js';
 
 export async function getUserInfoController(
   req: Request<UserParams>,
-  res: Response
+  res: Response,
 ): Promise<Response> {
   const cacheKey = `userInfo:${req.params.loginId}`;
 
@@ -21,13 +22,13 @@ export async function getUserInfoController(
   try {
     const user = await getUserValidators_db(req.params.loginId);
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: 'User not found' });
     }
 
     const slotInfo = await getSlotInfo();
     const missedAttestations = await getMissedAttestations_db(
       Number(user.id),
-      slotInfo.maxSafeSlotToQuery
+      slotInfo.maxSafeSlotToQuery,
     );
 
     // Process validators by withdrawal address
@@ -39,7 +40,7 @@ export async function getUserInfoController(
         group.validators,
         user.inactiveOnMissedAttestations,
         missedAttestations,
-        slotInfo.maxSafeSlotToQuery
+        slotInfo.maxSafeSlotToQuery,
       );
     }
 
@@ -52,7 +53,7 @@ export async function getUserInfoController(
     cache.set(cacheKey, response);
     return res.json(response);
   } catch (error) {
-    console.error("Error fetching user info:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error('Error fetching user info:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

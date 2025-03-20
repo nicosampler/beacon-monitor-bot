@@ -1,5 +1,5 @@
-import { getPrisma } from "@/src/config/prisma.js";
-import { AppError } from "@/src/utils/errors/AppError.js";
+import { getPrisma } from '@/src/config/prisma.js';
+import { AppError } from '@/src/utils/errors/AppError.js';
 
 const prisma = getPrisma();
 
@@ -19,10 +19,6 @@ export function getFeeRewardAddresses_db(userId?: number) {
       },
     })
     .catch((error) => {
-      throw new AppError(
-        "Error getting fee reward addresses",
-        "BD_ERROR",
-        error
-      );
+      throw new AppError('Error getting fee reward addresses', 'BD_ERROR', error);
     });
 }

@@ -1,15 +1,12 @@
-import { env } from "@/src/env.js";
-import { getPrisma } from "@/src/lib/prisma.js";
-import {
-  getTimestampFromSlotNumber,
-  slotsIn1h,
-  VALIDATOR_STATUS,
-} from "@/src/utils/beacon.js";
-import { Committee } from "@prisma/client";
+import { Committee } from '@prisma/client';
+
+import { env } from '@/src/env.js';
+import { getPrisma } from '@/src/lib/prisma.js';
+import { getTimestampFromSlotNumber, slotsIn1h, VALIDATOR_STATUS } from '@/src/utils/beacon.js';
 
 export async function getMissedAttestations_db(
   userId: number,
-  maxSlotToQuery: number
+  maxSlotToQuery: number,
 ): Promise<(Committee & { timestamp: number })[]> {
   const prisma = getPrisma();
 

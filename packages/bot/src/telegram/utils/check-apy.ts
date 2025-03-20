@@ -1,9 +1,7 @@
-import { formatEther } from "ethers/lib/utils.js";
+import { formatEther } from 'ethers/lib/utils.js';
 
 const _dailyRewards =
-  (BigInt(
-    912756055073 + 1954112050541 + 1021604437463 + 134238674013 + 729367282856
-  ) *
+  (BigInt(912756055073 + 1954112050541 + 1021604437463 + 134238674013 + 729367282856) *
     BigInt(10 ** 18)) /
   BigInt(32000000000);
 

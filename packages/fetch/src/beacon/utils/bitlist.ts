@@ -11,7 +11,7 @@ export function isBitSet(bitList: Uint8Array, i: number): boolean {
   const bits = bitList[byte];
   const bitPosition = i % 8;
   // bitwise AND operation
-  return (bits & (1 << bitPosition)) > 0;
+  return (bits! & (1 << bitPosition)) > 0;
 }
 
 /**
@@ -23,7 +23,7 @@ export function isBitSet(bitList: Uint8Array, i: number): boolean {
  * @throws {Error} Throws an error if the hexadecimal string cannot be parsed.
  */
 export function convertHexStringToByteArray(hex: string): Uint8Array {
-  const cleanedHex = hex.startsWith("0x") ? hex.substring(2) : hex;
+  const cleanedHex = hex.startsWith('0x') ? hex.substring(2) : hex;
   const length = cleanedHex.length;
   const byteArray = new Uint8Array(length / 2);
 
@@ -62,10 +62,10 @@ export function findLastSetBitIndex(list: Uint8Array): number {
 export function convertBitsToString(list: Uint8Array): string {
   const lastBixDataIndex = findLastSetBitIndex(list);
 
-  let buf = "";
+  let buf = '';
   for (let i = 0; i < lastBixDataIndex; i++) {
     const bit = isBitSet(list, i);
-    buf += bit ? "1" : "0";
+    buf += bit ? '1' : '0';
   }
   return buf;
 }
@@ -79,48 +79,10 @@ export function convertBitsToString(list: Uint8Array): string {
  */
 export function formatBitsAsByteBlocks(list: string): string {
   return list
-    .split("")
+    .split('')
     .reduce(
       (acc, bit, index) =>
-        acc +
-        bit +
-        ((index + 1) % 8 === 0 && index + 1 !== list.length ? " " : ""),
-      ""
+        acc + bit + ((index + 1) % 8 === 0 && index + 1 !== list.length ? ' ' : ''),
+      '',
     );
 }
-
-/**
- * Performs a bitwise OR operation between two Uint8Array objects.
- * Each array represents a binary string in byte form.
- * @param {Uint8Array} array1 - The first byte array.
- * @param {Uint8Array} array2 - The second byte array.
- * @return {Uint8Array} - A new Uint8Array resulting from the bitwise OR operation.
- */
-export function bitwiseOrUint8Arrays(array1: Uint8Array, array2: Uint8Array) {
-  if (array1.length !== array2.length)
-    throw new Error("Arrays must have the same length");
-
-  const result = new Uint8Array(array1.length);
-  for (let i = 0; i < array1.length; i++) {
-    result[i] = array1[i] | array2[i];
-  }
-  return result;
-}
-
-// The same committeeIndex can appear multiple times for the same slot
-// because validators may attest to different block heads.
-// We need to merge the aggregation bits for these occurrences to obtain the complete list of attesters.
-// the aggregation bits don't overlap among repeated committeeIndexes.
-// const mergedAggregationBitsMap = attestations.reduce((acc, attestation) => {
-//   const key = attestation.data.index;
-
-//   const current = convertHexStringToByteArray(attestation.aggregation_bits);
-
-//   if (!acc[key]) {
-//     acc[key] = current;
-//   } else {
-//     acc[key] = bitwiseOrUint8Arrays(acc[key], current);
-//   }
-
-//   return acc;
-// }, {} as Record<string, Uint8Array>);

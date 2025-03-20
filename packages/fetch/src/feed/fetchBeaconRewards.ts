@@ -1,14 +1,13 @@
-import ms from "ms";
-import { Prisma } from "@prisma/client";
+import { Prisma } from '@prisma/client';
+import chunk from 'lodash/chunk.js';
+import ms from 'ms';
 
-import { getAttestationRewards } from "@/src/beacon/endpoints.js";
-import { CustomLogger } from "@/src/lib/pino.js";
-import { createEpoch } from "@/src/feed/utils.js";
-import chunk from "lodash/chunk.js";
-import { getPrisma } from "@/src/lib/prisma.js";
-
-import { getTimestampFromEpochNumber } from "@/src/beacon/utils/time.js";
-import { convertToUTC } from "@/src/utils/date/index.js";
+import { getAttestationRewards } from '@/src/beacon/endpoints.js';
+import { getTimestampFromEpochNumber } from '@/src/beacon/utils/time.js';
+import { createEpoch } from '@/src/feed/utils.js';
+import { CustomLogger } from '@/src/lib/pino.js';
+import { getPrisma } from '@/src/lib/prisma.js';
+import { convertToUTC } from '@/src/utils/date/index.js';
 
 const prisma = getPrisma();
 
@@ -29,10 +28,10 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
     const rewardsData = response.data.total_rewards.map((validatorInfo) => ({
       validatorIndex: Number(validatorInfo.validator_index),
       epoch: epoch,
-      head: BigInt(validatorInfo.head || "0"),
-      target: BigInt(validatorInfo.target || "0"),
-      source: BigInt(validatorInfo.source || "0"),
-      inactivity: BigInt(validatorInfo.inactivity || "0"),
+      head: BigInt(validatorInfo.head || '0'),
+      target: BigInt(validatorInfo.target || '0'),
+      source: BigInt(validatorInfo.source || '0'),
+      inactivity: BigInt(validatorInfo.inactivity || '0'),
     }));
 
     await prisma.$transaction(
@@ -50,9 +49,9 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
           const values = batch
             .map(
               (reward) =>
-                `(${reward.validatorIndex}, ${hour}, '${date}', ${reward.head}, ${reward.target}, ${reward.source}, ${reward.inactivity})`
+                `(${reward.validatorIndex}, ${hour}, '${date}', ${reward.head}, ${reward.target}, ${reward.source}, ${reward.inactivity})`,
             )
-            .join(",");
+            .join(',');
 
           return tx.$executeRaw`
             INSERT INTO temp_validator_stats VALUES ${Prisma.raw(values)}
@@ -94,8 +93,8 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
         });
       },
       {
-        timeout: ms("10m"),
-      }
+        timeout: ms('10m'),
+      },
     );
     logger.info(`Done.`);
   } catch (error) {
@@ -104,9 +103,6 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
     //   logger.error(error.message, error);
     //   return;
     // }
-    logger.error(
-      `Error fetching or inserting beacon rewards for epoch ${epoch}`,
-      error
-    );
+    logger.error(`Error fetching or inserting beacon rewards for epoch ${epoch}`, error);
   }
 }

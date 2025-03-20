@@ -1,9 +1,8 @@
-import chunk from "lodash/chunk.js";
+import chunk from 'lodash/chunk.js';
 
-import { getCommittees } from "@/src/beacon/endpoints.js";
-import { getPrisma } from "@/src/lib/prisma.js";
-import { CustomLogger } from "@/src/lib/pino.js";
-import { GetCommittees } from "@/src/beacon/types.js";
+import { getCommittees } from '@/src/beacon/endpoints.js';
+import { CustomLogger } from '@/src/lib/pino.js';
+import { getPrisma } from '@/src/lib/prisma.js';
 
 type Committee = {
   slot: string;
@@ -28,33 +27,28 @@ function logCommitteeInfo(
     index: string;
     validators: string[];
   }>,
-  slotUpserts: Array<{ slot: number }>
+  slotUpserts: Array<{ slot: number }>,
 ): void {
   const groupedCommittees = fetchedCommittees.reduce(
     (acc, committee) => {
       if (!acc[committee.slot]) {
         acc[committee.slot] = [];
       }
-      acc[committee.slot].push(+committee.index);
+      acc[committee.slot]!.push(+committee.index);
       return acc;
     },
-    {} as Record<string, number[]>
+    {} as Record<string, number[]>,
   );
 
   const logMessage = Object.entries(groupedCommittees)
     .map(([slot, indexes]) => `${slot}:${indexes.length}`)
-    .join(",");
+    .join(',');
 
-  logger.info(
-    `New slots (${slotUpserts.length}) - Committees: ${logMessage || "null"}`
-  );
+  logger.info(`New slots (${slotUpserts.length}) - Committees: ${logMessage || 'null'}`);
 }
 
 // Helper function to prepare upsert data
-function prepareUpsertData(
-  _committees: Committee[],
-  lastSlotInCommittee: number
-) {
+function prepareUpsertData(_committees: Committee[], lastSlotInCommittee: number) {
   // filter out committees that are not already in the committee table
   // as the response from the API contains slots previous to the fetchedSlot
   const committees = _committees.filter((c) => +c.slot >= lastSlotInCommittee);
@@ -72,7 +66,7 @@ function prepareUpsertData(
       index: +committee.index, // index within the slot
       aggregationBitsIndex: index, // position in the validators array (indexOf)
       validatorIndex: +validatorIndex,
-    }))
+    })),
   );
 
   return {
@@ -83,10 +77,7 @@ function prepareUpsertData(
 }
 
 // Helper function to execute the transaction
-async function executeEpochTransaction(
-  uniqueSlots: number[],
-  committeeUpserts: CommitteeUpsert[]
-) {
+async function executeEpochTransaction(uniqueSlots: number[], committeeUpserts: CommitteeUpsert[]) {
   await prisma.$executeRaw`
     INSERT INTO "Slot" (slot, "attestationsFetched")
     SELECT unnest(${uniqueSlots}::integer[]), false
@@ -108,13 +99,10 @@ async function executeEpochTransaction(
 export async function fetchCommittee(
   logger: CustomLogger,
   epochToFetch: number,
-  lastSlotInCommittee: number
+  lastSlotInCommittee: number,
 ): Promise<void> {
   const committees = await getCommittees(epochToFetch);
   const preparedData = prepareUpsertData(committees, lastSlotInCommittee);
   logCommitteeInfo(logger, committees, preparedData.slotUpserts);
-  await executeEpochTransaction(
-    preparedData.uniqueSlots,
-    preparedData.committeeUpserts
-  );
+  await executeEpochTransaction(preparedData.uniqueSlots, preparedData.committeeUpserts);
 }

@@ -1,42 +1,38 @@
-import format from "date-fns/format";
-import { formatEther } from "ethers/lib/utils.js";
-import { bot } from "@/src/config/index.js";
-import { getPrisma } from "@/src/config/prisma.js";
-import { tokenPrice } from "@/src/scheduler/tasks/tokenPriceTask.js";
-import {
-  editMessageText,
-  sendMessage,
-} from "@/src/telegram/utils/messaging.js";
-import { formatNumber } from "@/src/utils/misc.js";
-import {
-  epochsIn1h,
-  getEpochFromSlot,
-  getEpochSlots,
-  slotsIn1h,
-  VALIDATOR_STATUS,
-} from "@/src/utils/beacon.js";
-import { AppError } from "@/src/utils/errors/AppError.js";
-import { getWithdrawableAmountByUserId } from "@/src/utils/getWithdrawableAmountByUserId.js";
-import { getSlotNumberFromTimestamp } from "@/src/utils/beacon.js";
+import { Committee, User, Validator, WithdrawalAddress } from '@prisma/client';
+import format from 'date-fns/format';
+import { formatEther } from 'ethers/lib/utils.js';
+import memoizee from 'memoizee';
+import ms from 'ms';
+
+import { getPrisma } from '@/src/config/prisma.js';
 import {
   TOKEN_SYMBOL,
   FEE_REWARDS_IN_STABLE,
   FEE_REWARDS_SYMBOL,
   TG_ERROR_SAME_MESSAGE,
   DAYS_IN_YEAR,
-  DAYS_IN_MONTH,
-} from "@/src/constants/index.js";
-import { Committee, User, Validator, WithdrawalAddress } from "@prisma/client";
-import { CustomLogger } from "@/src/lib/pino.js";
-import { notifyUnderPerformance } from "@/src/scheduler/tasks/notifyUnderPerformance.js";
-import { notifyInactiveValidators } from "@/src/scheduler/tasks/notifyInactiveValidators.js";
-import memoizee from "memoizee";
-import ms from "ms";
-import { env } from "@/src/env.js";
+} from '@/src/constants/index.js';
+import { env } from '@/src/env.js';
+import { CustomLogger } from '@/src/lib/pino.js';
+import { notifyInactiveValidators } from '@/src/scheduler/tasks/notifyInactiveValidators.js';
+import { notifyUnderPerformance } from '@/src/scheduler/tasks/notifyUnderPerformance.js';
+import { tokenPrice } from '@/src/scheduler/tasks/tokenPriceTask.js';
 import {
   getMonthlyExecutionRewardsMemoized,
   getMonthlyValidatorStatsMemoized,
-} from "@/src/scheduler/tasks/utils/monthly.js";
+} from '@/src/scheduler/tasks/utils/monthly.js';
+import { editMessageText, sendMessage } from '@/src/telegram/utils/messaging.js';
+import {
+  epochsIn1h,
+  getEpochFromSlot,
+  getEpochSlots,
+  slotsIn1h,
+  VALIDATOR_STATUS,
+} from '@/src/utils/beacon.js';
+import { getSlotNumberFromTimestamp } from '@/src/utils/beacon.js';
+import { AppError } from '@/src/utils/errors/AppError.js';
+import { getWithdrawableAmountByUserId } from '@/src/utils/getWithdrawableAmountByUserId.js';
+import { formatNumber } from '@/src/utils/misc.js';
 
 const prisma = getPrisma();
 const scale = BigInt(10) ** BigInt(18);
@@ -86,16 +82,15 @@ interface UserStats {
 async function slotsInfo() {
   const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
 
-  const headSlot = currentSlot - Number(process.env.BEACON_DELAY_SLOTS_TO_HEAD);
+  const headSlot = currentSlot - Number(env.BEACON_DELAY_SLOTS_TO_HEAD);
   const headEpoch = getEpochFromSlot(headSlot);
   const headEpochSlots = getEpochSlots(headEpoch);
 
-  const maxSlotToQuery =
-    headEpochSlots.startSlot - 1 - env.BEACON_SLOTS_PER_EPOCH;
+  const maxSlotToQuery = headEpochSlots.startSlot - 1 - env.BEACON_SLOTS_PER_EPOCH;
 
   const lastSlotProcessed = await prisma.slot.findFirst({
     where: { attestationsFetched: true },
-    orderBy: { slot: "desc" },
+    orderBy: { slot: 'desc' },
   });
 
   // The bot is syncing if the last slot processed is less than
@@ -121,7 +116,7 @@ function getValidatorStatuses(
   user: User & { validators: Validator[] },
   beaconActiveValidators: Validator[],
   userMissedAttestations: Committee[],
-  maxEpochToQuery: number
+  maxEpochToQuery: number,
 ): ValidatorByStatus {
   const inactiveIds: number[] = [];
   for (const validator of beaconActiveValidators) {
@@ -133,7 +128,7 @@ function getValidatorStatuses(
       .filter(
         // Get the last N epochs where N is the user's inactivity threshold.
         // Each validator attest once per epoch.
-        (epoch) => epoch > maxEpochToQuery - user.inactiveOnMissedAttestations
+        (epoch) => epoch > maxEpochToQuery - user.inactiveOnMissedAttestations,
       );
 
     // Skip if not enough missed attestations
@@ -155,14 +150,14 @@ function getValidatorStatuses(
       .filter(
         (v) =>
           v.status === VALIDATOR_STATUS.active_slashed ||
-          v.status === VALIDATOR_STATUS.exited_slashed
+          v.status === VALIDATOR_STATUS.exited_slashed,
       )
       .map((v) => v.id),
     exitedIds: user.validators
       .filter(
         (v) =>
           v.status === VALIDATOR_STATUS.exited_unslashed ||
-          v.status === VALIDATOR_STATUS.withdrawal_done
+          v.status === VALIDATOR_STATUS.withdrawal_done,
       )
       .map((v) => v.id),
   };
@@ -176,41 +171,23 @@ async function getUserAllStats(
     validators: Validator[];
     withdrawalAddresses: WithdrawalAddress[];
   },
-  logger: CustomLogger
+  logger: CustomLogger,
 ): Promise<UserStats> {
   const beaconActiveValidators = user.validators.filter(
     (v) =>
-      v.status === VALIDATOR_STATUS.active_ongoing ||
-      v.status === VALIDATOR_STATUS.active_exiting
+      v.status === VALIDATOR_STATUS.active_ongoing || v.status === VALIDATOR_STATUS.active_exiting,
   );
 
-  const missedAttestations = await getMissedAttestations(
-    Number(user.id),
-    maxSlotToQuery
-  );
+  const missedAttestations = await getMissedAttestations(Number(user.id), maxSlotToQuery);
 
-  const [
-    validatorStatuses,
-    performance1h,
-    balanceStats,
-    tableStats,
-    withdrawable,
-  ] = await Promise.all([
-    getValidatorStatuses(
-      user,
-      beaconActiveValidators,
-      missedAttestations,
-      maxEpochToQuery
-    ),
-    get1hPerformance(
-      syncing,
-      missedAttestations,
-      beaconActiveValidators.length
-    ),
-    getUserBalance(user.validators),
-    calculateTableStats(user, logger),
-    getWithdrawableAmountByUserId(Number(user.id)),
-  ]);
+  const [validatorStatuses, performance1h, balanceStats, tableStats, withdrawable] =
+    await Promise.all([
+      getValidatorStatuses(user, beaconActiveValidators, missedAttestations, maxEpochToQuery),
+      get1hPerformance(syncing, missedAttestations, beaconActiveValidators.length),
+      getUserBalance(user.validators),
+      calculateTableStats(user, logger),
+      getWithdrawableAmountByUserId(Number(user.id)),
+    ]);
 
   return {
     performance1h,
@@ -231,7 +208,7 @@ async function getUserAllStats(
 async function get1hPerformance(
   syncing: boolean,
   missedAttestations: Committee[],
-  userActiveValidators: number
+  userActiveValidators: number,
 ) {
   if (syncing) return null;
 
@@ -239,9 +216,7 @@ async function get1hPerformance(
   const expectedAttestations = epochsIn1h * userActiveValidators;
 
   const performancePercentage =
-    ((expectedAttestations - missedAttestations.length) /
-      expectedAttestations) *
-    100;
+    ((expectedAttestations - missedAttestations.length) / expectedAttestations) * 100;
 
   return performancePercentage;
 }
@@ -249,7 +224,7 @@ async function get1hPerformance(
 function getUserBalance(validators: Validator[]) {
   const totalBalance = validators.reduce(
     (acc, validator) => acc + BigInt(validator.balance.toString()),
-    BigInt(0)
+    BigInt(0),
   );
 
   const total = Number(totalBalance) / Number(tokenUnit);
@@ -261,10 +236,7 @@ function getUserBalance(validators: Validator[]) {
 }
 
 // Get all the missed attestations in the last hour for the user's validators
-async function getMissedAttestations(
-  userId: number,
-  maxSlotToQuery: number
-): Promise<Committee[]> {
+async function getMissedAttestations(userId: number, maxSlotToQuery: number): Promise<Committee[]> {
   return prisma.$queryRaw<Committee[]>`
     WITH slots AS (
       SELECT ${maxSlotToQuery - slotsIn1h} as slot_start, ${maxSlotToQuery} as slot_end
@@ -286,7 +258,7 @@ async function getMissedAttestations(
       AND c.slot BETWEEN s.slot_start AND s.slot_end
       AND (
         c."attestationDelay" IS NULL 
-        OR c."attestationDelay" > ${Number(process.env.BEACON_MAX_ATTESTATION_DELAY)}
+        OR c."attestationDelay" > ${env.BEACON_MAX_ATTESTATION_DELAY}
       )
     ) c ON true
     ORDER BY c.slot DESC
@@ -327,11 +299,11 @@ const getDailyValidatorStatsMemoized = memoizee(
         inactivity: string;
         syncCommittee: string;
         blockReward: string;
-        attestationsMissed: BigInt;
+        attestationsMissed: bigint;
       }[]
     >(query, userId);
   },
-  { promise: true, maxAge: ms("15m") }
+  { promise: true, maxAge: ms('15m') },
 );
 
 // Memoized version of getDailyExecutionRewards
@@ -358,7 +330,7 @@ const getDailyExecutionRewardsMemoized = memoizee(
       }[]
     >(query, userId);
   },
-  { promise: true, maxAge: ms("15m") }
+  { promise: true, maxAge: ms('15m') },
 );
 
 // Memoized version of getWeeklyValidatorStats
@@ -394,11 +366,11 @@ const getWeeklyValidatorStatsMemoized = memoizee(
         inactivity: string;
         syncCommittee: string;
         blockReward: string;
-        attestationsMissed: BigInt;
+        attestationsMissed: bigint;
       }[]
     >(query, userId);
   },
-  { promise: true, maxAge: ms("1h") }
+  { promise: true, maxAge: ms('1h') },
 );
 
 // Memoized version of getWeeklyExecutionRewards
@@ -424,14 +396,14 @@ const getWeeklyExecutionRewardsMemoized = memoizee(
       }[]
     >(query, userId);
   },
-  { promise: true, maxAge: ms("1h") }
+  { promise: true, maxAge: ms('1h') },
 );
 
 // Update calculateTableStats to include weekly stats
 async function calculateTableStats(
   user: User & { validators: Validator[] },
-  logger: CustomLogger
-): Promise<UserStats["rewards"]> {
+  logger: CustomLogger,
+): Promise<UserStats['rewards']> {
   logger.info(`stats`);
   const [
     dailyValidatorStats,
@@ -450,7 +422,7 @@ async function calculateTableStats(
   ]);
   logger.info(`stats done`);
 
-  if (!dailyValidatorStats.length) return null;
+  if (dailyValidatorStats.length) return null;
 
   // Calculate daily stats (existing code)
   const totalDailyConsensus =
@@ -461,19 +433,12 @@ async function calculateTableStats(
     BigInt(dailyValidatorStats[0].syncCommittee) +
     BigInt(dailyValidatorStats[0].blockReward);
 
-  const totalDailyConsensusInWei =
-    (BigInt(totalDailyConsensus) * scale) / tokenUnit;
-  const totalDailyConsensusEth = Number(
-    formatEther(totalDailyConsensusInWei.toString())
-  );
-  const totalDailyExecution = Number(
-    formatEther(dailyExecutionRewards[0].total.toString())
-  );
+  const totalDailyConsensusInWei = (BigInt(totalDailyConsensus) * scale) / tokenUnit;
+  const totalDailyConsensusEth = Number(formatEther(totalDailyConsensusInWei.toString()));
+  const totalDailyExecution = Number(formatEther(dailyExecutionRewards[0].total.toString()));
   const totalDailyUsd =
     totalDailyConsensusEth * tokenPrice +
-    (FEE_REWARDS_IN_STABLE
-      ? totalDailyExecution
-      : totalDailyExecution * tokenPrice);
+    (FEE_REWARDS_IN_STABLE ? totalDailyExecution : totalDailyExecution * tokenPrice);
 
   // Calculate weekly stats
   const totalWeeklyConsensus =
@@ -484,19 +449,12 @@ async function calculateTableStats(
     BigInt(weeklyValidatorStats[0].syncCommittee) +
     BigInt(weeklyValidatorStats[0].blockReward);
 
-  const totalWeeklyConsensusInWei =
-    (BigInt(totalWeeklyConsensus) * scale) / tokenUnit;
-  const totalWeeklyConsensusEth = Number(
-    formatEther(totalWeeklyConsensusInWei.toString())
-  );
-  const totalWeeklyExecution = Number(
-    formatEther(weeklyExecutionRewards[0].total.toString())
-  );
+  const totalWeeklyConsensusInWei = (BigInt(totalWeeklyConsensus) * scale) / tokenUnit;
+  const totalWeeklyConsensusEth = Number(formatEther(totalWeeklyConsensusInWei.toString()));
+  const totalWeeklyExecution = Number(formatEther(weeklyExecutionRewards[0].total.toString()));
   const totalWeeklyUsd =
     totalWeeklyConsensusEth * tokenPrice +
-    (FEE_REWARDS_IN_STABLE
-      ? totalWeeklyExecution
-      : totalWeeklyExecution * tokenPrice);
+    (FEE_REWARDS_IN_STABLE ? totalWeeklyExecution : totalWeeklyExecution * tokenPrice);
 
   const totalMonthlyConsensus =
     BigInt(monthlyValidatorStats[0].head) +
@@ -506,44 +464,34 @@ async function calculateTableStats(
     BigInt(monthlyValidatorStats[0].syncCommittee) +
     BigInt(monthlyValidatorStats[0].blockReward);
 
-  const totalMonthlyConsensusInWei =
-    (BigInt(totalMonthlyConsensus) * scale) / tokenUnit;
-  const totalMonthlyConsensusEth = Number(
-    formatEther(totalMonthlyConsensusInWei.toString())
-  );
+  const totalMonthlyConsensusInWei = (BigInt(totalMonthlyConsensus) * scale) / tokenUnit;
+  const totalMonthlyConsensusEth = Number(formatEther(totalMonthlyConsensusInWei.toString()));
 
-  const totalMonthlyExecution = Number(
-    formatEther(monthlyExecutionRewards[0].total.toString())
-  );
+  const totalMonthlyExecution = Number(formatEther(monthlyExecutionRewards[0].total.toString()));
 
   const totalMonthlyUsd =
     totalMonthlyConsensusEth * tokenPrice +
-    (FEE_REWARDS_IN_STABLE
-      ? totalMonthlyExecution
-      : totalMonthlyExecution * tokenPrice);
+    (FEE_REWARDS_IN_STABLE ? totalMonthlyExecution : totalMonthlyExecution * tokenPrice);
 
   const totalBalance =
     Number(
       user.validators.reduce(
         (acc, validator) => acc + BigInt(validator.balance.toString()),
-        BigInt(0)
-      )
+        BigInt(0),
+      ),
     ) / Number(tokenUnit);
 
   // Calculate APY
-  const dailyApy = calculateAPY_daily(
-    totalBalance,
-    totalDailyConsensusEth + totalDailyExecution
-  );
+  const dailyApy = calculateAPY_daily(totalBalance, totalDailyConsensusEth + totalDailyExecution);
 
   const weeklyApy = calculateAPY_weekly(
     totalBalance,
-    totalWeeklyConsensusEth + totalWeeklyExecution // Pasamos el total semanal directamente
+    totalWeeklyConsensusEth + totalWeeklyExecution, // Pasamos el total semanal directamente
   );
 
   const monthlyApy = calculateMonthlyAPY(
     totalBalance,
-    totalMonthlyConsensusEth + totalMonthlyExecution
+    totalMonthlyConsensusEth + totalMonthlyExecution,
   );
 
   return {
@@ -568,26 +516,17 @@ async function calculateTableStats(
   };
 }
 
-function calculateAPY_daily(
-  totalBalance: number,
-  dailyRewards: number
-): number {
+function calculateAPY_daily(totalBalance: number, dailyRewards: number): number {
   if (!totalBalance || !dailyRewards) return 0;
   return ((1 + dailyRewards / totalBalance) ** DAYS_IN_YEAR - 1) * 100;
 }
 
-function calculateAPY_weekly(
-  totalBalance: number,
-  weeklyRewards: number
-): number {
+function calculateAPY_weekly(totalBalance: number, weeklyRewards: number): number {
   if (!totalBalance || !weeklyRewards) return 0;
   return ((1 + weeklyRewards / totalBalance) ** (DAYS_IN_YEAR / 7) - 1) * 100;
 }
 
-function calculateMonthlyAPY(
-  totalBalance: number,
-  monthlyRewards: number
-): number {
+function calculateMonthlyAPY(totalBalance: number, monthlyRewards: number): number {
   if (!totalBalance || !monthlyRewards) return 0;
   return ((1 + monthlyRewards / totalBalance) ** (DAYS_IN_YEAR / 30) - 1) * 100;
 }
@@ -599,14 +538,9 @@ function formatStatsMessage(
     syncing: boolean;
     headSlot: number;
     maxSlotToQuery: number;
-  }
+  },
 ): string {
-  const {
-    performance1h: performance,
-    balance,
-    withdrawable,
-    validatorStats,
-  } = stats;
+  const { performance1h: performance, balance, withdrawable, validatorStats } = stats;
 
   const syncStatus = status.syncing
     ? `⚠️ ${status.headSlot - status.maxSlotToQuery} slots behind ⚠️`
@@ -617,76 +551,79 @@ function formatStatsMessage(
     ? `⚪️ ${validatorStats.activeIds.length + validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`
     : `🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`;
 
-  const dailyApy = calculateAPY_daily(
-    Number(balance.total),
-    stats.rewards.daily.consensus
-  ).toFixed(2);
+  const dailyApy = calculateAPY_daily(Number(balance.total), stats.rewards.daily.consensus).toFixed(
+    2,
+  );
 
   const weeklyApy = calculateAPY_weekly(
     Number(balance.total),
-    stats.rewards.weekly.consensus
+    stats.rewards.weekly.consensus,
   ).toFixed(2);
 
   const monthlyApy = calculateMonthlyAPY(
     Number(balance.total),
-    stats.rewards.monthly.consensus
+    stats.rewards.monthly.consensus,
   ).toFixed(2);
 
   const mainStats = [
-    `Last 1h perf: ${performance == null ? "-" : `${performance.toFixed(2)}%`}`,
+    `Last 1h perf: ${performance == null ? '-' : `${performance.toFixed(2)}%`}`,
     `Bal: ${balance.total} ${TOKEN_SYMBOL} $${balance.value}`,
     `Claimable: ${withdrawable.total} ${TOKEN_SYMBOL} $${withdrawable.value}`,
-  ].join("\n");
+  ].join('\n');
 
   const rewardsSection = [
     `Stats:`,
     `-----------------------------`,
     `    APY%  ${TOKEN_SYMBOL}   ${FEE_REWARDS_SYMBOL}   Total`,
-    `d:  ${dailyApy}  ${formatNumber(stats.rewards.daily.consensus, 3)}  ${formatNumber(stats.rewards.daily.execution, 3)}  ${formatNumber(stats.rewards.daily.usd, 4, "$")}`,
-    `w:  ${weeklyApy}  ${formatNumber(stats.rewards.weekly.consensus, 3)}  ${formatNumber(stats.rewards.weekly.execution, 3)}  ${formatNumber(stats.rewards.weekly.usd, 4, "$")}`,
-    `m:  ${monthlyApy}  ${formatNumber(stats.rewards.monthly.consensus, 3)}  ${formatNumber(stats.rewards.monthly.execution, 3)}  ${formatNumber(stats.rewards.monthly.usd, 4, "$")}`,
-  ].join("\n");
+    `d:  ${dailyApy}  ${formatNumber(stats.rewards.daily.consensus, 3)}  ${formatNumber(stats.rewards.daily.execution, 3)}  ${formatNumber(stats.rewards.daily.usd, 4, '$')}`,
+    `w:  ${weeklyApy}  ${formatNumber(stats.rewards.weekly.consensus, 3)}  ${formatNumber(stats.rewards.weekly.execution, 3)}  ${formatNumber(stats.rewards.weekly.usd, 4, '$')}`,
+    `m:  ${monthlyApy}  ${formatNumber(stats.rewards.monthly.consensus, 3)}  ${formatNumber(stats.rewards.monthly.execution, 3)}  ${formatNumber(stats.rewards.monthly.usd, 4, '$')}`,
+  ].join('\n');
 
   const footer = [
     `${TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}`,
-    `Updated: ${format(new Date(), "MM/dd hh:mmaaa")} UTC`,
-  ].join("\n");
+    `Updated: ${format(new Date(), 'MM/dd hh:mmaaa')} UTC`,
+  ].join('\n');
 
   // Combine all sections with proper HTML formatting
   return [
     ...(status.syncing
-      ? [`${syncStatus}`, "", `<code>${validatorStatus}</code>`]
+      ? [`${syncStatus}`, '', `<code>${validatorStatus}</code>`]
       : [`<code>${validatorStatus}</code>`]),
-    "", // empty line
+    '', // empty line
     `<pre language="c++">`,
     mainStats,
-    "", // empty line
+    '', // empty line
     rewardsSection,
-    "", // empty line
+    '', // empty line
     footer,
     `</pre>`,
-    "", // empty line
-    `📊 <a href="${process.env.NODE_SENTINEL_URL}/${env.NODE_SENTINEL_CHAIN}/dashboard/${loginId}">View full Dashboard</a>`,
-  ].join("\n");
+    '', // empty line
+    `📊 <a href="${env.NODE_SENTINEL_URL}/${env.NODE_SENTINEL_CHAIN}/dashboard/${loginId}">View full Dashboard</a>`,
+  ].join('\n');
 }
 
 async function updateOrSendMessage(
   chatId: number,
   messageId: number | null,
-  _message: string
+  _message: string,
 ): Promise<number | undefined> {
   //const message = `${_message}\n\n<a href="t.me/node_sentinel">Feedback & Support</a>`;
   if (messageId) {
     try {
       await editMessageText(chatId, messageId, _message, {
-        parse_mode: "HTML",
+        parse_mode: 'HTML',
         link_preview_options: {
           is_disabled: true,
         },
       });
       return messageId;
-    } catch (error: any) {
-      if (error.description === TG_ERROR_SAME_MESSAGE) {
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'description' in error &&
+        error.description === TG_ERROR_SAME_MESSAGE
+      ) {
         return messageId;
       }
     }
@@ -695,44 +632,35 @@ async function updateOrSendMessage(
   try {
     const res = await sendMessage(chatId, _message, {
       disable_notification: true,
-      parse_mode: "HTML",
+      parse_mode: 'HTML',
       link_preview_options: {
         is_disabled: true,
       },
     });
     return res.message_id;
   } catch (error) {
-    console.log("error: ", error);
-    throw new AppError(
-      "Error sending message",
-      "TELEGRAM_INTERACTION_ERROR",
-      error
-    );
+    console.log('error: ', error);
+    throw new AppError('Error sending message', 'TELEGRAM_INTERACTION_ERROR', error);
   }
 }
 
 export async function notifyUserStatsMessage(
   userId: bigint,
-  logger: CustomLogger
+  logger: CustomLogger,
 ): Promise<number | undefined> {
-  const { headSlot, maxSlotToQuery, maxEpochToQuery, syncing } =
-    await slotsInfo();
+  const { headSlot, maxSlotToQuery, maxEpochToQuery, syncing } = await slotsInfo();
 
-  logger.info(`db full user`);
   const user = await getUser(userId);
-  logger.info(`db full user done`);
+  if (!user) {
+    logger.info(`user not found`);
+    return;
+  }
 
-  const stats = await getUserAllStats(
-    syncing,
-    maxSlotToQuery,
-    maxEpochToQuery,
-    user,
-    logger
-  );
+  const stats = await getUserAllStats(syncing, maxSlotToQuery, maxEpochToQuery, user, logger);
 
   // TODO: check null values.
   if (!syncing) {
-    await notifyUnderPerformance(user, stats.performance1h);
+    await notifyUnderPerformance(user, stats.performance1h ?? 0);
     await notifyInactiveValidators(user, stats.validatorStats.inactiveIds);
   }
 
@@ -742,9 +670,5 @@ export async function notifyUserStatsMessage(
     headSlot,
     maxSlotToQuery,
   });
-  return await updateOrSendMessage(
-    Number(user.chatId),
-    Number(user.messageId),
-    message
-  );
+  return await updateOrSendMessage(Number(user.chatId), Number(user.messageId), message);
 }

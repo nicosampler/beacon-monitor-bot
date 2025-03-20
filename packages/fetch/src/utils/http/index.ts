@@ -1,15 +1,14 @@
-import createLogger from "@/src/lib/pino.js";
-import { AxiosResponse, InternalAxiosRequestConfig } from "axios";
+import { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+
+import createLogger from '@/src/lib/pino.js';
 
 const LOGS_ENABLED = false;
 
-export function logRequest(
-  request: InternalAxiosRequestConfig
-): InternalAxiosRequestConfig {
+export function logRequest(request: InternalAxiosRequestConfig): InternalAxiosRequestConfig {
   const logger = createLogger(null, LOGS_ENABLED);
   logger.info(
     // body: request.data,
-    `${request.method?.toUpperCase()} ${request.url}`
+    `${request.method?.toUpperCase()} ${request.url}`,
   );
   return request;
 }

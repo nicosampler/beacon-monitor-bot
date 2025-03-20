@@ -1,3 +1,3 @@
-import { ToadScheduler } from "toad-scheduler";
+import { ToadScheduler } from 'toad-scheduler';
 
 export const scheduler = new ToadScheduler();

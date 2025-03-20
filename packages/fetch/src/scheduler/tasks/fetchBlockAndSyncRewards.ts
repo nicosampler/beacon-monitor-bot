@@ -1,12 +1,12 @@
-import { AsyncTask, SimpleIntervalJob } from "toad-scheduler";
+import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
-import createLogger, { CustomLogger } from "@/src/lib/pino.js";
-import { getOldestLookbackSlot } from "@/src/beacon/utils/misc.js";
-import { env } from "@/src/env.js";
-import { db_getLastSlotWithSyncRewards } from "@/src/feed/utils.js";
-import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from "@/src/feed/fetchBlockAndSyncRewards.js";
-import { scheduler } from "@/src/lib/scheduler.js";
+import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
+import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
+import { env } from '@/src/env.js';
+import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/feed/fetchBlockAndSyncRewards.js';
+import { db_getLastSlotWithSyncRewards } from '@/src/feed/utils.js';
+import createLogger, { CustomLogger } from '@/src/lib/pino.js';
+import { scheduler } from '@/src/lib/scheduler.js';
 
 export const fetchBlockAndSyncRewardsTask = async (logger: CustomLogger) => {
   const now = new Date();
@@ -17,9 +17,7 @@ export const fetchBlockAndSyncRewardsTask = async (logger: CustomLogger) => {
   // Get the last processed slot
   const lastProcessedSlot = await db_getLastSlotWithSyncRewards();
 
-  const slotToFetch = lastProcessedSlot
-    ? lastProcessedSlot.slot + 1
-    : oldestLookbackSlot;
+  const slotToFetch = lastProcessedSlot ? lastProcessedSlot.slot + 1 : oldestLookbackSlot;
 
   logger.addContext(`slot: ${slotToFetch}`);
 
@@ -53,14 +51,12 @@ export function scheduleFetchBlockAndSyncRewards({
   const job = new SimpleIntervalJob(
     { milliseconds: interval, runImmediately: true },
     new AsyncTask(`${ID}_task`, () => {
-      return fetchBlockAndSyncRewardsTask(logger).catch((e) =>
-        logger.error("TASK-CATCH", e)
-      );
+      return fetchBlockAndSyncRewardsTask(logger).catch((e) => logger.error('TASK-CATCH', e));
     }),
     {
       id: ID,
       preventOverrun: true,
-    }
+    },
   );
 
   scheduler.addSimpleIntervalJob(job);

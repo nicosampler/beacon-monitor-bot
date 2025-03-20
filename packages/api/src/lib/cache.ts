@@ -1,4 +1,4 @@
-import NodeCache from "node-cache";
+import NodeCache from 'node-cache';
 
 // Create cache instance with default TTL of 60 seconds
 export const cache = new NodeCache({

@@ -1,6 +1,7 @@
-import memoizee from "memoizee";
-import ms from "ms";
-import { getPrisma } from "@/src/config/prisma.js";
+import memoizee from 'memoizee';
+import ms from 'ms';
+
+import { getPrisma } from '@/src/config/prisma.js';
 
 const prisma = getPrisma();
 
@@ -36,11 +37,11 @@ export const getMonthlyValidatorStatsMemoized = memoizee(
         inactivity: string;
         syncCommittee: string;
         blockReward: string;
-        attestationsMissed: BigInt;
+        attestationsMissed: bigint;
       }[]
     >(query, userId);
   },
-  { promise: true, maxAge: ms("1h") }
+  { promise: true, maxAge: ms('1h') },
 );
 
 export const getMonthlyExecutionRewardsMemoized = memoizee(
@@ -65,5 +66,5 @@ export const getMonthlyExecutionRewardsMemoized = memoizee(
       }[]
     >(query, userId);
   },
-  { promise: true, maxAge: ms("1h") }
+  { promise: true, maxAge: ms('1h') },
 );

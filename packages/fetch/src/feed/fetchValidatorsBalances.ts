@@ -1,10 +1,11 @@
-import { getValidatorsBalances } from "@/src/beacon/endpoints.js";
-import { getPrisma } from "@/src/lib/prisma.js";
-import { CustomLogger } from "@/src/lib/pino.js";
-import { Decimal } from "@prisma/client/runtime/library";
-import { getSlotNumberFromTimestamp } from "@/src/beacon/utils/time.js";
-import { env } from "@/src/env.js";
-import { Prisma } from "@prisma/client";
+import { Prisma } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
+
+import { getValidatorsBalances } from '@/src/beacon/endpoints.js';
+import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
+import { env } from '@/src/env.js';
+import { CustomLogger } from '@/src/lib/pino.js';
+import { getPrisma } from '@/src/lib/prisma.js';
 
 const prisma = getPrisma();
 
@@ -12,10 +13,10 @@ function logValidatorBalances(
   logger: CustomLogger,
   validatorCount: number,
   updateCount: number,
-  insertCount: number
+  insertCount: number,
 ): void {
   logger.info(
-    `Processed ${validatorCount} validators (${updateCount} updates, ${insertCount} inserts)`
+    `Processed ${validatorCount} validators (${updateCount} updates, ${insertCount} inserts)`,
   );
 }
 
@@ -32,11 +33,8 @@ function logValidatorBalances(
  * We use raw SQL queries for both updates and inserts to maximize efficiency.
  * Each operation (update or insert) is performed in a single transaction with up to 5000 records.
  */
-export const fetchValidatorsBalances = async (
-  logger: CustomLogger
-): Promise<void> => {
-  const slotNumber =
-    getSlotNumberFromTimestamp(Date.now()) - env.BEACON_SLOTS_PER_EPOCH;
+export const fetchValidatorsBalances = async (logger: CustomLogger): Promise<void> => {
+  const slotNumber = getSlotNumberFromTimestamp(Date.now()) - env.BEACON_SLOTS_PER_EPOCH;
   try {
     logger.info(`Fetching for state ${slotNumber}`);
     const validatorBalances = await getValidatorsBalances(slotNumber);
@@ -52,9 +50,7 @@ export const fetchValidatorsBalances = async (
       const upsertQuery = Prisma.sql`
         INSERT INTO "Validator" ("id", "balance")
         VALUES ${Prisma.join(
-          batch.map(
-            (v) => Prisma.sql`(${parseInt(v.index)}, ${new Decimal(v.balance)})`
-          )
+          batch.map((v) => Prisma.sql`(${parseInt(v.index)}, ${new Decimal(v.balance)})`),
         )}
         ON CONFLICT ("id") DO UPDATE
         SET "balance" = EXCLUDED.balance;
@@ -68,13 +64,10 @@ export const fetchValidatorsBalances = async (
       logger,
       validatorBalances.length,
       processedCount,
-      validatorBalances.length - processedCount
+      validatorBalances.length - processedCount,
     );
   } catch (error) {
-    logger.error(
-      `Error in fetchValidatorsBalances for state ${slotNumber}`,
-      error
-    );
+    logger.error(`Error in fetchValidatorsBalances for state ${slotNumber}`, error);
     throw error;
   }
 };

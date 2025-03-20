@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "dotenv -e ../../.env npx tsx src/index.ts",
-    "start": "npx tsx src/index.ts"
+    "start": "npx tsx src/index.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@grammyjs/conversations": "^1.2.0",
@@ -34,6 +36,7 @@
   "devDependencies": {
     "@types/lodash": "^4.14.200",
     "@types/memoizee": "^0.4.11",
+    "@types/ms": "^2.1.0",
     "@types/nedb": "^1.8.16",
     "@types/node": "^20.8.4",
     "dotenv-cli": "^7.4.2",

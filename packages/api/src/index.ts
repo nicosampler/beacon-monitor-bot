@@ -1,10 +1,11 @@
-import express from "express";
-import cors from "cors";
-import rateLimit from "express-rate-limit";
-import helmet from "helmet";
-import { env } from "./env.js";
-import { getPrisma } from "./lib/prisma.js";
-import { apiRouter } from "./routes/index.js";
+import cors from 'cors';
+import express from 'express';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
+
+import { env } from './env.js';
+import { getPrisma } from './lib/prisma.js';
+import { apiRouter } from './routes/index.js';
 
 const app = express();
 
@@ -16,7 +17,7 @@ app.use(helmet());
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
-  message: "Too many requests from this IP, please try again later",
+  message: 'Too many requests from this IP, please try again later',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
@@ -33,28 +34,26 @@ app.use(express.json());
 const authMiddleware = (
   req: express.Request,
   res: express.Response,
-  next: express.NextFunction
-) => {
+  next: express.NextFunction,
+): express.Response | void => {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res
-      .status(401)
-      .json({ error: "Unauthorized - Missing or invalid token" });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized - Missing or invalid token' });
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = authHeader.split(' ')[1];
 
   // Compare with your expected token
   if (token !== env.API_SECRET_KEY) {
-    return res.status(401).json({ error: "Unauthorized - Invalid token" });
+    return res.status(401).json({ error: 'Unauthorized - Invalid token' });
   }
 
   next();
 };
 
 // API Routes with authentication
-app.use("/api", authMiddleware, apiRouter);
+app.use('/api', authMiddleware, apiRouter);
 
 // Initialize Prisma
 getPrisma();

@@ -1,9 +1,9 @@
-import { MyContext } from "@/src/config/session.js";
-import { getFeeRewardAddresses_db } from "@/src/prisma/feeRewardAddresses.js";
-import { getWithdrawalAddresses_db } from "@/src/prisma/withdrawalAddresses.js";
-import { getDataFromContext } from "@/src/telegram/utils/getUserIdFromCtx.js";
-import { sendMessage } from "@/src/telegram/utils/messaging.js";
-import { handleError } from "@/src/utils/errors/handleError.js";
+import { MyContext } from '@/src/config/session.js';
+import { getFeeRewardAddresses_db } from '@/src/prisma/feeRewardAddresses.js';
+import { getWithdrawalAddresses_db } from '@/src/prisma/withdrawalAddresses.js';
+import { getDataFromContext } from '@/src/telegram/utils/getUserIdFromCtx.js';
+import { sendMessage } from '@/src/telegram/utils/messaging.js';
+import { handleError } from '@/src/utils/errors/handleError.js';
 
 export async function myAddresses(ctx: MyContext) {
   try {
@@ -22,9 +22,9 @@ export async function myAddresses(ctx: MyContext) {
 
 ${
   withdrawalAddresses.length
-    ? withdrawalAddresses.map((w) => w.address).join("\n")
-    : "No withdrawal addresses yet."
-}`
+    ? withdrawalAddresses.map((w) => w.address).join('\n')
+    : 'No withdrawal addresses yet.'
+}`,
     );
 
     await sendMessage(
@@ -33,9 +33,9 @@ ${
 
 ${
   feeRewardAddresses.length
-    ? feeRewardAddresses.map((w) => w.address).join("\n")
-    : "No fee reward addresses yet."
-}`
+    ? feeRewardAddresses.map((w) => w.address).join('\n')
+    : 'No fee reward addresses yet.'
+}`,
     );
   } catch (error) {
     await handleError(error, ctx.from?.username);

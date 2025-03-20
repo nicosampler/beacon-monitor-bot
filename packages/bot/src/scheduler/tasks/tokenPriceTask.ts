@@ -1,19 +1,17 @@
-import {
-  COINGECKO_TOKEN_NAME,
-  COINGECKO_TOKEN_PRICE_API_URL,
-} from "@/src/constants/index.js";
-import axios, { AxiosResponse } from "axios";
-import { AsyncTask, Task } from "toad-scheduler";
+import axios from 'axios';
+import { AsyncTask } from 'toad-scheduler';
+
+import { COINGECKO_TOKEN_NAME, COINGECKO_TOKEN_PRICE_API_URL } from '@/src/constants/index.js';
 
 export let tokenPrice = 0;
 
 export function tokenPriceTaskImp(): Promise<number> {
   return axios
-    .get<any, AxiosResponse<{ [key in string]: { usd: number } }>>(
-      `${COINGECKO_TOKEN_PRICE_API_URL}?ids=${COINGECKO_TOKEN_NAME}&vs_currencies=usd`
+    .get<{ [key in string]: { usd: number } }>(
+      `${COINGECKO_TOKEN_PRICE_API_URL}?ids=${COINGECKO_TOKEN_NAME}&vs_currencies=usd`,
     )
     .then((res) => {
-      tokenPrice = res.data[COINGECKO_TOKEN_NAME].usd;
+      tokenPrice = res.data[COINGECKO_TOKEN_NAME]?.usd || 0;
       return tokenPrice;
     })
     .catch((err) => {
@@ -22,6 +20,6 @@ export function tokenPriceTaskImp(): Promise<number> {
     });
 }
 
-export const tokenPriceTask = new AsyncTask("tokenPrice", () =>
-  tokenPriceTaskImp().catch(console.error)
+export const tokenPriceTask = new AsyncTask('tokenPrice', () =>
+  tokenPriceTaskImp().catch(console.error),
 );
