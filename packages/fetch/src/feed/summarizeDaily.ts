@@ -17,19 +17,24 @@ export type AggregateExecutionRewards = Awaited<
 
 const prisma = getPrisma();
 
-export function calculateSlotRange(startTime: Date, endTime: Date) {
-  const startSlot = getSlotNumberFromTimestamp(startTime.getTime());
-  const endSlot = getSlotNumberFromTimestamp(endTime.getTime());
-  return { startSlot, endSlot };
+interface HourlyStats {
+  validatorIndex: number;
+  _sum: {
+    head: bigint;
+    target: bigint;
+    source: bigint;
+    inactivity: bigint;
+    attestationsMissed: number;
+    syncCommittee: bigint;
+    blockReward: bigint;
+  };
 }
 
-export async function hasAllHourlyStats(date: Date): Promise<boolean> {
+export async function hasAllBlockAndEpochRewards(date: Date): Promise<boolean> {
   const nextDay = addDays(date, 1);
   const nextDaySlot = getSlotNumberFromTimestamp(nextDay.getTime()) + env.BEACON_SLOTS_PER_EPOCH;
 
-  console.log('>>> SLOT', nextDaySlot);
-  console.log('>>> EPOCH', getEpochFromSlot(nextDaySlot));
-
+  // check all rewards for the next epoch have been fetched
   const beaconRewardsFetched = await prisma.epoch.findUnique({
     where: {
       epoch: getEpochFromSlot(nextDaySlot),
@@ -41,6 +46,7 @@ export async function hasAllHourlyStats(date: Date): Promise<boolean> {
     return false;
   }
 
+  // check all stats for the slot have been fetched (attestations and attestations, sync committee and block rewards)
   const syncCommitteeAndBlockRewardsFetched = await prisma.slot.findFirst({
     where: {
       slot: nextDaySlot,
@@ -63,21 +69,51 @@ export async function hasAllExecutionRewards(date: Date): Promise<boolean> {
 }
 
 export async function aggregateHourlyStats(date: Date) {
-  return prisma.hourlyValidatorStats.groupBy({
-    by: ['validatorIndex'],
-    where: {
-      date,
-    },
-    _sum: {
-      head: true,
-      target: true,
-      source: true,
-      inactivity: true,
-      attestationsMissed: true,
-      syncCommittee: true,
-      blockReward: true,
-    },
-  });
+  const stats = await prisma.$queryRaw<Array<HourlyStats>>`
+    WITH combined_rewards AS (
+      -- Attestation (rewards and missed attestations)
+      SELECT 
+        "validatorIndex",
+        COALESCE(head, 0) as head,
+        COALESCE(target, 0) as target,
+        COALESCE(source, 0) as source,
+        COALESCE(inactivity, 0) as inactivity,
+        COALESCE("attestationsMissed", 0) as "attestationsMissed",
+        COALESCE("syncCommittee", 0) as "syncCommittee", -- TMP: remove this 
+        COALESCE("blockReward", 0) as "blockReward" -- TMP: remove this 
+      FROM "HourlyValidatorStats"
+      WHERE date = ${date}
+      
+      UNION ALL
+      
+      -- Block and sync rewards 
+      SELECT 
+        "validatorIndex",
+        0 as head,
+        0 as target,
+        0 as source,
+        0 as inactivity,
+        0 as "attestationsMissed",
+        COALESCE("syncCommittee", 0) as "syncCommittee",
+        COALESCE("blockReward", 0) as "blockReward"
+      FROM "HourlyBlockAndSyncRewards"
+      WHERE date = ${date}
+    )
+    SELECT 
+      "validatorIndex",
+      json_build_object(
+        'head', SUM(head),
+        'target', SUM(target),
+        'source', SUM(source),
+        'inactivity', SUM(inactivity),
+        'attestationsMissed', SUM("attestationsMissed"),
+        'syncCommittee', SUM("syncCommittee"),
+        'blockReward', SUM("blockReward")
+      ) as "_sum"
+    FROM combined_rewards
+    GROUP BY "validatorIndex"`;
+
+  return stats;
 }
 
 export async function aggregateExecutionRewards(date: Date) {
@@ -97,13 +133,16 @@ export async function removeProcessedHourlyStatsRecords(
   date: Date,
   logger: CustomLogger,
 ) {
-  logger.info(`Removing processed HourlyStats for ${date}`);
+  logger.info(`Removing processed HourlyStats and HourlyBlockAndSyncRewards for ${date}`);
 
-  await tx.hourlyValidatorStats.deleteMany({
-    where: {
-      date,
-    },
-  });
+  await Promise.all([
+    tx.hourlyValidatorStats.deleteMany({
+      where: { date },
+    }),
+    tx.hourlyBlockAndSyncRewards.deleteMany({
+      where: { date },
+    }),
+  ]);
 }
 
 export async function removeProcessedExecutionRewards(
@@ -112,10 +151,9 @@ export async function removeProcessedExecutionRewards(
   logger: CustomLogger,
 ) {
   logger.info(`Removing processed ExecutionRewards for ${date}`);
+
   await tx.hourlyExecutionRewards.deleteMany({
-    where: {
-      date,
-    },
+    where: { date },
   });
 }
 
@@ -162,7 +200,7 @@ export async function summarizeAtomicTransaction(
         });
       }
 
-      if (hasAllHourlyStats.length > 0 || hasAllExecutionRewards.length > 0) {
+      if (hasAllBlockAndEpochRewards.length > 0 || hasAllExecutionRewards.length > 0) {
         await updateLastSummaryUpdate('dailyValidatorStats', addDays(date, 1), tx);
         await removeProcessedHourlyStatsRecords(tx, date, logger);
         await removeProcessedExecutionRewards(tx, date, logger);
@@ -174,9 +212,8 @@ export async function summarizeAtomicTransaction(
   logger.info('Done.');
 }
 
-// TODO: add explanation about the requirements for the daily stats to run.
 export async function summarizeDaily(date: Date, day: number, logger: CustomLogger): Promise<void> {
-  if (!(await hasAllHourlyStats(date))) {
+  if (!(await hasAllBlockAndEpochRewards(date))) {
     logger.info(`Missing hourly stats for ${date}, skipping`);
     return;
   }

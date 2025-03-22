@@ -54,7 +54,15 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
             .join(',');
 
           return tx.$executeRaw`
-            INSERT INTO temp_validator_stats VALUES ${Prisma.raw(values)}
+            INSERT INTO temp_validator_stats (
+              "validatorIndex",
+              "hour",
+              "date",
+              "head",
+              "target",
+              "source",
+              "inactivity"
+            ) VALUES ${Prisma.raw(values)}
           `;
         });
         await Promise.all(batchPromises);
@@ -68,9 +76,7 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
             "head" = "HourlyValidatorStats"."head" + EXCLUDED."head",
             "target" = "HourlyValidatorStats"."target" + EXCLUDED."target",
             "source" = "HourlyValidatorStats"."source" + EXCLUDED."source",
-            "inactivity" = "HourlyValidatorStats"."inactivity" + EXCLUDED."inactivity",
-            "syncCommittee" = COALESCE("HourlyValidatorStats"."syncCommittee", 0),
-            "blockReward" = COALESCE("HourlyValidatorStats"."blockReward", 0)
+            "inactivity" = "HourlyValidatorStats"."inactivity" + EXCLUDED."inactivity"
         `;
 
         // TODO: This seems to be unnecessary.

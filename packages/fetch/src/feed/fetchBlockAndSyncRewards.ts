@@ -2,12 +2,69 @@ import { Prisma } from '@prisma/client';
 import ms from 'ms';
 
 import { getBlockRewards, getSyncCommitteeRewards } from '@/src/beacon/endpoints.js';
+import { SyncCommitteeRewards, type BlockRewards } from '@/src/beacon/types.js';
 import { getTimestampFromSlotNumber } from '@/src/beacon/utils/time.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
 
 const prisma = getPrisma();
+
+interface SyncRewardValues {
+  validatorIndex: number;
+  hour: number;
+  date: string;
+  syncCommittee: bigint;
+}
+
+interface BlockRewardValues {
+  validatorIndex: number;
+  hour: number;
+  date: string;
+  blockReward: bigint;
+}
+
+function prepareSyncRewards(
+  syncRewardsData: SyncCommitteeRewards['data'],
+  hour: number,
+  date: string,
+): SyncRewardValues[] {
+  return syncRewardsData.map((syncReward) => ({
+    validatorIndex: Number(syncReward.validator_index),
+    hour,
+    date,
+    syncCommittee: BigInt(syncReward.reward),
+  }));
+}
+
+function prepareBlockRewards(
+  blockRewards: 'SLOT MISSED' | BlockRewards,
+  hour: number,
+  date: string,
+): BlockRewardValues | null {
+  if (blockRewards === 'SLOT MISSED') return null;
+
+  return {
+    validatorIndex: Number(blockRewards.data.proposer_index),
+    hour,
+    date,
+    blockReward: BigInt(blockRewards.data.total),
+  };
+}
+
+/**
+ * Prefetches rewards for future slots to improve performance when the bot is behind head.
+ * This is particularly useful when the bot has been down and needs to catch up with rewards.
+ * The requests are deduplicated by memoizee, so we can safely fire them in advance.
+ */
+function prefetchFutureRewards(slot: number, maxSlotToFetch: number) {
+  for (let i = 1; i <= 5; i++) {
+    const futureSlot = slot + i;
+    if (futureSlot > maxSlotToFetch) break;
+    getSyncCommitteeRewards(futureSlot, []);
+    getBlockRewards(futureSlot);
+  }
+}
 
 export const fetchBlockAndSyncRewards = async (
   slot: number,
@@ -17,7 +74,6 @@ export const fetchBlockAndSyncRewards = async (
   try {
     const dbSlot = await prisma.slot.findUnique({
       where: { slot },
-      select: { blockAndSyncRewardsFetched: true },
     });
 
     if (!dbSlot) {
@@ -25,89 +81,61 @@ export const fetchBlockAndSyncRewards = async (
       return;
     }
 
+    if (dbSlot.blockAndSyncRewardsFetched) {
+      logger.warn(`Slot ${slot} already fetched`);
+      return;
+    }
+
     logger.info('api call sync & block rewards');
 
-    // Current slot requests
+    // fetch sync committee and block rewards for current slot
     const currentSlotRequests = Promise.all([
       getSyncCommitteeRewards(slot, []),
       getBlockRewards(slot),
     ]);
-
-    // Just fire the requests for future slots - memoizee will handle deduplication
-    for (let i = 1; i <= 10; i++) {
-      const futureSlot = slot + i;
-      if (futureSlot > maxSlotToFetch) break;
-      getSyncCommitteeRewards(futureSlot, []);
-      getBlockRewards(futureSlot);
-    }
-
     const [syncCommitteeRewards, blockRewards] = await currentSlotRequests;
 
-    const timestamp = getTimestampFromSlotNumber(slot);
-    const { date, hour } = convertToUTC(timestamp);
-
-    // Format rewards data
-    const rewardsData = syncCommitteeRewards.data.map((reward) => ({
-      validatorIndex: Number(reward.validator_index),
-      reward: BigInt(reward.reward),
-      hour,
-      date,
-    }));
-
-    // Check if sync rewards were already fetched
-    const slotRecord = await prisma.slot.findUnique({
-      where: { slot },
-      select: { blockAndSyncRewardsFetched: true },
-    });
-
-    if (!slotRecord) {
-      return;
-    }
-
-    if (slotRecord?.blockAndSyncRewardsFetched) {
-      logger.warn(`Already fetched`);
-      return;
-    }
+    // Prefetch future rewards to improve performance when the indexer is behind head
+    prefetchFutureRewards(slot, maxSlotToFetch);
 
     logger.info(`Saving rewards`);
+    const timestamp = getTimestampFromSlotNumber(slot);
+    const { date, hour } = convertToUTC(timestamp);
     await prisma.$transaction(
       async (tx) => {
-        // Sync rewards
-        const values = rewardsData
-          .map(
-            (syncReward) =>
-              `(${syncReward.validatorIndex}, ${hour}, '${date}', ${syncReward.reward})`,
-          )
-          .join(',');
+        // Prepare rewards data
+        const syncRewards = prepareSyncRewards(syncCommitteeRewards.data, hour, date);
+        const blockReward = prepareBlockRewards(blockRewards, hour, date);
 
-        await tx.$executeRaw`
-          INSERT INTO "HourlyValidatorStats" ("validatorIndex", "hour", "date", "syncCommittee")
-          VALUES ${Prisma.raw(values)}
-          ON CONFLICT ("validatorIndex", "hour", "date") 
-          DO UPDATE SET
-            "head" = COALESCE("HourlyValidatorStats"."head", 0),
-            "target" = COALESCE("HourlyValidatorStats"."target", 0),
-            "source" = COALESCE("HourlyValidatorStats"."source", 0),
-            "inactivity" = COALESCE("HourlyValidatorStats"."inactivity", 0),
-            "blockReward" = COALESCE("HourlyValidatorStats"."blockReward", 0),
-            "syncCommittee" = COALESCE("HourlyValidatorStats"."syncCommittee", 0) + EXCLUDED."syncCommittee"
-        `;
-
-        // Block rewards
-        if (blockRewards !== 'SLOT MISSED') {
-          const blockRewardValue = `(${Number(blockRewards.data.proposer_index)}, ${hour}, '${date}', ${BigInt(blockRewards.data.total)})`;
+        // Save sync committee rewards
+        if (syncRewards.length > 0) {
+          const sqlValues = syncRewards
+            .map(
+              (v) => `(${v.validatorIndex}, ${v.hour}, '${v.date}'::date, ${v.syncCommittee}, 0)`,
+            )
+            .join(',');
 
           await tx.$executeRaw`
-            INSERT INTO "HourlyValidatorStats" ("validatorIndex", "hour", "date", "blockReward")
-            VALUES ${Prisma.raw(blockRewardValue)}
+            INSERT INTO "HourlyBlockAndSyncRewards" 
+              ("validatorIndex", "hour", "date", "syncCommittee", "blockReward")
+            VALUES ${Prisma.raw(sqlValues)}
             ON CONFLICT ("validatorIndex", "hour", "date") 
             DO UPDATE SET
-              "head" = COALESCE("HourlyValidatorStats"."head", 0),
-              "target" = COALESCE("HourlyValidatorStats"."target", 0),
-              "source" = COALESCE("HourlyValidatorStats"."source", 0),
-              "inactivity" = COALESCE("HourlyValidatorStats"."inactivity", 0),
-              "syncCommittee" = COALESCE("HourlyValidatorStats"."syncCommittee", 0),
-              "blockReward" = COALESCE("HourlyValidatorStats"."blockReward", 0) + EXCLUDED."blockReward"
+              "syncCommittee" = COALESCE("HourlyBlockAndSyncRewards"."syncCommittee", 0) + EXCLUDED."syncCommittee",
+              "blockReward" = COALESCE("HourlyBlockAndSyncRewards"."blockReward", 0)
+          `;
+        }
+
+        // Save block rewards
+        if (blockReward) {
+          await tx.$executeRaw`
+            INSERT INTO "HourlyBlockAndSyncRewards" 
+              ("validatorIndex", "hour", "date", "blockReward", "syncCommittee")
+            VALUES (${blockReward.validatorIndex}, ${blockReward.hour}, ${blockReward.date}::date, ${blockReward.blockReward}, 0)
+            ON CONFLICT ("validatorIndex", "hour", "date") 
+            DO UPDATE SET
+              "blockReward" = COALESCE("HourlyBlockAndSyncRewards"."blockReward", 0) + EXCLUDED."blockReward",
+              "syncCommittee" = COALESCE("HourlyBlockAndSyncRewards"."syncCommittee", 0)
           `;
         }
 

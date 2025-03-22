@@ -26,9 +26,10 @@ async function summarizeDailyTask(logger: CustomLogger) {
     const now = new Date();
     const oneDayBefore = subDays(now, 1);
 
-    logger.info(
-      `lastSummaryDate: ${lastSummaryDate}, nextSummaryDate: ${nextSummaryDate}, oneDayBefore: ${oneDayBefore}`,
-    );
+    logger.info(`
+lastSummaryDate: ${lastSummaryDate}
+nextSummaryDate: ${nextSummaryDate}
+oneDayBefore: ${oneDayBefore}`);
 
     // We should only summarize data that is older than 24 hours
     // to ensure we have all hourly data available
@@ -38,8 +39,6 @@ async function summarizeDailyTask(logger: CustomLogger) {
     }
 
     const { date, day } = convertToUTC(lastSummaryDate);
-
-    logger.info(`Summarizing daily stats for ${date}`);
 
     await summarizeDaily(new Date(date), day, logger);
 

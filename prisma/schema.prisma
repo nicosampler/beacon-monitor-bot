@@ -64,14 +64,28 @@ model HourlyValidatorStats {
   hour           Int // 0-23
   date           DateTime @db.Date // dd-mm-yyyy
 
+  // TODO: remove these
   blockReward   BigInt? // Reward for proposing a block
   syncCommittee BigInt? // Rewarded for participating in the sync committee
-  head          BigInt? // Reward for attesting
-  target        BigInt? // Reward for attesting
-  source        BigInt? // Reward for attesting
-  inactivity    BigInt? // Reward for attesting
+
+  head       BigInt? // Reward for attesting
+  target     BigInt? // Reward for attesting
+  source     BigInt? // Reward for attesting
+  inactivity BigInt? // Reward for attesting
 
   attestationsMissed Int?
+
+  @@id([validatorIndex, date, hour])
+  @@index([date, hour])
+}
+
+model HourlyBlockAndSyncRewards {
+  validatorIndex Int
+  hour           Int // 0-23
+  date           DateTime @db.Date // dd-mm-yyyy
+
+  blockReward   BigInt? // Reward for proposing a block
+  syncCommittee BigInt? // Rewarded for participating in the sync committee
 
   @@id([validatorIndex, date, hour])
   @@index([date, hour])

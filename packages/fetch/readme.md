@@ -123,7 +123,7 @@ This task is responsible for fetching and storing block proposer rewards and syn
 
 The task updates one main table:
 
-- `HourlyValidatorStats`: 
+- `HourlyBlockAndSyncRewards`: 
   - Updates or creates records for validators who:
     - Proposed blocks (adds block rewards)
     - Participated in sync committees (adds sync committee rewards)

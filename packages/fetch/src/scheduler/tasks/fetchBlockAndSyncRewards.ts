@@ -31,7 +31,7 @@ export const fetchBlockAndSyncRewardsTask = async (logger: CustomLogger) => {
 
 /* 
   This function get the sync committee and block rewards for a given slot.
-  Data is saved to the HourlyValidatorStats table for the Date and Hour of the slot.
+  Data is saved to the HourlyBlockAndSyncRewards table for the Date and Hour of the slot.
   It might collide with the existing data in the table as missedAttestations and attestations rewards are handled by other task ans saved to the same table.
   If a collision happens, existing data is kept and syncCommittee and blockReward are added to the existing data.
   

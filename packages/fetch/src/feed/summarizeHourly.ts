@@ -2,9 +2,9 @@ import { Prisma } from '@prisma/client';
 import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
+import { calculateSlotRange } from '@/src/beacon/utils/misc.js';
 import {
   getEpochNumberFromTimestamp,
-  getSlotNumberFromTimestamp,
   getTimestampFromSlotNumber,
 } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
@@ -15,20 +15,11 @@ import { convertToUTC } from '@/src/utils/date/index.js';
 
 const prisma = getPrisma();
 
-export function calculateSlotRange(startTime: Date, endTime: Date) {
-  const startSlot = getSlotNumberFromTimestamp(startTime.getTime());
-  const endSlot = getSlotNumberFromTimestamp(endTime.getTime());
-  return { startSlot, endSlot };
-}
-
-//
-export function isProcessingTooEarly(endSlot: number) {
-  const endSlotTime = getTimestampFromSlotNumber(endSlot);
-  return Date.now() <= endSlotTime;
-}
-
+/* 
+  All slots up to endSlot should have been processed.
+  A slot is processed when their attestations are fetched.
+*/
 export async function hasUnprocessedSlots(endSlot: number): Promise<boolean> {
-  // wait until the attestations are fetched for the endSlot
   const slot = await prisma.slot.findUnique({
     where: {
       slot: endSlot,
@@ -50,16 +41,21 @@ export async function hasUnprocessedExecutionRewards(endTime: Date): Promise<boo
   return executionRewards == null;
 }
 
+/*
+ * All epoch rewards up to endEpoch should have been processed.
+ * A epoch is processed when their rewards are fetched.
+ */
 export async function hasUnprocessedBeaconRewards(endSlot: number): Promise<boolean> {
   const endSlotTime = getTimestampFromSlotNumber(endSlot);
   const endEpoch = getEpochNumberFromTimestamp(endSlotTime);
 
-  // We need at least one beacon reward epoch processed after the endTime because
-  // We will remove all the beacon rewards before the endTime and
-  // if the table is empty, fetching restarts from env.EXECUTION_BLOCK_LOOKBACK
   const beaconRewards = await prisma.epoch.findFirst({
+    // We need at least one beacon reward epoch processed after the endSlot
+    // because we will remove all the beacon rewards before the endSlot
+    // and if the table is empty, fetching restarts from env.BEACON_LOOKBACK_EPOCH
     where: { epoch: { gt: endEpoch }, rewardsFetched: true },
   });
+
   return beaconRewards == null;
 }
 

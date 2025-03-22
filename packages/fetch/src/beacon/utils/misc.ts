@@ -1,3 +1,4 @@
+import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 
 export function getOldestLookbackSlot() {
@@ -23,3 +24,9 @@ export const getEpochSlots = (epoch: number) => {
 export const getEpochFromSlot = (slot: number) => {
   return Math.floor(slot / Number(env.BEACON_SLOTS_PER_EPOCH));
 };
+
+export function calculateSlotRange(startTime: Date, endTime: Date) {
+  const startSlot = getSlotNumberFromTimestamp(startTime.getTime());
+  const endSlot = getSlotNumberFromTimestamp(endTime.getTime());
+  return { startSlot, endSlot };
+}
