@@ -22,10 +22,7 @@ export async function updateUsersStatsImp(userId?: number) {
             await updateUserMessageId_db(Number(user.id), messageIdStats);
           }
         } catch (error) {
-          console.error(
-            `Error processing user ${user.username}:`,
-            error instanceof Error ? error.message : String(error),
-          );
+          console.error(`Error processing user ${user.username}:`, error);
         }
       }),
     );

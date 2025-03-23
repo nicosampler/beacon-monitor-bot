@@ -271,7 +271,6 @@ const getDailyValidatorStatsMemoized = memoizee(
     // Query to get validator stats for the last 24 hours
     const query = `
       WITH combined_stats AS (
-        -- Get stats from HourlyValidatorStats (historical data)
         SELECT 
           "validatorIndex",
           date,
@@ -287,7 +286,6 @@ const getDailyValidatorStatsMemoized = memoizee(
         
         UNION ALL
         
-        -- Get stats from HourlyBlockAndSyncRewards (new data)
         SELECT 
           "validatorIndex",
           date,
@@ -315,10 +313,8 @@ const getDailyValidatorStatsMemoized = memoizee(
       WHERE uv."A" = $1
         AND v.status IN (2, 3)
         AND (
-          -- Today's records up to current hour
           (cs.date = CURRENT_DATE AND cs.hour <= EXTRACT(HOUR FROM NOW()))
           OR
-          -- Yesterday's records after current hour
           (cs.date = CURRENT_DATE - INTERVAL '1 day' AND cs.hour > EXTRACT(HOUR FROM NOW()))
         )`;
 
