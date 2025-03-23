@@ -449,7 +449,9 @@ async function calculateTableStats(
   ]);
   logger.info(`stats done`);
 
-  if (dailyValidatorStats.length) return null;
+  if (!dailyValidatorStats.length) {
+    return null;
+  }
 
   // Calculate daily stats (existing code)
   const totalDailyConsensus =
