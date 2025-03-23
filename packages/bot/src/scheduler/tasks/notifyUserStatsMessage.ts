@@ -273,7 +273,7 @@ const getDailyValidatorStatsMemoized = memoizee(
       WITH combined_stats AS (
         -- Get stats from HourlyValidatorStats (historical data)
         SELECT 
-          validatorIndex,
+          "validatorIndex",
           date,
           hour,
           head,
@@ -289,7 +289,7 @@ const getDailyValidatorStatsMemoized = memoizee(
         
         -- Get stats from HourlyBlockAndSyncRewards (new data)
         SELECT 
-          validatorIndex,
+          "validatorIndex",
           date,
           hour,
           0 as head,
