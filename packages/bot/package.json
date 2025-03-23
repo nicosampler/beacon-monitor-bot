@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "dotenv -e ../../.env npx tsx src/index.ts",
-    "start": "npx tsx src/index.ts",
+    "start": "NODE_OPTIONS='--import tsx' tsx src/index.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
