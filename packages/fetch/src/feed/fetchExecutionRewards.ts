@@ -13,6 +13,7 @@ export async function fetchExecutionRewards(logger: CustomLogger, blockToQuery: 
     await prisma.executionRewards.create({
       data: blockInfo,
     });
+    logger.info('done.');
   } catch (error) {
     logger.warn('Not found', error);
     const timestamp = await getPublicClient().getBlock({ blockNumber: BigInt(blockToQuery) });

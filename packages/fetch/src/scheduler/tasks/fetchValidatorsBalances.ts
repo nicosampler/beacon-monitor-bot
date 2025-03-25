@@ -3,27 +3,24 @@ import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 import { fetchValidatorsBalances } from '@/src/feed/fetchValidatorsBalances.js';
 import createLogger from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
+import { TaskOptions } from '@/src/scheduler/tasks/types.js';
 
 export function scheduleFetchValidatorsBalances({
+  id,
   logsEnabled,
-  interval,
-  ID,
-}: {
-  logsEnabled: boolean;
-  interval: number;
-  ID: string;
-}) {
+  intervalMs,
+  runImmediately,
+  preventOverrun,
+}: TaskOptions) {
+  const logger = createLogger(id, logsEnabled);
+  const task = new AsyncTask(`${id}_task`, () => {
+    return fetchValidatorsBalances(logger).catch((e) => logger.error('TASK-CATCH', e.message));
+  });
+
   scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob(
-      { milliseconds: interval, runImmediately: true },
-      new AsyncTask(`${ID}_task`, () => {
-        const logger = createLogger(ID, logsEnabled);
-        return fetchValidatorsBalances(logger).catch((e) => logger.error('TASK-CATCH', e.message));
-      }),
-      {
-        id: ID,
-        preventOverrun: true,
-      },
-    ),
+    new SimpleIntervalJob({ milliseconds: intervalMs, runImmediately }, task, {
+      id,
+      preventOverrun,
+    }),
   );
 }

@@ -56,7 +56,7 @@ export function scheduleFetchAttestations({
   });
 
   scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob({ milliseconds: intervalMs, runImmediately: runImmediately }, task, {
+    new SimpleIntervalJob({ milliseconds: intervalMs, runImmediately }, task, {
       id,
       preventOverrun,
     }),

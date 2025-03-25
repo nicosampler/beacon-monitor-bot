@@ -5,8 +5,9 @@ import { getEpochNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 import { fetchBeaconRewards } from '@/src/feed/fetchBeaconRewards.js'; // Assuming this function exists
 import { db_getLastProcessedEpoch } from '@/src/feed/utils.js';
-import createLogger from '@/src/lib/pino.js';
+import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
+import { TaskOptions } from '@/src/scheduler/tasks/types.js';
 
 /* 
   This task fetches the beacon rewards 
@@ -15,7 +16,7 @@ import { scheduler } from '@/src/lib/scheduler.js';
   It skips fetching if the last slot with rewards is too far back in time.
   It also skips fetching if the last slot with rewards is from the current epoch.
  */
-async function fetchBeaconRewardsTask(ID: string, logsEnabled: boolean) {
+async function fetchBeaconRewardsTask(logger: CustomLogger) {
   const now = new Date();
   const currentEpoch = getEpochNumberFromTimestamp(now.getTime());
   const maxEpoch = currentEpoch - 2; // Give some buffer to avoid so many 404
@@ -24,7 +25,7 @@ async function fetchBeaconRewardsTask(ID: string, logsEnabled: boolean) {
   const lastProcessedEpoch = await db_getLastProcessedEpoch();
 
   if (lastProcessedEpoch?.epoch && lastProcessedEpoch.epoch + 1 > maxEpoch) {
-    createLogger(ID).info(`No new epochs to fetch`);
+    logger.info(`No new epochs to fetch`);
     return;
   }
 
@@ -32,32 +33,27 @@ async function fetchBeaconRewardsTask(ID: string, logsEnabled: boolean) {
     ? Math.min(lastProcessedEpoch.epoch + 1, maxEpoch)
     : oldestLookbackEpoch;
 
-  const logger = createLogger(`${ID} Epoch: ${epochToFetch}`, logsEnabled);
+  logger.addContext(`Epoch: ${epochToFetch}`);
   logger.info(`Fetching. HeadEpoch: ${maxEpoch}.`);
 
   await fetchBeaconRewards(epochToFetch, logger);
 }
 
 export function scheduleFetchBeaconRewards({
+  id,
   logsEnabled,
-  interval,
-  ID,
-}: {
-  logsEnabled: boolean;
-  interval: number;
-  ID: string;
-}) {
+  intervalMs,
+  runImmediately,
+  preventOverrun,
+}: TaskOptions) {
+  const logger = createLogger(id, logsEnabled);
+  const task = new AsyncTask(`${id}_task`, () => {
+    return fetchBeaconRewardsTask(logger).catch((e) => logger.error('TASK-CATCH', e));
+  });
   scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob(
-      { milliseconds: interval, runImmediately: true },
-      new AsyncTask(`${ID}_task`, () => {
-        const logger = createLogger(ID);
-        return fetchBeaconRewardsTask(ID, logsEnabled).catch((e) => logger.error('TASK-CATCH', e));
-      }),
-      {
-        id: ID,
-        preventOverrun: true,
-      },
-    ),
+    new SimpleIntervalJob({ milliseconds: intervalMs, runImmediately }, task, {
+      id,
+      preventOverrun,
+    }),
   );
 }

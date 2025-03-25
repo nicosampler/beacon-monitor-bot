@@ -22,9 +22,10 @@ async function summarizeHourlyTask(logger: CustomLogger) {
   const now = new Date();
   const oneHourBefore = subHours(now, 1);
 
-  logger.addContext(
-    `lastSummaryDate: ${lastSummaryDate}, nextSummaryDate: ${nextSummaryDate}, oneHourBefore: ${oneHourBefore}`,
-  );
+  logger.info(`
+lastSummaryDate: ${lastSummaryDate}. 
+nextSummaryDate: ${nextSummaryDate}. 
+oneHourBefore: ${oneHourBefore}.`);
 
   // We need to wait for a full hour of data before summarizing
   // because we use this data to calculate:

@@ -20,7 +20,6 @@ export function scheduleTasks() {
     runImmediately: true,
     preventOverrun: true,
   });
-
   scheduleFetchAttestations({
     id: 'FetchAttestations',
     logsEnabled: true,
@@ -28,37 +27,41 @@ export function scheduleTasks() {
     runImmediately: true,
     preventOverrun: true,
   });
-
   scheduleFetchExecutionRewards({
-    logsEnabled: false,
-    interval: ms('2s'),
-    ID: 'FetchExecutionRewards',
+    id: 'FetchExecutionRewards',
+    logsEnabled: true,
+    intervalMs: ms('1s'),
+    runImmediately: true,
+    preventOverrun: true,
   });
-
   scheduleFetchBeaconRewards({
+    id: 'FetchBeaconRewards',
     logsEnabled: false,
-    interval: ms('5s'),
-    ID: 'FetchBeaconRewards',
+    intervalMs: ms('5s'),
+    runImmediately: true,
+    preventOverrun: true,
   });
-
   scheduleFetchBlockAndSyncRewards({
+    id: 'FetchBlockAndSyncRewards',
     logsEnabled: false,
-    interval: ms('2s'),
-    ID: 'FetchBlockAndSyncRewards',
+    intervalMs: ms('2s'),
+    runImmediately: true,
+    preventOverrun: true,
   });
-
   scheduleFetchValidatorsBalances({
+    id: 'FetchValidatorsBalances',
     logsEnabled: false,
-    interval: ms('10m'),
-    ID: 'FetchValidatorsBalances',
+    intervalMs: ms('10m'),
+    runImmediately: true,
+    preventOverrun: true,
   });
-
   scheduleFetchValidatorsInfo({
+    id: 'FetchValidatorsInfo',
     logsEnabled: false,
-    interval: ms('10m'),
-    ID: 'FetchValidatorsInfo',
+    intervalMs: ms('10m'),
+    runImmediately: true,
+    preventOverrun: true,
   });
-
   scheduleSummarizeHourly({
     id: 'SummarizeHourly',
     logsEnabled: true,
@@ -66,7 +69,6 @@ export function scheduleTasks() {
     runImmediately: true,
     preventOverrun: true,
   });
-
   scheduleSummarizeDaily({
     id: 'SummarizeDaily',
     logsEnabled: true,
@@ -74,7 +76,6 @@ export function scheduleTasks() {
     runImmediately: true,
     preventOverrun: true,
   });
-
   scheduleCleanupCommittee({
     id: 'CleanupCommittee',
     logsEnabled: true,

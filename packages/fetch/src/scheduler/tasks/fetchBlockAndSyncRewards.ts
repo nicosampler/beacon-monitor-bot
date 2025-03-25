@@ -7,6 +7,7 @@ import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/fee
 import { db_getLastSlotWithSyncRewards } from '@/src/feed/utils.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
+import { TaskOptions } from '@/src/scheduler/tasks/types.js';
 
 export const fetchBlockAndSyncRewardsTask = async (logger: CustomLogger) => {
   const now = new Date();
@@ -38,26 +39,20 @@ export const fetchBlockAndSyncRewardsTask = async (logger: CustomLogger) => {
   It get's the last processed slot from the database and then fetches the rewards for the next slot. If the slot is greater than the max slot to fetch, it skips.
 */
 export function scheduleFetchBlockAndSyncRewards({
+  id,
   logsEnabled,
-  interval,
-  ID,
-}: {
-  logsEnabled: boolean;
-  interval: number;
-  ID: string;
-}) {
-  const logger = createLogger(ID, logsEnabled);
-
-  const job = new SimpleIntervalJob(
-    { milliseconds: interval, runImmediately: true },
-    new AsyncTask(`${ID}_task`, () => {
-      return fetchBlockAndSyncRewardsTask(logger).catch((e) => logger.error('TASK-CATCH', e));
+  intervalMs,
+  runImmediately,
+  preventOverrun,
+}: TaskOptions) {
+  const logger = createLogger(id, logsEnabled);
+  const task = new AsyncTask(`${id}_task`, () => {
+    return fetchBlockAndSyncRewardsTask(logger).catch((e) => logger.error('TASK-CATCH', e));
+  });
+  scheduler.addSimpleIntervalJob(
+    new SimpleIntervalJob({ milliseconds: intervalMs, runImmediately }, task, {
+      id,
+      preventOverrun,
     }),
-    {
-      id: ID,
-      preventOverrun: true,
-    },
   );
-
-  scheduler.addSimpleIntervalJob(job);
 }
