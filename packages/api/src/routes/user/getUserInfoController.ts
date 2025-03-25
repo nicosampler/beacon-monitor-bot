@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 
 import { cache } from '@/src/lib/cache.js';
-import { getMissedAttestations_db } from '@/src/prisma/getMissedAttestations.js';
-import { getUserValidators_db } from '@/src/prisma/getUserValidators.js';
 import { UserInfo, ValidatorStatusesByWithdrawal } from '@/src/routes/types.js';
 import { UserParams } from '@/src/routes/user/schema.js';
+import { getMissedAttestations_db } from '@/src/services/prisma/getMissedAttestations.js';
+import { getUserValidators_db } from '@/src/services/prisma/getUserValidators.js';
 import { getSlotInfo } from '@/src/utils/getSlotInfo.js';
 import { getValidatorStatuses } from '@/src/utils/getValidatorStatuses.js';
 

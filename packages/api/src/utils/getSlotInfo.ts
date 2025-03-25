@@ -1,5 +1,5 @@
 import { env } from '@/src/env.js';
-import { getLastSlotWithAttestations_db } from '@/src/prisma/getLastSlotWithAttestations.js';
+import { getLastSlotWithAttestations_db } from '@/src/services/prisma/getLastSlotWithAttestations.js';
 import { getSlotNumberFromTimestamp } from '@/src/utils/beacon.js';
 
 export async function getSlotInfo() {
