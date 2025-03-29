@@ -12,7 +12,7 @@ const prisma = getPrisma();
 
 const _fetchExecutionRewardsTask = async (logger: CustomLogger) => {
   const latestReward = await prisma.executionRewards.findFirst({
-    orderBy: { timestamp: 'desc' },
+    orderBy: { blockNumber: 'desc' },
   });
 
   let blockToQuery: number;

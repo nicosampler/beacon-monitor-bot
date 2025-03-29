@@ -5,6 +5,7 @@ import pRetry from 'p-retry';
 import { env } from '@/src/env.js';
 import { Blockscout_Blocks, Etherscan_BlockReward } from '@/src/execution/types.js';
 import { instance } from '@/src/execution/utils/instance.js';
+import { CustomLogger } from '@/src/lib/pino.js';
 
 export type BlockResponse = {
   address: string;
@@ -13,7 +14,10 @@ export type BlockResponse = {
   blockNumber: number;
 };
 
-export async function getBlock(blockNumber: number): Promise<BlockResponse> {
+export async function getBlock(
+  blockNumber: number,
+  logger: CustomLogger,
+): Promise<BlockResponse | null> {
   let lastError: unknown;
 
   // First endpoint is blockscout, second is etherscan
@@ -23,6 +27,11 @@ export async function getBlock(blockNumber: number): Promise<BlockResponse> {
       process: (response: AxiosResponse<Blockscout_Blocks>) => {
         const blockInfo = response.data;
         const minerReward = blockInfo.rewards.find((r) => r.type === 'Miner Reward');
+
+        if (!blockInfo.miner || !blockInfo.miner.hash || blockInfo.miner.hash == '') {
+          logger.warn('Unexpected block response', blockInfo);
+          return null;
+        }
 
         const result: BlockResponse = {
           address: blockInfo.miner.hash,

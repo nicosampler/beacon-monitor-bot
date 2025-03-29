@@ -15,14 +15,14 @@ import { scheduleSummarizeHourly } from '@/src/scheduler/tasks/summarizeHourly.j
 export function scheduleTasks() {
   scheduleFetchCommittee({
     id: 'FetchCommittee',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('5s'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleFetchAttestations({
     id: 'FetchAttestations',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('2s'),
     runImmediately: true,
     preventOverrun: true,
@@ -64,21 +64,21 @@ export function scheduleTasks() {
   });
   scheduleSummarizeHourly({
     id: 'SummarizeHourly',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('15m'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleSummarizeDaily({
     id: 'SummarizeDaily',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('1h'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleCleanupCommittee({
     id: 'CleanupCommittee',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('30m'),
     runImmediately: true,
     preventOverrun: true,
