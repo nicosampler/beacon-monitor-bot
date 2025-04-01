@@ -33,10 +33,10 @@ async function makeBeaconRequest<T>(
   let lastError: unknown;
 
   // Try each URL in sequence
-  for (const url of [env.BEACON_API_URL, env.BEACON_API_BKP_URL]) {
+  for (const url of [env.BEACON_API_BKP_URL, env.BEACON_API_URL]) {
     try {
       const result = await pRetry(() => requestBuilder(url), {
-        retries: 2,
+        retries: 1,
         minTimeout: 1000,
       });
       return result;
