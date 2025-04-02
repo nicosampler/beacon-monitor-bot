@@ -22,14 +22,14 @@ export function scheduleTasks() {
   });
   scheduleFetchAttestations({
     id: 'FetchAttestations',
-    logsEnabled: false,
+    logsEnabled: true,
     intervalMs: ms('2s'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleFetchExecutionRewards({
     id: 'FetchExecutionRewards',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('1s'),
     runImmediately: true,
     preventOverrun: true,
