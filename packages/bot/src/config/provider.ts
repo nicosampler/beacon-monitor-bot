@@ -1,11 +1,10 @@
 import { ethers } from 'ethers';
 import emp from 'ethers-multicall-provider';
 
-import { PK, RPC_URL } from '@/src/constants/index.js';
+import { env } from '@/src/env.js';
 
-// export const batchProvider = new ethers.providers.JsonRpcBatchProvider(RPC_URL);
-export const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+export const provider = new ethers.providers.JsonRpcProvider(env.EXECUTION_RPC_URL);
 
 export const multicallProvider = emp.MulticallWrapper.wrap(provider);
 
-export const signer = new ethers.Wallet(PK, provider);
+export const signer = new ethers.Wallet(env.NODE_SENTINEL_PRIVATE_KEY, provider);

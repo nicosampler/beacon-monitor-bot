@@ -1,6 +1,6 @@
 import { CommandContext, Context } from 'grammy';
 
-import { TG_ADMIN_USER_IDS } from '@/src/constants/index.js';
+import { env } from '@/src/env.js';
 import { countUsers_db } from '@/src/prisma/users.js';
 import { countAllValidatorsLoaded } from '@/src/prisma/validatros.js';
 import { getDataFromContext } from '@/src/telegram/utils/getUserIdFromCtx.js';
@@ -12,7 +12,7 @@ export async function botStats(ctx: CommandContext<Context>) {
   try {
     const { userId } = getDataFromContext(ctx);
 
-    if (!TG_ADMIN_USER_IDS.includes(userId)) {
+    if (!env.TG_ADMIN_USER_IDS.includes(userId)) {
       throw new AppError('You are not allowed to use this command', 'UNAUTHORIZED');
     }
 

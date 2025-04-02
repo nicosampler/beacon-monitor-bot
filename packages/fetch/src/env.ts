@@ -7,10 +7,27 @@ export const env = createEnv({
   clientPrefix: 'FIX_SERVER_ERROR',
   client: {},
   server: {
+    // Database
+    DATABASE_URL: z.string().url(),
+
+    // Telegram
+    TG_BOT_TOKEN: z.string(),
+    TG_ADMIN_USER_IDS: z.preprocess(
+      (val) => (typeof val === 'string' ? val.split(',').map(Number) : []),
+      z.array(z.number()),
+    ),
+
+    // Logging
     LOG_OUTPUT: z.enum(['file', 'console']).optional(),
     LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).optional(),
 
-    DATABASE_URL: z.string().url(),
+    // Node Sentinel
+    NODE_SENTINEL_URL: z.string().url(),
+    NODE_SENTINEL_CHAIN: z.enum(['gnosis', 'mainnet']),
+    NODE_SENTINEL_PRIVATE_KEY: z.string(),
+    NODE_SENTINEL_API_URL: z.string().url(),
+    NODE_SENTINEL_API_PORT: z.number().int().positive().default(3005),
+    NODE_SENTINEL_API_SECRET_KEY: z.string(),
     // Beacon
     BEACON_GENESIS_TIMESTAMP: z.number().int().positive(),
     BEACON_SLOT_DURATION_IN_SECONDS: z.number().int().positive(),
@@ -27,13 +44,24 @@ export const env = createEnv({
     // Execution
     EXECUTION_BLOCK_LOOKBACK: z.number().int().positive(),
     // Execution API
-    EXECUTION_RPC_URL: z.string().url(),
+    EXECUTION_EXPLORER_URL: z.string().url(),
     EXECUTION_API_URL: z.string().url(),
     EXECUTION_API_KEY: z.string().optional(),
     EXECUTION_API_BKP_URL: z.string().url(),
     EXECUTION_API_BKP_KEY: z.string().optional(),
     EXECUTION_API_REQUEST_PER_SECOND: z.number().int().positive(),
     EXECUTION_API_REQUEST_PER_MINUTE: z.number().int().positive(),
+    EXECUTION_RPC_URL: z.string().url(),
+
+    // Blockchain
+    BLOCKCHAIN_TOKEN_SYMBOL: z.string(),
+    BLOCKCHAIN_FEE_REWARDS_IN_STABLE: z.preprocess((val) => val === 'true', z.boolean()),
+    BLOCKCHAIN_FEE_REWARDS_SYMBOL: z.string(),
+    BLOCKCHAIN_SC_DEPOSIT_ADDRESS: z.string(),
+
+    // Coingecko
+    COINGECKO_TOKEN_PRICE_API_URL: z.string(),
+    COINGECKO_TOKEN_NAME: z.string(),
   },
   runtimeEnv: {
     ..._env,

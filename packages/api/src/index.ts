@@ -45,7 +45,7 @@ const authMiddleware = (
   const token = authHeader.split(' ')[1];
 
   // Compare with your expected token
-  if (token !== env.API_SECRET_KEY) {
+  if (token !== env.NODE_SENTINEL_API_SECRET_KEY) {
     return res.status(401).json({ error: 'Unauthorized - Invalid token' });
   }
 
@@ -58,7 +58,7 @@ app.use('/api', authMiddleware, apiRouter);
 // Initialize Prisma
 getPrisma();
 
-const port = env.PORT;
+const port = env.NODE_SENTINEL_API_PORT;
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });

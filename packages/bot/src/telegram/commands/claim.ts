@@ -3,7 +3,8 @@ import { Context } from 'grammy';
 import { Message } from 'grammy/types';
 
 import { signer } from '@/src/config/provider.js';
-import { CLAIM_COOL_DOWN_DAYS, EXPLORER_URL } from '@/src/constants/index.js';
+import { CLAIM_COOL_DOWN_DAYS } from '@/src/constants/index.js';
+import { env } from '@/src/env.js';
 import { getUser_db, updateUserById_db } from '@/src/prisma/users.js';
 import { getWithdrawalAddresses_db } from '@/src/prisma/withdrawalAddresses.js';
 import { getDataFromContext } from '@/src/telegram/utils/getUserIdFromCtx.js';
@@ -55,7 +56,7 @@ export async function claim(ctx: Context) {
     await editMessageText(
       tmpReply.chat.id,
       tmpReply.message_id,
-      `🤑 Claim sent. ${EXPLORER_URL}/tx/${transactionHash}`,
+      `🤑 Claim sent. ${env.EXECUTION_EXPLORER_URL}/tx/${transactionHash}`,
     );
 
     // update user.

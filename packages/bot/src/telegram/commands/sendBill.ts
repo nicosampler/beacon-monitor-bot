@@ -2,7 +2,7 @@ import { getDataFromContext } from '../utils/getUserIdFromCtx.js';
 
 import { getPrisma } from '@/src/config/prisma.js';
 import { MyContext } from '@/src/config/session.js';
-import { TG_ADMIN_USER_IDS } from '@/src/constants/index.js';
+import { env } from '@/src/env.js';
 import { sendMessage } from '@/src/telegram/utils/messaging.js';
 import { AppError } from '@/src/utils/errors/AppError.js';
 
@@ -14,7 +14,7 @@ export async function sendBill(ctx: MyContext) {
     const { userId } = getDataFromContext(ctx);
 
     // Check if the user is authorized
-    if (!TG_ADMIN_USER_IDS.includes(userId)) {
+    if (!env.TG_ADMIN_USER_IDS.includes(userId)) {
       throw new AppError('You are not authorized to use this command.', 'UNAUTHORIZED');
     }
 
@@ -31,10 +31,10 @@ export async function sendBill(ctx: MyContext) {
     for (const user of users) {
       // Get pricing details for this user's validator count
       // const response = await fetch(
-      //   `${env.API_URL}/api/pricing/calculate?validators=${user.validators.length}`,
+      //   `${env.NODE_SENTINEL_API_URL}/api/pricing/calculate?validators=${user.validators.length}`,
       //   {
       //     headers: {
-      //       Authorization: `Bearer ${env.API_SECRET_KEY}`,
+      //       Authorization: `Bearer ${env.NODE_SENTINEL_API_SECRET_KEY}`,
       //     },
       //   }
       // );

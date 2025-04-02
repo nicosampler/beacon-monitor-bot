@@ -3,7 +3,7 @@ import { InlineKeyboard } from 'grammy';
 
 import { getPrisma } from '@/src/config/prisma.js';
 import { MyContext } from '@/src/config/session.js';
-import { TG_ADMIN_USER_IDS } from '@/src/constants/index.js';
+import { env } from '@/src/env.js';
 import { getDataFromContext } from '@/src/telegram/utils/getUserIdFromCtx.js';
 import { sendMessage } from '@/src/telegram/utils/messaging.js';
 import { AppError } from '@/src/utils/errors/AppError.js';
@@ -18,7 +18,7 @@ export async function headsUp(conversation: HeadsUpConversation, ctx: MyContext)
     const { userId } = getDataFromContext(ctx);
 
     // Check if the user is authorized
-    if (!TG_ADMIN_USER_IDS.includes(userId)) {
+    if (!env.TG_ADMIN_USER_IDS.includes(userId)) {
       throw new AppError('You are not authorized to use this command.', 'UNAUTHORIZED');
     }
 

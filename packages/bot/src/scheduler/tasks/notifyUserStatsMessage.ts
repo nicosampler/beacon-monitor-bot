@@ -5,13 +5,7 @@ import memoizee from 'memoizee';
 import ms from 'ms';
 
 import { getPrisma } from '@/src/config/prisma.js';
-import {
-  TOKEN_SYMBOL,
-  FEE_REWARDS_IN_STABLE,
-  FEE_REWARDS_SYMBOL,
-  TG_ERROR_SAME_MESSAGE,
-  DAYS_IN_YEAR,
-} from '@/src/constants/index.js';
+import { TG_ERROR_SAME_MESSAGE, DAYS_IN_YEAR } from '@/src/constants/index.js';
 import { env } from '@/src/env.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { notifyInactiveValidators } from '@/src/scheduler/tasks/notifyInactiveValidators.js';
@@ -467,7 +461,7 @@ async function calculateTableStats(
   const totalDailyExecution = Number(formatEther(dailyExecutionRewards[0].total.toString()));
   const totalDailyUsd =
     totalDailyConsensusEth * tokenPrice +
-    (FEE_REWARDS_IN_STABLE ? totalDailyExecution : totalDailyExecution * tokenPrice);
+    (env.BLOCKCHAIN_FEE_REWARDS_IN_STABLE ? totalDailyExecution : totalDailyExecution * tokenPrice);
 
   // Calculate weekly stats
   const totalWeeklyConsensus =
@@ -483,7 +477,9 @@ async function calculateTableStats(
   const totalWeeklyExecution = Number(formatEther(weeklyExecutionRewards[0].total.toString()));
   const totalWeeklyUsd =
     totalWeeklyConsensusEth * tokenPrice +
-    (FEE_REWARDS_IN_STABLE ? totalWeeklyExecution : totalWeeklyExecution * tokenPrice);
+    (env.BLOCKCHAIN_FEE_REWARDS_IN_STABLE
+      ? totalWeeklyExecution
+      : totalWeeklyExecution * tokenPrice);
 
   const totalMonthlyConsensus =
     BigInt(monthlyValidatorStats[0].head) +
@@ -500,7 +496,9 @@ async function calculateTableStats(
 
   const totalMonthlyUsd =
     totalMonthlyConsensusEth * tokenPrice +
-    (FEE_REWARDS_IN_STABLE ? totalMonthlyExecution : totalMonthlyExecution * tokenPrice);
+    (env.BLOCKCHAIN_FEE_REWARDS_IN_STABLE
+      ? totalMonthlyExecution
+      : totalMonthlyExecution * tokenPrice);
 
   const totalBalance =
     Number(
@@ -596,21 +594,21 @@ function formatStatsMessage(
 
   const mainStats = [
     `Last 1h perf: ${performance == null ? '-' : `${performance.toFixed(2)}%`}`,
-    `Bal: ${balance.total} ${TOKEN_SYMBOL} $${balance.value}`,
-    `Claimable: ${withdrawable.total} ${TOKEN_SYMBOL} $${withdrawable.value}`,
+    `Bal: ${balance.total} ${env.BLOCKCHAIN_TOKEN_SYMBOL} $${balance.value}`,
+    `Claimable: ${withdrawable.total} ${env.BLOCKCHAIN_TOKEN_SYMBOL} $${withdrawable.value}`,
   ].join('\n');
 
   const rewardsSection = [
     `Stats:`,
     `-----------------------------`,
-    `    APY%  ${TOKEN_SYMBOL}   ${FEE_REWARDS_SYMBOL}   Total`,
+    `    APY%  ${env.BLOCKCHAIN_TOKEN_SYMBOL}   ${env.BLOCKCHAIN_FEE_REWARDS_SYMBOL}   Total`,
     `d:  ${dailyApy}  ${formatNumber(stats.rewards.daily.consensus, 3)}  ${formatNumber(stats.rewards.daily.execution, 3)}  ${formatNumber(stats.rewards.daily.usd, 4, '$')}`,
     `w:  ${weeklyApy}  ${formatNumber(stats.rewards.weekly.consensus, 3)}  ${formatNumber(stats.rewards.weekly.execution, 3)}  ${formatNumber(stats.rewards.weekly.usd, 4, '$')}`,
     `m:  ${monthlyApy}  ${formatNumber(stats.rewards.monthly.consensus, 3)}  ${formatNumber(stats.rewards.monthly.execution, 3)}  ${formatNumber(stats.rewards.monthly.usd, 4, '$')}`,
   ].join('\n');
 
   const footer = [
-    `${TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}`,
+    `${env.BLOCKCHAIN_TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}`,
     `Updated: ${format(new Date(), 'MM/dd hh:mmaaa')} UTC`,
   ].join('\n');
 
