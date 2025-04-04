@@ -1,3 +1,7 @@
+export type ErrorResponse = {
+  error: string;
+};
+
 export type UserValidators = {
   username: string;
   validatorStatuses: {
@@ -49,12 +53,6 @@ export type SpecificPricingResponse = PricingTierResponse & {
   timestamp: string;
 };
 
-// Error responses
-export type ErrorResponse = {
-  error: string;
-  timestamp: string;
-};
-
 export type UserBilling = {
   username: string;
   validatorCount: number;
@@ -92,7 +90,7 @@ export type ValidatorInfo = {
   attestation_status: 'active' | 'inactive' | 'slashed' | 'exited';
 };
 
-export type UserInfo = {
+export type UserValidatorsInfo = {
   username: string;
   validatorsByWithdrawal: ValidatorStatusesByWithdrawal;
   missedAttestations: {

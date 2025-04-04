@@ -1,3 +1,7 @@
+export type ErrorResponse = {
+  error: string;
+};
+
 export type UserValidators = {
   username: string;
   validatorStatuses: {
@@ -49,12 +53,6 @@ export type SpecificPricingResponse = PricingTierResponse & {
   timestamp: string;
 };
 
-// Error responses
-export type ErrorResponse = {
-  error: string;
-  timestamp: string;
-};
-
 export type UserBilling = {
   username: string;
   validatorCount: number;
@@ -73,4 +71,33 @@ export type NodeBillingResponse = {
   users: UserBillingDetail[];
   totalMonthly: number;
   timestamp: string;
+};
+
+export type ValidatorStatuses = {
+  activeIds: number[];
+  inactiveIds: number[];
+  slashedIds: number[];
+  exitedIds: number[];
+};
+
+export type ValidatorStatusesByWithdrawal = {
+  [withdrawalAddress: string]: ValidatorStatuses;
+};
+
+export type ValidatorInfo = {
+  withdrawal_address: string | null;
+  validator_id: number;
+  attestation_status: 'active' | 'inactive' | 'slashed' | 'exited';
+};
+
+export type UserValidatorsInfo = {
+  username: string;
+  validatorsByWithdrawal: ValidatorStatusesByWithdrawal;
+  missedAttestations: {
+    slot: number;
+    timestamp: number;
+    index: number;
+    attestationDelay: number | null;
+    validatorIndex: number;
+  }[];
 };

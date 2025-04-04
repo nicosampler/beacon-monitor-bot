@@ -1,9 +1,10 @@
-import { Committee, User, Validator, WithdrawalAddress } from '@prisma/client';
+import { User, Validator, WithdrawalAddress } from '@prisma/client';
 import format from 'date-fns/format';
 import { formatEther } from 'ethers/lib/utils.js';
 import memoizee from 'memoizee';
 import ms from 'ms';
 
+import { getUserValidatorsInfo } from '@/src/api/user.js';
 import { getPrisma } from '@/src/config/prisma.js';
 import { TG_ERROR_SAME_MESSAGE, DAYS_IN_YEAR } from '@/src/constants/index.js';
 import { env } from '@/src/env.js';
@@ -20,7 +21,6 @@ import {
   epochsIn1h,
   getEpochFromSlot,
   getEpochSlots,
-  slotsIn1h,
   VALIDATOR_STATUS,
 } from '@/src/utils/beacon.js';
 import { getSlotNumberFromTimestamp } from '@/src/utils/beacon.js';
@@ -109,7 +109,7 @@ async function getUser(userId: bigint) {
 function getValidatorStatuses(
   user: User & { validators: Validator[] },
   beaconActiveValidators: Validator[],
-  userMissedAttestations: Committee[],
+  userMissedAttestations: MissedAttestations,
   maxEpochToQuery: number,
 ): ValidatorByStatus {
   const inactiveIds: number[] = [];
@@ -172,7 +172,9 @@ async function getUserAllStats(
       v.status === VALIDATOR_STATUS.active_ongoing || v.status === VALIDATOR_STATUS.active_exiting,
   );
 
-  const missedAttestations = await getMissedAttestations(Number(user.id), maxSlotToQuery);
+  // const missedAttestationsOld = await getMissedAttestations(Number(user.id), maxSlotToQuery);
+  const userValidatorsInfo = await getUserValidatorsInfo(user.loginId);
+  const missedAttestations = userValidatorsInfo.missedAttestations;
 
   const [validatorStatuses, performance1h, balanceStats, tableStats, withdrawable] =
     await Promise.all([
@@ -201,7 +203,7 @@ async function getUserAllStats(
 
 async function get1hPerformance(
   syncing: boolean,
-  missedAttestations: Committee[],
+  missedAttestations: MissedAttestations,
   userActiveValidators: number,
 ) {
   if (syncing) return null;
@@ -230,34 +232,34 @@ function getUserBalance(validators: Validator[]) {
 }
 
 // Get all the missed attestations in the last hour for the user's validators
-async function getMissedAttestations(userId: number, maxSlotToQuery: number): Promise<Committee[]> {
-  return prisma.$queryRaw<Committee[]>`
-    WITH slots AS (
-      SELECT ${maxSlotToQuery - slotsIn1h} as slot_start, ${maxSlotToQuery} as slot_end
-    ),
-    active_validators AS MATERIALIZED (
-      SELECT v.id
-      FROM "_UserToValidator" uv 
-      JOIN "Validator" v ON v.id = uv."B"
-      WHERE uv."A" = ${userId}
-      AND v.status IN (${VALIDATOR_STATUS.active_ongoing}, ${VALIDATOR_STATUS.active_exiting})
-    )
-    SELECT c.* 
-    FROM active_validators av
-    CROSS JOIN slots s
-    JOIN LATERAL (
-      SELECT *
-      FROM "Committee" c
-      WHERE c."validatorIndex" = av.id
-      AND c.slot BETWEEN s.slot_start AND s.slot_end
-      AND (
-        c."attestationDelay" IS NULL 
-        OR c."attestationDelay" > ${env.BEACON_MAX_ATTESTATION_DELAY}
-      )
-    ) c ON true
-    ORDER BY c.slot DESC
-  `;
-}
+// async function getMissedAttestations(userId: number, maxSlotToQuery: number): Promise<Committee[]> {
+//   return prisma.$queryRaw<Committee[]>`
+//     WITH slots AS (
+//       SELECT ${maxSlotToQuery - slotsIn1h} as slot_start, ${maxSlotToQuery} as slot_end
+//     ),
+//     active_validators AS MATERIALIZED (
+//       SELECT v.id
+//       FROM "_UserToValidator" uv
+//       JOIN "Validator" v ON v.id = uv."B"
+//       WHERE uv."A" = ${userId}
+//       AND v.status IN (${VALIDATOR_STATUS.active_ongoing}, ${VALIDATOR_STATUS.active_exiting})
+//     )
+//     SELECT c.*
+//     FROM active_validators av
+//     CROSS JOIN slots s
+//     JOIN LATERAL (
+//       SELECT *
+//       FROM "Committee" c
+//       WHERE c."validatorIndex" = av.id
+//       AND c.slot BETWEEN s.slot_start AND s.slot_end
+//       AND (
+//         c."attestationDelay" IS NULL
+//         OR c."attestationDelay" > ${env.BEACON_MAX_ATTESTATION_DELAY}
+//       )
+//     ) c ON true
+//     ORDER BY c.slot DESC
+//   `;
+// }
 
 // Memoized version of getDailyValidatorStats
 const getDailyValidatorStatsMemoized = memoizee(
