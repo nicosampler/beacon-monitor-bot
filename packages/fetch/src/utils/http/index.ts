@@ -2,19 +2,14 @@ import { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 import createLogger from '@/src/lib/pino.js';
 
-const LOGS_ENABLED = false;
-
 export function logRequest(request: InternalAxiosRequestConfig): InternalAxiosRequestConfig {
-  const logger = createLogger(null, LOGS_ENABLED);
-  logger.info(
-    // body: request.data,
-    `${request.method?.toUpperCase()} ${request.url}`,
-  );
+  const logger = createLogger(null, true);
+  logger.info(`${request.method?.toUpperCase()} ${request.url}`);
   return request;
 }
 
 export function logResponse(response: AxiosResponse): AxiosResponse {
-  const logger = createLogger(null, LOGS_ENABLED);
+  const logger = createLogger(null, false);
   const message = `<< ${
     response.status
   } ${response.config?.method?.toUpperCase()} ${response.config?.url}`;

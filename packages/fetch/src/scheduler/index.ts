@@ -22,7 +22,7 @@ export function scheduleTasks() {
   });
   scheduleFetchAttestations({
     id: 'FetchAttestations',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('2s'),
     runImmediately: true,
     preventOverrun: true,
@@ -58,7 +58,7 @@ export function scheduleTasks() {
   scheduleFetchValidatorsInfo({
     id: 'FetchValidatorsInfo',
     logsEnabled: false,
-    intervalMs: ms('10m'),
+    intervalMs: ms('30m'),
     runImmediately: true,
     preventOverrun: true,
   });

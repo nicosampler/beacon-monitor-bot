@@ -10,11 +10,11 @@ const limiterPerSecond = new RateLimiterMemory({
 });
 
 // Create a rate limiter per minute
-const limiterPerMinute = new RateLimiterMemory({
-  points: env.EXECUTION_API_REQUEST_PER_MINUTE,
-  duration: 60, // Per minute
-  keyPrefix: 'per-minute',
-});
+// const limiterPerMinute = new RateLimiterMemory({
+//   points: env.EXECUTION_API_REQUEST_PER_MINUTE,
+//   duration: 60, // Per minute
+//   keyPrefix: 'per-minute',
+// });
 
 // Function to limit requests
 export async function limitRequests<T>(fn: () => Promise<T>): Promise<T> {
@@ -22,7 +22,7 @@ export async function limitRequests<T>(fn: () => Promise<T>): Promise<T> {
     // Consume a point from both rate limiters
     await Promise.all([
       limiterPerSecond.consume('per-second-key', 1),
-      limiterPerMinute.consume('per-minute-key', 1),
+      // limiterPerMinute.consume('per-minute-key', 1),
     ]);
 
     return fn();

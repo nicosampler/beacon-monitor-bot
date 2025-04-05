@@ -1,3 +1,33 @@
+/**
+ * Configuration for beacon URLs
+ */
+export type BeaconConfig = {
+  primaryUrl: string;
+  secondaryUrl: string;
+};
+
+/**
+ * URL priority options
+ */
+export type UrlPriority = 'primary' | 'secondary';
+
+/**
+ * Options for endpoint requests
+ */
+export type EndpointOptions = {
+  /**
+   * URL priority to use for the request
+   * @default 'primary'
+   */
+  priority?: UrlPriority;
+
+  /**
+   * Whether to attempt fallback to the other URL if the first one fails
+   * @default true
+   */
+  attemptFallback?: boolean;
+};
+
 // TODO: analyze when to use each status to do filtering for the beacon API.
 // https://docs.blockdaemon.com/docs/eth-validator-statuses
 export type ValidatorStatus =

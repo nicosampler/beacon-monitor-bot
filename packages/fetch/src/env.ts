@@ -32,14 +32,13 @@ export const env = createEnv({
     BEACON_GENESIS_TIMESTAMP: z.number().int().positive(),
     BEACON_SLOT_DURATION_IN_SECONDS: z.number().int().positive(),
     BEACON_SLOTS_PER_EPOCH: z.number().int().positive(),
-    BEACON_DELAY_SLOTS_TO_HEAD: z.number().int().min(2),
+    BEACON_DELAY_SLOTS_TO_HEAD: z.number().int().positive(),
     BEACON_LOOKBACK_SLOT: z.number().int().min(0),
-    BEACON_MAX_ATTESTATION_DELAY: z.number().int().min(2),
+    BEACON_MAX_ATTESTATION_DELAY: z.number().int().min(5),
     // Beacon API
     BEACON_API_URL: z.string().url(),
     BEACON_API_BKP_URL: z.string().url(),
     BEACON_API_REQUEST_PER_SECOND: z.number().int().positive(),
-    BEACON_API_REQUEST_PER_MINUTE: z.number().int().positive(),
 
     // Execution
     EXECUTION_BLOCK_LOOKBACK: z.number().int().positive(),
@@ -50,7 +49,6 @@ export const env = createEnv({
     EXECUTION_API_BKP_URL: z.string().url(),
     EXECUTION_API_BKP_KEY: z.string().optional(),
     EXECUTION_API_REQUEST_PER_SECOND: z.number().int().positive(),
-    EXECUTION_API_REQUEST_PER_MINUTE: z.number().int().positive(),
     EXECUTION_RPC_URL: z.string().url(),
 
     // Blockchain
@@ -75,13 +73,11 @@ export const env = createEnv({
     BEACON_MAX_ATTESTATION_DELAY: Number(_env['BEACON_MAX_ATTESTATION_DELAY']),
     // Beacon-node API
     BEACON_API_REQUEST_PER_SECOND: Number(_env['BEACON_API_REQUEST_PER_SECOND']),
-    BEACON_API_REQUEST_PER_MINUTE: Number(_env['BEACON_API_REQUEST_PER_MINUTE']),
 
     // Execution config
     EXECUTION_BLOCK_LOOKBACK: Number(_env['EXECUTION_BLOCK_LOOKBACK']),
     // Execution API
     EXECUTION_API_REQUEST_PER_SECOND: Number(_env['EXECUTION_API_REQUEST_PER_SECOND']),
-    EXECUTION_API_REQUEST_PER_MINUTE: Number(_env['EXECUTION_API_REQUEST_PER_MINUTE']),
   },
   emptyStringAsUndefined: true,
 });

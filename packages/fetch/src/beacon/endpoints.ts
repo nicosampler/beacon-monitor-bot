@@ -12,8 +12,14 @@ import {
   GetValidatorsBalances,
   SyncCommitteeRewards,
   ValidatorStatus,
+  EndpointOptions,
 } from '@/src/beacon/types.js';
 import { instance } from '@/src/beacon/utils/instance.js';
+import { getEpochSlots } from '@/src/beacon/utils/misc.js';
+import {
+  getEpochNumberFromTimestamp,
+  getTimestampFromSlotNumber,
+} from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 
 // Helper function to check for missed slot errors
@@ -25,24 +31,63 @@ function _isSlotMissedError(error: unknown): boolean {
   );
 }
 
-// Generic helper function for making requests with retries and multiple URLs
+/**
+ * Generic helper function for making requests with retries and multiple URLs
+ *
+ * This function implements a bidirectional fallback strategy:
+ * 1. First attempts to make the request using the primary URL (BEACON_API_URL by default)
+ * 2. If the primary URL fails, automatically falls back to the secondary URL (BEACON_API_BKP_URL)
+ * 3. The priority can be reversed by passing { priority: 'secondary' } in options
+ * 4. Each attempt includes retries using pRetry
+ * 5. If both URLs fail, it will use the provided errorHandler if available
+ *
+ * The errorHandler is useful for handling specific error cases that should not be treated as failures.
+ * For example, when a slot is missed in the blockchain, we might want to return a specific value
+ * instead of throwing an error. The errorHandler receives the error and can return a value to be
+ * used as the result, or undefined if the error should be propagated.
+ *
+ * @param callEndpoint - Function that builds the request using the provided URL
+ * @param errorHandler - Optional function to handle specific error cases. If provided, it will be called
+ *                      when both URLs fail. It can return a value to be used as the result, or undefined
+ *                      to propagate the error.
+ * @param options - Optional configuration for the request
+ * @returns Promise with the response data
+ */
 async function makeBeaconRequest<T>(
-  requestBuilder: (url: string) => Promise<T>,
+  callEndpoint: (url: string) => Promise<T>,
   errorHandler?: (error: unknown) => T | undefined,
+  options: EndpointOptions = {},
 ): Promise<T> {
+  const { priority = 'primary' } = options;
   let lastError: unknown;
 
-  // Try each URL in sequence
-  for (const url of [env.BEACON_API_BKP_URL, env.BEACON_API_URL]) {
-    try {
-      const result = await pRetry(() => requestBuilder(url), {
-        retries: 1,
-        minTimeout: 1000,
-      });
-      return result;
-    } catch (error) {
-      lastError = error;
-    }
+  // Get URLs based on priority
+  const primaryUrl = priority === 'primary' ? env.BEACON_API_URL : env.BEACON_API_BKP_URL;
+  const secondaryUrl = priority === 'primary' ? env.BEACON_API_BKP_URL : env.BEACON_API_URL;
+
+  const minTimeout = 500;
+
+  // Try primary URL first
+  try {
+    const result = await pRetry(() => callEndpoint(primaryUrl), {
+      retries: 2,
+      minTimeout,
+    });
+    return result;
+  } catch (error) {
+    lastError = error;
+  }
+
+  // Always try with secondary URL if primary fails
+  try {
+    console.log(`Beacon fallback. URL (${priority}) failed`);
+    const result = await pRetry(() => callEndpoint(secondaryUrl), {
+      retries: 2,
+      minTimeout,
+    });
+    return result;
+  } catch (error) {
+    lastError = error;
   }
 
   // Handle special error cases if handler provided
@@ -56,7 +101,26 @@ async function makeBeaconRequest<T>(
   throw lastError;
 }
 
-// Updated functions using the helper
+function isIndexerDelayed({ value, type }: { value: number; type: 'block' | 'epoch' }) {
+  let slot: number;
+
+  if (type === 'epoch') {
+    const currEpoch = getEpochNumberFromTimestamp(Date.now());
+    const { endSlot } = getEpochSlots(currEpoch);
+    slot = endSlot;
+  } else {
+    slot = value;
+  }
+
+  const delay = ms('10m');
+  const slotTimestamp = getTimestampFromSlotNumber(slot);
+  const currentTimestamp = Date.now();
+
+  // Return true if the slot timestamp is more than 10 minutes behind current time
+  return currentTimestamp - slotTimestamp > delay;
+}
+
+// Restore original endpoint functions
 export async function getCommittees(
   epoch: number,
   stateId = 'head',
@@ -88,12 +152,16 @@ export async function getAttestations(
 export async function getValidatorsBalances(
   stateId: string | number,
 ): Promise<GetValidatorsBalances['data']> {
-  return makeBeaconRequest(async (url) => {
-    const res = await instance.get<GetValidatorsBalances>(
-      `${url}/eth/v1/beacon/states/${stateId}/validator_balances`,
-    );
-    return res.data.data;
-  });
+  return makeBeaconRequest(
+    async (url) => {
+      const res = await instance.get<GetValidatorsBalances>(
+        `${url}/eth/v1/beacon/states/${stateId}/validator_balances`,
+      );
+      return res.data.data;
+    },
+    undefined,
+    { priority: 'secondary' },
+  );
 }
 
 export async function getValidatorsInfo(
@@ -101,31 +169,39 @@ export async function getValidatorsInfo(
   validatorIds: number[],
   status?: ValidatorStatus[],
 ): Promise<GetValidators['data']> {
-  return makeBeaconRequest(async (url) => {
-    // Construct query parameters
-    const params = new URLSearchParams();
-    validatorIds.forEach((id) => params.append('id', id.toString()));
-    status?.forEach((s) => params.append('status', s));
+  return makeBeaconRequest(
+    async (url) => {
+      // Construct query parameters
+      const params = new URLSearchParams();
+      validatorIds.forEach((id) => params.append('id', id.toString()));
+      status?.forEach((s) => params.append('status', s));
 
-    const res = await instance.get<GetValidators>(
-      `${url}/eth/v1/beacon/states/${stateId}/validators`,
-      { params },
-    );
-    return res.data.data;
-  });
+      const res = await instance.get<GetValidators>(
+        `${url}/eth/v1/beacon/states/${stateId}/validators`,
+        { params },
+      );
+      return res.data.data;
+    },
+    undefined,
+    { priority: 'secondary' },
+  );
 }
 
 export async function getAttestationRewards(
-  stateId: string | number,
+  epoch: number,
   validatorIds: string[],
 ): Promise<AttestationRewards> {
-  return makeBeaconRequest(async (url) => {
-    const res = await instance.post<AttestationRewards>(
-      `${url}/eth/v1/beacon/rewards/attestations/${stateId}`,
-      validatorIds,
-    );
-    return res.data;
-  });
+  return makeBeaconRequest(
+    async (url) => {
+      const res = await instance.post<AttestationRewards>(
+        `${url}/eth/v1/beacon/rewards/attestations/${epoch}`,
+        validatorIds,
+      );
+      return res.data;
+    },
+    undefined,
+    { priority: isIndexerDelayed({ value: epoch, type: 'epoch' }) ? 'primary' : 'secondary' },
+  );
 }
 
 export const getBlockRewards = memoizee(
@@ -136,6 +212,7 @@ export const getBlockRewards = memoizee(
         return res.data;
       },
       (error) => (_isSlotMissedError(error) ? 'SLOT MISSED' : undefined),
+      { priority: isIndexerDelayed({ value: slot, type: 'block' }) ? 'primary' : 'secondary' },
     );
   },
   {
@@ -147,13 +224,17 @@ export const getBlockRewards = memoizee(
 
 export const getSyncCommitteeRewards = memoizee(
   async function getSyncCommitteeRewards(slot: number, validatorIds: string[]) {
-    return makeBeaconRequest<SyncCommitteeRewards>(async (url) => {
-      const res = await instance.post<SyncCommitteeRewards>(
-        `${url}/eth/v1/beacon/rewards/sync_committee/${slot}`,
-        validatorIds,
-      );
-      return res.data;
-    });
+    return makeBeaconRequest<SyncCommitteeRewards>(
+      async (url) => {
+        const res = await instance.post<SyncCommitteeRewards>(
+          `${url}/eth/v1/beacon/rewards/sync_committee/${slot}`,
+          validatorIds,
+        );
+        return res.data;
+      },
+      undefined,
+      { priority: isIndexerDelayed({ value: slot, type: 'block' }) ? 'primary' : 'secondary' },
+    );
   },
   {
     promise: true,
