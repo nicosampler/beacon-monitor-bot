@@ -1,6 +1,6 @@
 import cors from 'cors';
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+// import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 
 import { env } from './env.js';
@@ -14,16 +14,16 @@ const app = express();
 app.use(helmet());
 
 // Rate limiter configuration
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later',
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-});
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 100, // Limit each IP to 100 requests per windowMs
+//   message: 'Too many requests from this IP, please try again later',
+//   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+//   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+// });
 
-// Apply rate limiter to all requests
-app.use(limiter);
+// // Apply rate limiter to all requests
+// app.use(limiter);
 
 // CORS configuration - allow all origins but protect routes with authentication
 app.use(cors());
