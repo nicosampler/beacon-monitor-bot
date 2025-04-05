@@ -14,8 +14,6 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
   logger.info(`Start`);
   try {
     const highestValidatorId = await getHighestValidatorId();
-    const apiBatchSize = 6500; // Batch size for API calls
-    const dbBatchSize = 5000; // Batch size for DB updates
 
     // Fetch validator IDs that are in final states
     logger.info(`Fetching final state validators`);
@@ -39,17 +37,17 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
       (id) => !finalStateValidatorIds.has(id),
     );
 
-    // First loop: Fetch all validator info in parallel batches
+    // Fetch all validator info in parallel batches
     logger.info(`Call validators info API`);
-    const apiValidatorBatches = chunk(allValidatorIds, apiBatchSize);
+    const apiValidatorBatches = chunk(allValidatorIds, 6500);
     const allValidatorsInfo: Awaited<ReturnType<typeof getValidatorsInfo>> = [];
     try {
-      const validatorPromises = apiValidatorBatches.map((validatorIds) =>
-        getValidatorsInfo('head', validatorIds),
-      );
-
-      const results = await Promise.all(validatorPromises);
-      results.forEach((batch) => allValidatorsInfo.push(...batch));
+      // Process batches sequentially
+      for (const validatorIds of apiValidatorBatches) {
+        logger.info(`Processing batch of ${validatorIds.length} validators`);
+        const batchResult = await getValidatorsInfo('head', validatorIds);
+        allValidatorsInfo.push(...batchResult);
+      }
     } catch (error) {
       logger.error(`Error fetching validators info batch`, error);
       return;
@@ -59,7 +57,7 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
     try {
       // Insert data in batches with upsert
       logger.info(`Upserting validators info in DB`);
-      const insertBatches = chunk(allValidatorsInfo, dbBatchSize);
+      const insertBatches = chunk(allValidatorsInfo, 5000);
       for (const batch of insertBatches) {
         await prisma.$executeRaw`
               INSERT INTO "Validator" (id, "withdrawalAddress", "status", "balance")
