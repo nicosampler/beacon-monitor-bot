@@ -23,7 +23,7 @@ export function scheduleTasks() {
   scheduleFetchAttestations({
     id: 'FetchAttestations',
     logsEnabled: false,
-    intervalMs: ms('2s'),
+    intervalMs: ms('1s'),
     runImmediately: true,
     preventOverrun: true,
   });
