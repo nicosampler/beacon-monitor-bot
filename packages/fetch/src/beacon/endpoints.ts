@@ -79,16 +79,16 @@ async function makeBeaconRequest<T>(
   }
 
   // Always try with secondary URL if primary fails
-  try {
-    console.log(`Beacon fallback. URL (${priority}) failed`);
-    const result = await pRetry(() => callEndpoint(secondaryUrl), {
-      retries,
-      minTimeout,
-    });
-    return result;
-  } catch (error) {
-    lastError = error;
-  }
+  // try {
+  //   console.log(`Beacon fallback. URL (${priority}) failed`);
+  //   const result = await pRetry(() => callEndpoint(secondaryUrl), {
+  //     retries,
+  //     minTimeout,
+  //   });
+  //   return result;
+  // } catch (error) {
+  //   lastError = error;
+  // }
 
   // Handle special error cases if handler provided
   if (errorHandler) {
