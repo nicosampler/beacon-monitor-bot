@@ -70,7 +70,7 @@ async function makeBeaconRequest<T>(
   // Try primary URL first
   try {
     const result = await pRetry(() => callEndpoint(primaryUrl), {
-      retries: 2,
+      retries: 1,
       minTimeout,
     });
     return result;
