@@ -58,7 +58,7 @@ async function makeBeaconRequest<T>(
   errorHandler?: (error: unknown) => T | undefined,
   options: EndpointOptions = {},
 ): Promise<T> {
-  const { priority = 'primary' } = options;
+  const { priority = 'primary', retries = 0 } = options;
   let lastError: unknown;
 
   // Get URLs based on priority
@@ -70,7 +70,7 @@ async function makeBeaconRequest<T>(
   // Try primary URL first
   try {
     const result = await pRetry(() => callEndpoint(primaryUrl), {
-      retries: 1,
+      retries,
       minTimeout,
     });
     return result;
@@ -82,7 +82,7 @@ async function makeBeaconRequest<T>(
   try {
     console.log(`Beacon fallback. URL (${priority}) failed`);
     const result = await pRetry(() => callEndpoint(secondaryUrl), {
-      retries: 2,
+      retries,
       minTimeout,
     });
     return result;

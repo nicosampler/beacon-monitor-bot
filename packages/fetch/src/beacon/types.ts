@@ -26,6 +26,12 @@ export type EndpointOptions = {
    * @default true
    */
   attemptFallback?: boolean;
+
+  /**
+   * Number of retries for the request
+   * @default 0
+   */
+  retries?: number;
 };
 
 // TODO: analyze when to use each status to do filtering for the beacon API.
