@@ -55,27 +55,27 @@ export function scheduleTasks() {
     runImmediately: true,
     preventOverrun: true,
   });
-  // scheduleFetchValidatorsInfo({
-  //   id: 'FetchValidatorsInfo',
-  //   logsEnabled: false,
-  //   intervalMs: ms('30m'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
-  // scheduleSummarizeHourly({
-  //   id: 'SummarizeHourly',
-  //   logsEnabled: false,
-  //   intervalMs: ms('15m'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
-  // scheduleSummarizeDaily({
-  //   id: 'SummarizeDaily',
-  //   logsEnabled: false,
-  //   intervalMs: ms('1h'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
+  scheduleFetchValidatorsInfo({
+    id: 'FetchValidatorsInfo',
+    logsEnabled: false,
+    intervalMs: ms('30m'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
+  scheduleSummarizeHourly({
+    id: 'SummarizeHourly',
+    logsEnabled: false,
+    intervalMs: ms('15m'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
+  scheduleSummarizeDaily({
+    id: 'SummarizeDaily',
+    logsEnabled: false,
+    intervalMs: ms('1h'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
   scheduleCleanupCommittee({
     id: 'CleanupCommittee',
     logsEnabled: false,
