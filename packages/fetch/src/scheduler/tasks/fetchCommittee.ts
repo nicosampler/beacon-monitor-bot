@@ -20,8 +20,8 @@ async function fetchNewCommittees(logger: CustomLogger): Promise<void> {
   const slotToFetch = lastSlotInCommittee ? lastSlotInCommittee.slot + 1 : getOldestLookbackSlot();
   const epochToFetch = getEpochFromSlot(slotToFetch);
 
-  logger.addContext(`Slot: ${slotToFetch}/${headSlot} - Epoch: ${epochToFetch}/${headEpoch}`);
-  logger.info('');
+  logger.addContext(`Epoch: ${epochToFetch}`);
+  logger.info(`FetchCommittee: Distance to head: ${headEpoch - epochToFetch} epochs`);
 
   // Skip if the committee does not exist yet
   if (slotToFetch > headSlot + env.BEACON_SLOTS_PER_EPOCH) {
@@ -39,9 +39,6 @@ async function fetchNewCommittees(logger: CustomLogger): Promise<void> {
     logger.info(`Skipping, last slot with attestations is too back in time`);
     return;
   }
-
-  // Logging the context
-  logger.info('');
 
   await fetchCommittee(logger, epochToFetch, lastSlotInCommittee?.slot || -1);
 

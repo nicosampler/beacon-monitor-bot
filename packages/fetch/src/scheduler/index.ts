@@ -52,14 +52,14 @@ export function scheduleTasks() {
     id: 'FetchValidatorsBalances',
     logsEnabled: false,
     intervalMs: ms('30m'),
-    runImmediately: true,
+    runImmediately: false,
     preventOverrun: true,
   });
   scheduleFetchValidatorsInfo({
     id: 'FetchValidatorsInfo',
     logsEnabled: false,
     intervalMs: ms('30m'),
-    runImmediately: true,
+    runImmediately: false,
     preventOverrun: true,
   });
   scheduleSummarizeHourly({

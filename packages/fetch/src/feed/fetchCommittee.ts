@@ -78,21 +78,39 @@ function prepareUpsertData(_committees: Committee[], lastSlotInCommittee: number
 
 // Helper function to execute the transaction
 async function executeEpochTransaction(uniqueSlots: number[], committeeUpserts: CommitteeUpsert[]) {
-  await prisma.$executeRaw`
-    INSERT INTO "Slot" (slot, "attestationsFetched")
-    SELECT unnest(${uniqueSlots}::integer[]), false
-    ON CONFLICT (slot) DO NOTHING
-  `;
+  // Prepare arrays for UNNEST
+  const slots = [];
+  const positions = [];
+  const aggBits = [];
+  const validators = [];
 
-  // Second transaction: Insert committees in batches
-  const batchSize = 10000;
-  const batches = chunk(committeeUpserts, batchSize);
-  for (const batch of batches) {
-    await prisma.committee.createMany({
-      data: batch,
-      skipDuplicates: true,
-    });
+  for (const u of committeeUpserts) {
+    slots.push(u.slot);
+    positions.push(u.index);
+    aggBits.push(u.aggregationBitsIndex);
+    validators.push(u.validatorIndex);
   }
+
+  // Execute both operations in a single transaction
+  await prisma.$transaction([
+    // Insert slots
+    prisma.$executeRaw`
+      INSERT INTO "Slot" (slot, "attestationsFetched")
+      SELECT unnest(${uniqueSlots}::integer[]), false
+      ON CONFLICT (slot) DO NOTHING
+    `,
+    // Insert committees
+    prisma.$executeRaw`
+      INSERT INTO "Committee"
+        (slot, "index", "aggregationBitsIndex", "validatorIndex")
+      SELECT 
+        UNNEST(${slots}::int[]),
+        UNNEST(${positions}::int[]),
+        UNNEST(${aggBits}::int[]),
+        UNNEST(${validators}::int[])
+      ON CONFLICT DO NOTHING
+    `,
+  ]);
 }
 
 // New function to handle parallel fetching
