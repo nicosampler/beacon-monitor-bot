@@ -32,7 +32,7 @@ export const env = createEnv({
     BEACON_GENESIS_TIMESTAMP: z.number().int().positive(),
     BEACON_SLOT_DURATION_IN_SECONDS: z.number().int().positive(),
     BEACON_SLOTS_PER_EPOCH: z.number().int().positive(),
-    BEACON_DELAY_SLOTS_TO_HEAD: z.number().int().min(2),
+    BEACON_DELAY_SLOTS_TO_HEAD: z.number().int().positive(),
     BEACON_LOOKBACK_SLOT: z.number().int().min(0),
     BEACON_MAX_ATTESTATION_DELAY: z.number().int().min(2),
     // Beacon API

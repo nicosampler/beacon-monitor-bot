@@ -32,8 +32,9 @@ async function fetchNewCommittees(logger: CustomLogger): Promise<void> {
   // skip if fetch attestations is delayed
   const lastSlotWithAttestations = await db_getLastSlotWithAttestations();
   if (
-    (lastSlotInCommittee?.slot ?? 0) - (lastSlotWithAttestations?.slot ?? 0) >=
-    env.BEACON_SLOTS_PER_EPOCH * 25
+    lastSlotInCommittee &&
+    lastSlotWithAttestations &&
+    lastSlotInCommittee.slot - lastSlotWithAttestations.slot >= env.BEACON_SLOTS_PER_EPOCH * 25
   ) {
     logger.info(`Skipping, last slot with attestations is too back in time`);
     return;

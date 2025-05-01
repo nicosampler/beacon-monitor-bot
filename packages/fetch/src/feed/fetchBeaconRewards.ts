@@ -18,6 +18,18 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
     // Create epoch record in db if it doesn't exist
     await createEpoch(epoch);
 
+    // const highestValidatorId = await getHighestValidatorId();
+    // //Get all validator IDs that are not in final states
+    // logger.info(`Fetching non-final state validators`);
+    // const allValidatorIds = await getAttestingValidatorIds(highestValidatorId);
+    // //fetch beacon node to get the attestation rewards for all the validators in batches
+    // const validatorBatches = chunk(allValidatorIds, 100000);
+    // const response: AttestationRewards = {} as AttestationRewards;
+    // for (const batch of validatorBatches) {
+    //   const batchResponse = await getAttestationRewards(epoch, batch);
+    //   merge(response, batchResponse);
+    // }
+
     // fetch beacon node to get the attestation rewards for all the validators
     const response = await getAttestationRewards(epoch, []);
 

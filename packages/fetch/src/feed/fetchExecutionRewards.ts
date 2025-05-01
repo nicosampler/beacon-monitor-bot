@@ -1,9 +1,9 @@
 import { Decimal } from '@prisma/client/runtime/library';
+import ms from 'ms';
 
 import { getBlock } from '@/src/execution/endpoints.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
-import { getPublicClient } from '@/src/lib/providers.js';
 
 const prisma = getPrisma();
 
@@ -20,12 +20,20 @@ export async function fetchExecutionRewards(logger: CustomLogger, blockToQuery: 
     logger.info('done.');
   } catch (error) {
     logger.warn('Not found', error);
-    const timestamp = await getPublicClient().getBlock({ blockNumber: BigInt(blockToQuery) });
+
+    const lastBlock = await prisma.executionRewards.findFirst({
+      orderBy: {
+        blockNumber: 'desc',
+      },
+    });
+
+    // add 5 to the last block number
+    const timestamp = lastBlock!.timestamp.getTime() + ms('5s');
 
     await prisma.executionRewards.create({
       data: {
         address: '',
-        timestamp: new Date(Number(timestamp.timestamp)),
+        timestamp: new Date(timestamp),
         amount: new Decimal(0),
         blockNumber: blockToQuery,
       },

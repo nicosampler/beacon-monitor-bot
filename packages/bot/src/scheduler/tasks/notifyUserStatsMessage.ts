@@ -5,6 +5,7 @@ import memoizee from 'memoizee';
 import ms from 'ms';
 
 import { getUserValidatorsInfo } from '@/src/api/user.js';
+import { UserValidatorsInfo } from '@/src/apiTypes.js';
 import { getPrisma } from '@/src/config/prisma.js';
 import { TG_ERROR_SAME_MESSAGE, DAYS_IN_YEAR } from '@/src/constants/index.js';
 import { env } from '@/src/env.js';
@@ -17,12 +18,7 @@ import {
   getMonthlyValidatorStatsMemoized,
 } from '@/src/scheduler/tasks/utils/monthly.js';
 import { editMessageText, sendMessage } from '@/src/telegram/utils/messaging.js';
-import {
-  epochsIn1h,
-  getEpochFromSlot,
-  getEpochSlots,
-  VALIDATOR_STATUS,
-} from '@/src/utils/beacon.js';
+import { epochsIn1h, getEpochFromSlot, VALIDATOR_STATUS } from '@/src/utils/beacon.js';
 import { getSlotNumberFromTimestamp } from '@/src/utils/beacon.js';
 import { AppError } from '@/src/utils/errors/AppError.js';
 import { getWithdrawableAmountByUserId } from '@/src/utils/getWithdrawableAmountByUserId.js';
@@ -74,27 +70,45 @@ interface UserStats {
 }
 
 async function slotsInfo() {
-  const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+  //const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+  //const headSlot = currentSlot - Number(env.BEACON_DELAY_SLOTS_TO_HEAD);
+  // const headEpoch = getEpochFromSlot(headSlot);
+  // const headEpochSlots = getEpochSlots(headEpoch);
+  // const maxSlotToQuery = headEpochSlots.startSlot - 1 - env.BEACON_SLOTS_PER_EPOCH;
+  // const lastSlotProcessed = await prisma.slot.findFirst({
+  //   where: { attestationsFetched: true },
+  //   orderBy: { slot: 'desc' },
+  // });
+  // // The bot is syncing if the last slot processed is less than
+  // // one complete epoch behind the head epoch
+  // const syncing = (lastSlotProcessed?.slot || 0) < maxSlotToQuery;
 
-  const headSlot = currentSlot - Number(env.BEACON_DELAY_SLOTS_TO_HEAD);
-  const headEpoch = getEpochFromSlot(headSlot);
-  const headEpochSlots = getEpochSlots(headEpoch);
-
-  const maxSlotToQuery = headEpochSlots.startSlot - 1 - env.BEACON_SLOTS_PER_EPOCH;
-
-  const lastSlotProcessed = await prisma.slot.findFirst({
+  const lastSlotWithAttestations = await prisma.slot.findFirst({
     where: { attestationsFetched: true },
     orderBy: { slot: 'desc' },
   });
 
-  // The bot is syncing if the last slot processed is less than
-  // one complete epoch behind the head epoch
-  const syncing = (lastSlotProcessed?.slot || 0) < maxSlotToQuery;
+  const lastSlotProcessed = lastSlotWithAttestations?.slot || 0;
+
+  // This should be equal to lastSlotProcessed, if lastSlotProcessed is behind
+  // it means that the indexer is delayed.
+  const headSlot = getSlotNumberFromTimestamp(new Date().getTime());
+
+  // attestations for slot n come at slot n + 1
+  const slotNComesAtNPlusOne = 1;
+  const indexerIdealHead = headSlot - slotNComesAtNPlusOne - env.BEACON_DELAY_SLOTS_TO_HEAD;
+
+  // A validator can safely attest to a slot up to env.BEACON_MAX_ATTESTATION_DELAY slots after.
+  // is the attestation comes after it, is considered missed.
+  const maxSafeSlotToQuery = lastSlotProcessed - env.BEACON_MAX_ATTESTATION_DELAY;
+
+  // is syncing if the indexer is 1 epoch behind
+  const syncing = lastSlotProcessed < indexerIdealHead - env.BEACON_SLOTS_PER_EPOCH;
 
   return {
     headSlot,
-    maxSlotToQuery,
-    maxEpochToQuery: getEpochFromSlot(maxSlotToQuery),
+    maxSlotToQuery: maxSafeSlotToQuery,
+    maxEpochToQuery: getEpochFromSlot(maxSafeSlotToQuery),
     syncing,
   };
 }
@@ -109,7 +123,7 @@ async function getUser(userId: bigint) {
 function getValidatorStatuses(
   user: User & { validators: Validator[] },
   beaconActiveValidators: Validator[],
-  userMissedAttestations: MissedAttestations,
+  userMissedAttestations: UserValidatorsInfo['missedAttestations'],
   maxEpochToQuery: number,
 ): ValidatorByStatus {
   const inactiveIds: number[] = [];
@@ -203,7 +217,7 @@ async function getUserAllStats(
 
 async function get1hPerformance(
   syncing: boolean,
-  missedAttestations: MissedAttestations,
+  missedAttestations: UserValidatorsInfo['missedAttestations'], //MissedAttestations,
   userActiveValidators: number,
 ) {
   if (syncing) return null;

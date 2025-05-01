@@ -22,7 +22,7 @@ export function scheduleTasks() {
   });
   scheduleFetchAttestations({
     id: 'FetchAttestations',
-    logsEnabled: false,
+    logsEnabled: true,
     intervalMs: ms('1s'),
     runImmediately: true,
     preventOverrun: true,
@@ -51,31 +51,31 @@ export function scheduleTasks() {
   scheduleFetchValidatorsBalances({
     id: 'FetchValidatorsBalances',
     logsEnabled: false,
-    intervalMs: ms('10m'),
-    runImmediately: true,
-    preventOverrun: true,
-  });
-  scheduleFetchValidatorsInfo({
-    id: 'FetchValidatorsInfo',
-    logsEnabled: false,
     intervalMs: ms('30m'),
     runImmediately: true,
     preventOverrun: true,
   });
-  scheduleSummarizeHourly({
-    id: 'SummarizeHourly',
-    logsEnabled: false,
-    intervalMs: ms('15m'),
-    runImmediately: true,
-    preventOverrun: true,
-  });
-  scheduleSummarizeDaily({
-    id: 'SummarizeDaily',
-    logsEnabled: false,
-    intervalMs: ms('1h'),
-    runImmediately: true,
-    preventOverrun: true,
-  });
+  // scheduleFetchValidatorsInfo({
+  //   id: 'FetchValidatorsInfo',
+  //   logsEnabled: false,
+  //   intervalMs: ms('30m'),
+  //   runImmediately: true,
+  //   preventOverrun: true,
+  // });
+  // scheduleSummarizeHourly({
+  //   id: 'SummarizeHourly',
+  //   logsEnabled: false,
+  //   intervalMs: ms('15m'),
+  //   runImmediately: true,
+  //   preventOverrun: true,
+  // });
+  // scheduleSummarizeDaily({
+  //   id: 'SummarizeDaily',
+  //   logsEnabled: false,
+  //   intervalMs: ms('1h'),
+  //   runImmediately: true,
+  //   preventOverrun: true,
+  // });
   scheduleCleanupCommittee({
     id: 'CleanupCommittee',
     logsEnabled: false,

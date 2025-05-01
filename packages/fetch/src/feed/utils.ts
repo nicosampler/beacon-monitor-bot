@@ -172,3 +172,29 @@ export const getActiveValidators = memoizee(
     maxAge: ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS * env.BEACON_SLOTS_PER_EPOCH * 5} seconds`),
   },
 );
+
+export async function getAttestingValidatorIds(highestValidatorId: number): Promise<number[]> {
+  const finalStateValidators = await prisma.validator.findMany({
+    where: {
+      status: {
+        in: [
+          VALIDATOR_STATUS.pending_initialized,
+          VALIDATOR_STATUS.pending_queued,
+          VALIDATOR_STATUS.active_slashed,
+          VALIDATOR_STATUS.exited_unslashed,
+          VALIDATOR_STATUS.exited_slashed,
+          VALIDATOR_STATUS.withdrawal_possible,
+          VALIDATOR_STATUS.withdrawal_done,
+        ],
+      },
+    },
+    select: { id: true },
+  });
+
+  // Create array of all validator IDs and filter out those in final states
+  // Using a map for faster access
+  const finalStateValidatorIds = new Set(finalStateValidators.map((v) => v.id));
+  return Array.from({ length: highestValidatorId + 1 }, (_, i) => i).filter(
+    (id) => !finalStateValidatorIds.has(id),
+  );
+}

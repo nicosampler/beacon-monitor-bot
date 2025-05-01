@@ -2,9 +2,9 @@ import { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import chunk from 'lodash/chunk.js';
 
-import { getValidatorsInfo } from '@/src/beacon/endpoints.js';
+import { extractError, getValidatorsInfo } from '@/src/beacon/endpoints.js';
 import { VALIDATOR_STATUS } from '@/src/constants/index.js';
-import { getHighestValidatorId } from '@/src/feed/utils.js';
+import { getHighestValidatorId, getAttestingValidatorIds } from '@/src/feed/utils.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 
@@ -15,41 +15,23 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
   try {
     const highestValidatorId = await getHighestValidatorId();
 
-    // Fetch validator IDs that are in final states
-    logger.info(`Fetching final state validators`);
-    const finalStateValidators = await prisma.validator.findMany({
-      where: {
-        status: {
-          in: [
-            VALIDATOR_STATUS.exited_unslashed,
-            VALIDATOR_STATUS.exited_slashed,
-            VALIDATOR_STATUS.withdrawal_done,
-          ],
-        },
-      },
-      select: { id: true },
-    });
-
-    // Create array of all validator IDs and filter out those in final states
-    // Using a map for faster access
-    const finalStateValidatorIds = new Set(finalStateValidators.map((v) => v.id));
-    const allValidatorIds = Array.from({ length: highestValidatorId + 1 }, (_, i) => i).filter(
-      (id) => !finalStateValidatorIds.has(id),
-    );
+    // Get all validator IDs that are not in final states
+    logger.info(`Fetching non-final state validators`);
+    const allValidatorIds = await getAttestingValidatorIds(highestValidatorId);
 
     // Fetch all validator info in parallel batches
     logger.info(`Call validators info API`);
-    const apiValidatorBatches = chunk(allValidatorIds, 6500);
+    const apiValidatorBatches = chunk(allValidatorIds, 900);
     const allValidatorsInfo: Awaited<ReturnType<typeof getValidatorsInfo>> = [];
     try {
       // Process batches sequentially
       for (const validatorIds of apiValidatorBatches) {
         logger.info(`Processing batch of ${validatorIds.length} validators`);
-        const batchResult = await getValidatorsInfo('head', validatorIds);
+        const batchResult = await getValidatorsInfo('head', validatorIds, ['active']);
         allValidatorsInfo.push(...batchResult);
       }
     } catch (error) {
-      logger.error(`Error fetching validators info batch`, error);
+      logger.error(`Error fetching validators info batch`, extractError(error));
       return;
     }
 

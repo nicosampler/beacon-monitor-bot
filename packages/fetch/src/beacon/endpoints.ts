@@ -18,6 +18,8 @@ import { instance } from '@/src/beacon/utils/instance.js';
 import { getEpochSlots } from '@/src/beacon/utils/misc.js';
 import {
   getEpochNumberFromTimestamp,
+  getSlotNumberFromTimestamp,
+  getTimestampFromEpochNumber,
   getTimestampFromSlotNumber,
 } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
@@ -29,6 +31,17 @@ function _isSlotMissedError(error: unknown): boolean {
     axiosError.response?.status === 404 &&
     axiosError.response?.data.message.includes('NOT_FOUND: beacon block')
   );
+}
+
+export function extractError(error: unknown) {
+  if (error instanceof AxiosError) {
+    return {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+    };
+  }
+  return error;
 }
 
 /**
@@ -101,23 +114,21 @@ async function makeBeaconRequest<T>(
   throw lastError;
 }
 
-function isIndexerDelayed({ value, type }: { value: number; type: 'block' | 'epoch' }) {
+function isIndexerDelayed({ value, type }: { value: number; type: 'slot' | 'epoch' }) {
   let slot: number;
 
   if (type === 'epoch') {
-    const currEpoch = getEpochNumberFromTimestamp(Date.now());
-    const { endSlot } = getEpochSlots(currEpoch);
+    const { endSlot } = getEpochSlots(value);
     slot = endSlot;
   } else {
     slot = value;
   }
 
-  const delay = ms('10m');
   const slotTimestamp = getTimestampFromSlotNumber(slot);
   const currentTimestamp = Date.now();
 
   // Return true if the slot timestamp is more than 10 minutes behind current time
-  return currentTimestamp - slotTimestamp > delay;
+  return currentTimestamp - slotTimestamp > ms('4m');
 }
 
 // Restore original endpoint functions
@@ -125,27 +136,34 @@ export async function getCommittees(
   epoch: number,
   stateId = 'head',
 ): Promise<GetCommittees['data']> {
-  return makeBeaconRequest(async (url) => {
-    const res = await instance.get<GetCommittees>(
-      `${url}/eth/v1/beacon/states/${stateId}/committees?epoch=${epoch}`,
-    );
-    return res.data.data;
-  });
+  return makeBeaconRequest(
+    async (url) => {
+      const res = await instance.get<GetCommittees>(
+        `${url}/eth/v1/beacon/states/${stateId}/committees?epoch=${epoch}`,
+      );
+      return res.data.data;
+    },
+    undefined,
+    { priority: isIndexerDelayed({ value: epoch, type: 'epoch' }) ? 'primary' : 'secondary' },
+  );
 }
 
 export async function getAttestations(
-  stateId: string | number,
+  slot: number,
 ): Promise<GetAttestations['data'] | 'SLOT MISSED'> {
   type AttestationsResponse = GetAttestations['data'];
+
+  const currentSlot = getSlotNumberFromTimestamp(Date.now());
 
   return makeBeaconRequest<AttestationsResponse | 'SLOT MISSED'>(
     async (url) => {
       const res = await instance.get<GetAttestations>(
-        `${url}/eth/v1/beacon/blocks/${stateId}/attestations`,
+        `${url}/eth/v1/beacon/blocks/${slot}/attestations`,
       );
       return res.data.data;
     },
     (error) => (_isSlotMissedError(error) ? 'SLOT MISSED' : undefined),
+    { priority: currentSlot - slot > 5 ? 'primary' : 'secondary' },
   );
 }
 
@@ -167,14 +185,17 @@ export async function getValidatorsBalances(
 export async function getValidatorsInfo(
   stateId: string | number,
   validatorIds: number[],
-  status?: ValidatorStatus[],
+  status?: string[], //ValidatorStatus[],
 ): Promise<GetValidators['data']> {
   return makeBeaconRequest(
     async (url) => {
       // Construct query parameters
       const params = new URLSearchParams();
-      validatorIds.forEach((id) => params.append('id', id.toString()));
-      status?.forEach((s) => params.append('status', s));
+      // Join all validator IDs with commas
+      params.append('id', validatorIds.join(','));
+      if (status) {
+        params.append('status', status.join(','));
+      }
 
       const res = await instance.get<GetValidators>(
         `${url}/eth/v1/beacon/states/${stateId}/validators`,
@@ -189,19 +210,23 @@ export async function getValidatorsInfo(
 
 export async function getAttestationRewards(
   epoch: number,
-  validatorIds: string[],
+  validatorIds: number[],
 ): Promise<AttestationRewards> {
-  return makeBeaconRequest(
-    async (url) => {
-      const res = await instance.post<AttestationRewards>(
-        `${url}/eth/v1/beacon/rewards/attestations/${epoch}`,
-        validatorIds,
-      );
-      return res.data;
-    },
-    undefined,
-    { priority: isIndexerDelayed({ value: epoch, type: 'epoch' }) ? 'primary' : 'secondary' },
-  );
+  try {
+    return makeBeaconRequest(
+      async (url) => {
+        const res = await instance.post<AttestationRewards>(
+          `${url}/eth/v1/beacon/rewards/attestations/${epoch}`,
+          validatorIds.map((id) => id.toString()),
+        );
+        return res.data;
+      },
+      undefined,
+      { priority: isIndexerDelayed({ value: epoch, type: 'epoch' }) ? 'primary' : 'secondary' },
+    );
+  } catch (error: unknown) {
+    throw extractError(error);
+  }
 }
 
 export const getBlockRewards = memoizee(
@@ -212,7 +237,7 @@ export const getBlockRewards = memoizee(
         return res.data;
       },
       (error) => (_isSlotMissedError(error) ? 'SLOT MISSED' : undefined),
-      { priority: isIndexerDelayed({ value: slot, type: 'block' }) ? 'primary' : 'secondary' },
+      { priority: isIndexerDelayed({ value: slot, type: 'slot' }) ? 'primary' : 'secondary' },
     );
   },
   {
@@ -233,7 +258,7 @@ export const getSyncCommitteeRewards = memoizee(
         return res.data;
       },
       undefined,
-      { priority: isIndexerDelayed({ value: slot, type: 'block' }) ? 'primary' : 'secondary' },
+      { priority: isIndexerDelayed({ value: slot, type: 'slot' }) ? 'primary' : 'secondary' },
     );
   },
   {
