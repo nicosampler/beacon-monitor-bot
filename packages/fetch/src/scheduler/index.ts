@@ -15,8 +15,8 @@ import { scheduleSummarizeHourly } from '@/src/scheduler/tasks/summarizeHourly.j
 export function scheduleTasks() {
   scheduleFetchCommittee({
     id: 'FetchCommittee',
-    logsEnabled: false,
-    intervalMs: ms('5s'),
+    logsEnabled: true,
+    intervalMs: ms('1s'),
     runImmediately: true,
     preventOverrun: true,
   });
