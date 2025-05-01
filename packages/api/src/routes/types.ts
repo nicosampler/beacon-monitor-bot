@@ -108,5 +108,5 @@ export type SlotInfoResponse = {
   syncing: boolean;
   delay: number;
   maxSafeSlotToQuery: number;
-  maxEpochToQuery: number;
+  maxSafeEpochToQuery: number;
 };

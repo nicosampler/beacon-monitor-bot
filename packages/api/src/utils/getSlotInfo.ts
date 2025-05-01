@@ -1,8 +1,9 @@
 import { env } from '@/src/env.js';
+import { SlotInfoResponse } from '@/src/routes/types.js';
 import { getLastSlotWithAttestations_db } from '@/src/services/prisma/getLastSlotWithAttestations.js';
 import { getEpochFromSlot, getSlotNumberFromTimestamp } from '@/src/utils/beacon.js';
 
-export async function getSlotInfo() {
+export async function getSlotInfo(): Promise<SlotInfoResponse> {
   const lastSlotWithAttestations = await getLastSlotWithAttestations_db();
   const lastSlotProcessed = lastSlotWithAttestations?.slot || 0;
 
@@ -27,6 +28,6 @@ export async function getSlotInfo() {
     syncing,
     delay: indexerIdealHead - lastSlotProcessed,
     maxSafeSlotToQuery,
-    maxEpochToQuery: getEpochFromSlot(maxSafeSlotToQuery),
+    maxSafeEpochToQuery: getEpochFromSlot(maxSafeSlotToQuery),
   };
 }
