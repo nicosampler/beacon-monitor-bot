@@ -101,3 +101,12 @@ export type UserValidatorsInfo = {
     validatorIndex: number;
   }[];
 };
+
+export type SlotInfoResponse = {
+  headSlot: number;
+  lastSlotProcessed: number;
+  syncing: boolean;
+  delay: number;
+  maxSafeSlotToQuery: number;
+  maxSafeEpochToQuery: number;
+};

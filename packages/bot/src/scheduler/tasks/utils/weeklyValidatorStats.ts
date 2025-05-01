@@ -4,8 +4,10 @@ import ms from 'ms';
 import { getPrisma } from '@/src/config/prisma.js';
 
 const prisma = getPrisma();
+const cacheTime = ms('12h');
 
-export const getMonthlyValidatorStatsMemoized = memoizee(
+// Memoized version of getWeeklyValidatorStats
+export const getWeeklyValidatorStatsMemoized = memoizee(
   async (userId: number) => {
     const query = `
       WITH last_date AS (
@@ -27,7 +29,7 @@ export const getMonthlyValidatorStatsMemoized = memoizee(
       WHERE uv."A" = $1
         AND v.status IN (2, 3)
         AND dvs.date <= ld.max_date
-        AND dvs.date > ld.max_date - INTERVAL '1 month'`;
+        AND dvs.date > ld.max_date - INTERVAL '7 days'`;
 
     return await prisma.$queryRawUnsafe<
       {
@@ -41,10 +43,11 @@ export const getMonthlyValidatorStatsMemoized = memoizee(
       }[]
     >(query, userId);
   },
-  { promise: true, maxAge: ms('1h') },
+  { promise: true, maxAge: cacheTime },
 );
 
-export const getMonthlyExecutionRewardsMemoized = memoizee(
+// Memoized version of getWeeklyExecutionRewards
+export const getWeeklyExecutionRewardsMemoized = memoizee(
   async (userId: number) => {
     const query = `
       WITH last_date AS (
@@ -58,7 +61,7 @@ export const getMonthlyExecutionRewardsMemoized = memoizee(
       CROSS JOIN last_date ld
       WHERE fra."B" = $1
         AND der.date <= ld.max_date
-        AND der.date > ld.max_date - INTERVAL '1 month'`;
+        AND der.date > ld.max_date - INTERVAL '7 days'`;
 
     return await prisma.$queryRawUnsafe<
       {
@@ -66,5 +69,5 @@ export const getMonthlyExecutionRewardsMemoized = memoizee(
       }[]
     >(query, userId);
   },
-  { promise: true, maxAge: ms('1h') },
+  { promise: true, maxAge: cacheTime },
 );

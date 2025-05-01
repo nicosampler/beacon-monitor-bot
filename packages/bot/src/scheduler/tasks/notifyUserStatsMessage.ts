@@ -4,6 +4,7 @@ import { formatEther } from 'ethers/lib/utils.js';
 import memoizee from 'memoizee';
 import ms from 'ms';
 
+import { geSlotsInfo } from '@/src/api/slot.js';
 import { getUserValidatorsInfo } from '@/src/api/user.js';
 import { UserValidatorsInfo } from '@/src/apiTypes.js';
 import { getPrisma } from '@/src/config/prisma.js';
@@ -14,9 +15,22 @@ import { notifyInactiveValidators } from '@/src/scheduler/tasks/notifyInactiveVa
 import { notifyUnderPerformance } from '@/src/scheduler/tasks/notifyUnderPerformance.js';
 import { tokenPrice } from '@/src/scheduler/tasks/tokenPriceTask.js';
 import {
+  calculateAPY_daily,
+  calculateAPY_weekly,
+  calculateMonthlyAPY,
+} from '@/src/scheduler/tasks/utils/apy.js';
+import {
+  getDailyExecutionRewardsMemoized,
+  getDailyValidatorStatsMemoized,
+} from '@/src/scheduler/tasks/utils/dailyValidatorStats.js';
+import {
   getMonthlyExecutionRewardsMemoized,
   getMonthlyValidatorStatsMemoized,
-} from '@/src/scheduler/tasks/utils/monthly.js';
+} from '@/src/scheduler/tasks/utils/monthlyValidatorsStats.js';
+import {
+  getWeeklyExecutionRewardsMemoized,
+  getWeeklyValidatorStatsMemoized,
+} from '@/src/scheduler/tasks/utils/weeklyValidatorStats.js';
 import { editMessageText, sendMessage } from '@/src/telegram/utils/messaging.js';
 import { epochsIn1h, getEpochFromSlot, VALIDATOR_STATUS } from '@/src/utils/beacon.js';
 import { getSlotNumberFromTimestamp } from '@/src/utils/beacon.js';
@@ -69,107 +83,100 @@ interface UserStats {
   validatorStats: ValidatorByStatus;
 }
 
-async function slotsInfo() {
-  //const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
-  //const headSlot = currentSlot - Number(env.BEACON_DELAY_SLOTS_TO_HEAD);
-  // const headEpoch = getEpochFromSlot(headSlot);
-  // const headEpochSlots = getEpochSlots(headEpoch);
-  // const maxSlotToQuery = headEpochSlots.startSlot - 1 - env.BEACON_SLOTS_PER_EPOCH;
-  // const lastSlotProcessed = await prisma.slot.findFirst({
-  //   where: { attestationsFetched: true },
-  //   orderBy: { slot: 'desc' },
-  // });
-  // // The bot is syncing if the last slot processed is less than
-  // // one complete epoch behind the head epoch
-  // const syncing = (lastSlotProcessed?.slot || 0) < maxSlotToQuery;
+// async function slotsInfo() {
+//   //const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+//   //const headSlot = currentSlot - Number(env.BEACON_DELAY_SLOTS_TO_HEAD);
+//   // const headEpoch = getEpochFromSlot(headSlot);
+//   // const headEpochSlots = getEpochSlots(headEpoch);
+//   // const maxSlotToQuery = headEpochSlots.startSlot - 1 - env.BEACON_SLOTS_PER_EPOCH;
+//   // const lastSlotProcessed = await prisma.slot.findFirst({
+//   //   where: { attestationsFetched: true },
+//   //   orderBy: { slot: 'desc' },
+//   // });
+//   // // The bot is syncing if the last slot processed is less than
+//   // // one complete epoch behind the head epoch
+//   // const syncing = (lastSlotProcessed?.slot || 0) < maxSlotToQuery;
 
-  const lastSlotWithAttestations = await prisma.slot.findFirst({
-    where: { attestationsFetched: true },
-    orderBy: { slot: 'desc' },
-  });
+//   const lastSlotWithAttestations = await prisma.slot.findFirst({
+//     where: { attestationsFetched: true },
+//     orderBy: { slot: 'desc' },
+//   });
 
-  const lastSlotProcessed = lastSlotWithAttestations?.slot || 0;
+//   const lastSlotProcessed = lastSlotWithAttestations?.slot || 0;
 
-  // This should be equal to lastSlotProcessed, if lastSlotProcessed is behind
-  // it means that the indexer is delayed.
-  const headSlot = getSlotNumberFromTimestamp(new Date().getTime());
+//   // This should be equal to lastSlotProcessed, if lastSlotProcessed is behind
+//   // it means that the indexer is delayed.
+//   const headSlot = getSlotNumberFromTimestamp(new Date().getTime());
 
-  // attestations for slot n come at slot n + 1
-  const slotNComesAtNPlusOne = 1;
-  const indexerIdealHead = headSlot - slotNComesAtNPlusOne - env.BEACON_DELAY_SLOTS_TO_HEAD;
+//   // attestations for slot n come at slot n + 1
+//   const slotNComesAtNPlusOne = 1;
+//   const indexerIdealHead = headSlot - slotNComesAtNPlusOne - env.BEACON_DELAY_SLOTS_TO_HEAD;
 
-  // A validator can safely attest to a slot up to env.BEACON_MAX_ATTESTATION_DELAY slots after.
-  // is the attestation comes after it, is considered missed.
-  const maxSafeSlotToQuery = lastSlotProcessed - env.BEACON_MAX_ATTESTATION_DELAY;
+//   // A validator can safely attest to a slot up to env.BEACON_MAX_ATTESTATION_DELAY slots after.
+//   // is the attestation comes after it, is considered missed.
+//   const maxSafeSlotToQuery = lastSlotProcessed - env.BEACON_MAX_ATTESTATION_DELAY;
 
-  // is syncing if the indexer is 1 epoch behind
-  const syncing = lastSlotProcessed < indexerIdealHead - env.BEACON_SLOTS_PER_EPOCH;
+//   // is syncing if the indexer is 1 epoch behind
+//   const syncing = lastSlotProcessed < indexerIdealHead - env.BEACON_SLOTS_PER_EPOCH;
 
-  return {
-    headSlot,
-    maxSlotToQuery: maxSafeSlotToQuery,
-    maxEpochToQuery: getEpochFromSlot(maxSafeSlotToQuery),
-    syncing,
-  };
-}
+//   return {
+//     headSlot,
+//     maxSlotToQuery: maxSafeSlotToQuery,
+//     maxEpochToQuery: getEpochFromSlot(maxSafeSlotToQuery),
+//     syncing,
+//   };
+// }
 
-async function getUser(userId: bigint) {
-  return await prisma.user.findUnique({
-    where: { userId },
-    include: { validators: true, withdrawalAddresses: true },
-  });
-}
+// function getValidatorStatuses(
+//   user: User & { validators: Validator[] },
+//   beaconActiveValidators: Validator[],
+//   userMissedAttestations: UserValidatorsInfo['missedAttestations'],
+//   maxEpochToQuery: number,
+// ): ValidatorByStatus {
+//   const inactiveIds: number[] = [];
+//   for (const validator of beaconActiveValidators) {
+//     // get the last missed attestations for each validator
+//     const recentMissed = userMissedAttestations
+//       .filter((entry) => entry.validatorIndex === validator.id)
+//       .slice(0, user.inactiveOnMissedAttestations)
+//       .map((entry) => getEpochFromSlot(entry.slot))
+//       .filter(
+//         // Get the last N epochs where N is the user's inactivity threshold.
+//         // Each validator attest once per epoch.
+//         (epoch) => epoch > maxEpochToQuery - user.inactiveOnMissedAttestations,
+//       );
 
-function getValidatorStatuses(
-  user: User & { validators: Validator[] },
-  beaconActiveValidators: Validator[],
-  userMissedAttestations: UserValidatorsInfo['missedAttestations'],
-  maxEpochToQuery: number,
-): ValidatorByStatus {
-  const inactiveIds: number[] = [];
-  for (const validator of beaconActiveValidators) {
-    // get the last missed attestations for each validator
-    const recentMissed = userMissedAttestations
-      .filter((entry) => entry.validatorIndex === validator.id)
-      .slice(0, user.inactiveOnMissedAttestations)
-      .map((entry) => getEpochFromSlot(entry.slot))
-      .filter(
-        // Get the last N epochs where N is the user's inactivity threshold.
-        // Each validator attest once per epoch.
-        (epoch) => epoch > maxEpochToQuery - user.inactiveOnMissedAttestations,
-      );
+//     // Skip if not enough missed attestations
+//     if (recentMissed.length < user.inactiveOnMissedAttestations) {
+//       continue;
+//     }
 
-    // Skip if not enough missed attestations
-    if (recentMissed.length < user.inactiveOnMissedAttestations) {
-      continue;
-    }
+//     inactiveIds.push(validator.id);
+//   }
 
-    inactiveIds.push(validator.id);
-  }
+//   const activeIds = beaconActiveValidators
+//     .filter((v) => !inactiveIds.includes(v.id))
+//     .map((v) => v.id);
 
-  const activeIds = beaconActiveValidators
-    .filter((v) => !inactiveIds.includes(v.id))
-    .map((v) => v.id);
-
-  return {
-    activeIds,
-    inactiveIds,
-    slashedIds: user.validators
-      .filter(
-        (v) =>
-          v.status === VALIDATOR_STATUS.active_slashed ||
-          v.status === VALIDATOR_STATUS.exited_slashed,
-      )
-      .map((v) => v.id),
-    exitedIds: user.validators
-      .filter(
-        (v) =>
-          v.status === VALIDATOR_STATUS.exited_unslashed ||
-          v.status === VALIDATOR_STATUS.withdrawal_done,
-      )
-      .map((v) => v.id),
-  };
-}
+//   return {
+//     activeIds,
+//     inactiveIds,
+//     slashedIds: user.validators
+//       .filter(
+//         (v) =>
+//           v.status === VALIDATOR_STATUS.active_slashed ||
+//           v.status === VALIDATOR_STATUS.exited_slashed,
+//       )
+//       .map((v) => v.id),
+//     exitedIds: user.validators
+//       .filter(
+//         (v) =>
+//           v.status === VALIDATOR_STATUS.exited_unslashed ||
+//           v.status === VALIDATOR_STATUS.withdrawal_done,
+//       )
+//       .map((v) => v.id),
+//   };
+// }
 
 async function getUserAllStats(
   syncing: boolean,
@@ -181,23 +188,40 @@ async function getUserAllStats(
   },
   logger: CustomLogger,
 ): Promise<UserStats> {
-  const beaconActiveValidators = user.validators.filter(
-    (v) =>
-      v.status === VALIDATOR_STATUS.active_ongoing || v.status === VALIDATOR_STATUS.active_exiting,
-  );
-
-  // const missedAttestationsOld = await getMissedAttestations(Number(user.id), maxSlotToQuery);
   const userValidatorsInfo = await getUserValidatorsInfo(user.loginId);
   const missedAttestations = userValidatorsInfo.missedAttestations;
 
-  const [validatorStatuses, performance1h, balanceStats, tableStats, withdrawable] =
-    await Promise.all([
-      getValidatorStatuses(user, beaconActiveValidators, missedAttestations, maxEpochToQuery),
-      get1hPerformance(syncing, missedAttestations, beaconActiveValidators.length),
-      getUserBalance(user.validators),
-      calculateTableStats(user, logger),
-      getWithdrawableAmountByUserId(Number(user.id)),
-    ]);
+  // merge the validator statuses for all the withdrawal addresses
+  const validatorStatuses: ValidatorByStatus = Object.values(
+    userValidatorsInfo.validatorsByWithdrawal,
+  ).reduce(
+    (acc, statuses) => ({
+      activeIds: [...acc.activeIds, ...statuses.activeIds],
+      inactiveIds: [...acc.inactiveIds, ...statuses.inactiveIds],
+      slashedIds: [...acc.slashedIds, ...statuses.slashedIds],
+      exitedIds: [...acc.exitedIds, ...statuses.exitedIds],
+    }),
+    {
+      activeIds: [],
+      inactiveIds: [],
+      slashedIds: [],
+      exitedIds: [],
+    },
+  );
+
+  const beaconActiveValidators =
+    validatorStatuses.activeIds.length + validatorStatuses.inactiveIds.length;
+  // const beaconActiveValidators = user.validators.filter(
+  //   (v) =>
+  //     v.status === VALIDATOR_STATUS.active_ongoing || v.status === VALIDATOR_STATUS.active_exiting,
+  // );
+  const [performance1h, balanceStats, tableStats, withdrawable] = await Promise.all([
+    //getValidatorStatuses(user, beaconActiveValidators, missedAttestations, maxEpochToQuery),
+    get1hPerformance(syncing, missedAttestations.length, beaconActiveValidators),
+    getUserBalance(user.validators),
+    getUserRewards(user, logger),
+    getWithdrawableAmountByUserId(Number(user.id)),
+  ]);
 
   return {
     performance1h,
@@ -217,7 +241,7 @@ async function getUserAllStats(
 
 async function get1hPerformance(
   syncing: boolean,
-  missedAttestations: UserValidatorsInfo['missedAttestations'], //MissedAttestations,
+  missedAttestations: number,
   userActiveValidators: number,
 ) {
   if (syncing) return null;
@@ -226,7 +250,7 @@ async function get1hPerformance(
   const expectedAttestations = epochsIn1h * userActiveValidators;
 
   const performancePercentage =
-    ((expectedAttestations - missedAttestations.length) / expectedAttestations) * 100;
+    ((expectedAttestations - missedAttestations) / expectedAttestations) * 100;
 
   return performancePercentage;
 }
@@ -245,199 +269,8 @@ function getUserBalance(validators: Validator[]) {
   };
 }
 
-// Get all the missed attestations in the last hour for the user's validators
-// async function getMissedAttestations(userId: number, maxSlotToQuery: number): Promise<Committee[]> {
-//   return prisma.$queryRaw<Committee[]>`
-//     WITH slots AS (
-//       SELECT ${maxSlotToQuery - slotsIn1h} as slot_start, ${maxSlotToQuery} as slot_end
-//     ),
-//     active_validators AS MATERIALIZED (
-//       SELECT v.id
-//       FROM "_UserToValidator" uv
-//       JOIN "Validator" v ON v.id = uv."B"
-//       WHERE uv."A" = ${userId}
-//       AND v.status IN (${VALIDATOR_STATUS.active_ongoing}, ${VALIDATOR_STATUS.active_exiting})
-//     )
-//     SELECT c.*
-//     FROM active_validators av
-//     CROSS JOIN slots s
-//     JOIN LATERAL (
-//       SELECT *
-//       FROM "Committee" c
-//       WHERE c."validatorIndex" = av.id
-//       AND c.slot BETWEEN s.slot_start AND s.slot_end
-//       AND (
-//         c."attestationDelay" IS NULL
-//         OR c."attestationDelay" > ${env.BEACON_MAX_ATTESTATION_DELAY}
-//       )
-//     ) c ON true
-//     ORDER BY c.slot DESC
-//   `;
-// }
-
-// Memoized version of getDailyValidatorStats
-const getDailyValidatorStatsMemoized = memoizee(
-  async (userId: number) => {
-    // Query to get validator stats for the last 24 hours
-    const query = `
-      WITH combined_stats AS (
-        SELECT 
-          "validatorIndex",
-          date,
-          hour,
-          head,
-          target,
-          source,
-          inactivity,
-          "attestationsMissed",
-          "syncCommittee",
-          "blockReward"
-        FROM "HourlyValidatorStats"
-        
-        UNION ALL
-        
-        SELECT 
-          "validatorIndex",
-          date,
-          hour,
-          0 as head,
-          0 as target,
-          0 as source,
-          0 as inactivity,
-          0 as "attestationsMissed",
-          "syncCommittee",
-          "blockReward"
-        FROM "HourlyBlockAndSyncRewards"
-      )
-      SELECT 
-        COALESCE(SUM(head), 0) as head,
-        COALESCE(SUM(target), 0) as target,
-        COALESCE(SUM(source), 0) as source,
-        COALESCE(SUM(inactivity), 0) as inactivity,
-        COALESCE(SUM("attestationsMissed"), 0) as "attestationsMissed",
-        COALESCE(SUM("syncCommittee"), 0) as "syncCommittee",
-        COALESCE(SUM("blockReward"), 0) as "blockReward"
-      FROM combined_stats cs
-      JOIN "_UserToValidator" uv ON uv."B" = cs."validatorIndex"
-      JOIN "Validator" v ON v.id = uv."B"
-      WHERE uv."A" = $1
-        AND v.status IN (2, 3)
-        AND (
-          (cs.date = CURRENT_DATE AND cs.hour <= EXTRACT(HOUR FROM NOW()))
-          OR
-          (cs.date = CURRENT_DATE - INTERVAL '1 day' AND cs.hour > EXTRACT(HOUR FROM NOW()))
-        )`;
-
-    return await prisma.$queryRawUnsafe<
-      {
-        head: string;
-        target: string;
-        source: string;
-        inactivity: string;
-        syncCommittee: string;
-        blockReward: string;
-        attestationsMissed: bigint;
-      }[]
-    >(query, userId);
-  },
-  { promise: true, maxAge: ms('15m') },
-);
-
-// Memoized version of getDailyExecutionRewards
-const getDailyExecutionRewardsMemoized = memoizee(
-  async (userId: number) => {
-    // Query to get execution rewards for the last 24 hours
-    const query = `
-      SELECT 
-        COALESCE(SUM(her.amount), 0) as total
-      FROM "HourlyExecutionRewards" her
-      JOIN "_FeeRewardAddressToUser" fra ON fra."A" ilike her.address
-      WHERE fra."B" = $1
-      AND (
-          -- Today's records up to current hour
-          (her.date = CURRENT_DATE AND her.hour <= EXTRACT(HOUR FROM NOW()))
-          OR
-          -- Yesterday's records after current hour
-          (her.date = CURRENT_DATE - INTERVAL '1 day' AND her.hour > EXTRACT(HOUR FROM NOW()))
-      )`;
-
-    return await prisma.$queryRawUnsafe<
-      {
-        total: string;
-      }[]
-    >(query, userId);
-  },
-  { promise: true, maxAge: ms('15m') },
-);
-
-// Memoized version of getWeeklyValidatorStats
-const getWeeklyValidatorStatsMemoized = memoizee(
-  async (userId: number) => {
-    const query = `
-      WITH last_date AS (
-        SELECT MAX(date) as max_date
-        FROM "DailyValidatorStats"
-      )
-      SELECT 
-        COALESCE(SUM(head), 0) as head,
-        COALESCE(SUM(target), 0) as target,
-        COALESCE(SUM(source), 0) as source,
-        COALESCE(SUM(inactivity), 0) as inactivity,
-        COALESCE(SUM("attestationsMissed"), 0) as "attestationsMissed",
-        COALESCE(SUM("syncCommittee"), 0) as "syncCommittee",
-        COALESCE(SUM("blockReward"), 0) as "blockReward"
-      FROM "DailyValidatorStats" dvs
-      JOIN "_UserToValidator" uv ON uv."B" = dvs."validatorIndex"
-      JOIN "Validator" v ON v.id = uv."B"
-      CROSS JOIN last_date ld
-      WHERE uv."A" = $1
-        AND v.status IN (2, 3)
-        AND dvs.date <= ld.max_date
-        AND dvs.date > ld.max_date - INTERVAL '7 days'`;
-
-    return await prisma.$queryRawUnsafe<
-      {
-        head: string;
-        target: string;
-        source: string;
-        inactivity: string;
-        syncCommittee: string;
-        blockReward: string;
-        attestationsMissed: bigint;
-      }[]
-    >(query, userId);
-  },
-  { promise: true, maxAge: ms('1h') },
-);
-
-// Memoized version of getWeeklyExecutionRewards
-const getWeeklyExecutionRewardsMemoized = memoizee(
-  async (userId: number) => {
-    const query = `
-      WITH last_date AS (
-        SELECT MAX(date) as max_date
-        FROM "DailyExecutionRewards"
-      )
-      SELECT 
-        COALESCE(SUM(der.amount), 0) as total
-      FROM "DailyExecutionRewards" der
-      JOIN "_FeeRewardAddressToUser" fra ON fra."A" ilike der.address
-      CROSS JOIN last_date ld
-      WHERE fra."B" = $1
-        AND der.date <= ld.max_date
-        AND der.date > ld.max_date - INTERVAL '7 days'`;
-
-    return await prisma.$queryRawUnsafe<
-      {
-        total: string;
-      }[]
-    >(query, userId);
-  },
-  { promise: true, maxAge: ms('1h') },
-);
-
 // Update calculateTableStats to include weekly stats
-async function calculateTableStats(
+async function getUserRewards(
   user: User & { validators: Validator[] },
   logger: CustomLogger,
 ): Promise<UserStats['rewards']> {
@@ -559,21 +392,6 @@ async function calculateTableStats(
   };
 }
 
-function calculateAPY_daily(totalBalance: number, dailyRewards: number): number {
-  if (!totalBalance || !dailyRewards) return 0;
-  return ((1 + dailyRewards / totalBalance) ** DAYS_IN_YEAR - 1) * 100;
-}
-
-function calculateAPY_weekly(totalBalance: number, weeklyRewards: number): number {
-  if (!totalBalance || !weeklyRewards) return 0;
-  return ((1 + weeklyRewards / totalBalance) ** (DAYS_IN_YEAR / 7) - 1) * 100;
-}
-
-function calculateMonthlyAPY(totalBalance: number, monthlyRewards: number): number {
-  if (!totalBalance || !monthlyRewards) return 0;
-  return ((1 + monthlyRewards / totalBalance) ** (DAYS_IN_YEAR / 30) - 1) * 100;
-}
-
 function formatStatsMessage(
   loginId: string,
   stats: UserStats,
@@ -691,15 +509,24 @@ export async function notifyUserStatsMessage(
   userId: bigint,
   logger: CustomLogger,
 ): Promise<number | undefined> {
-  const { headSlot, maxSlotToQuery, maxEpochToQuery, syncing } = await slotsInfo();
+  const { headSlot, maxSafeSlotToQuery, maxSafeEpochToQuery, syncing } = await geSlotsInfo();
 
-  const user = await getUser(userId);
+  const user = await prisma.user.findUnique({
+    where: { userId },
+    include: { validators: true, withdrawalAddresses: true },
+  });
   if (!user) {
     logger.info(`user not found`);
     return;
   }
 
-  const stats = await getUserAllStats(syncing, maxSlotToQuery, maxEpochToQuery, user, logger);
+  const stats = await getUserAllStats(
+    syncing,
+    maxSafeSlotToQuery,
+    maxSafeEpochToQuery,
+    user,
+    logger,
+  );
 
   // TODO: check null values.
   if (!syncing) {
@@ -711,7 +538,7 @@ export async function notifyUserStatsMessage(
   const message = formatStatsMessage(user.loginId, stats, {
     syncing,
     headSlot,
-    maxSlotToQuery,
+    maxSlotToQuery: maxSafeSlotToQuery,
   });
   return await updateOrSendMessage(Number(user.chatId), Number(user.messageId), message);
 }
