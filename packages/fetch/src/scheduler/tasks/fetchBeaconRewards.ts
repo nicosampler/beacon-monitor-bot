@@ -17,21 +17,20 @@ import { TaskOptions } from '@/src/scheduler/tasks/types.js';
   It also skips fetching if the last slot with rewards is from the current epoch.
  */
 async function fetchBeaconRewardsTask(logger: CustomLogger) {
-  const now = new Date();
-  const currentEpoch = getEpochNumberFromTimestamp(now.getTime());
+  const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
   const maxEpoch = currentEpoch - 2; // Give some buffer to avoid so many 404
+
   const oldestLookbackEpoch = Math.floor(getOldestLookbackSlot() / env.BEACON_SLOTS_PER_EPOCH);
-
   const lastProcessedEpoch = await db_getLastProcessedEpoch();
-
-  if (lastProcessedEpoch?.epoch && lastProcessedEpoch.epoch + 1 > maxEpoch) {
-    logger.info(`No new epochs to fetch`);
-    return;
-  }
 
   const epochToFetch = lastProcessedEpoch
     ? Math.min(lastProcessedEpoch.epoch + 1, maxEpoch)
     : oldestLookbackEpoch;
+
+  if (epochToFetch > maxEpoch) {
+    logger.info(`No new epochs to fetch`);
+    return;
+  }
 
   logger.addContext(`Epoch: ${epochToFetch}`);
   logger.info(`Fetching. HeadEpoch: ${maxEpoch}.`);
