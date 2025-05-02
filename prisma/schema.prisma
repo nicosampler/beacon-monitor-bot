@@ -18,6 +18,7 @@ model Slot {
 
   attestationsFetched        Boolean @default(false) // Whether the attestations for this slot have been fetched
   blockAndSyncRewardsFetched Boolean @default(false) // Whether the sync rewards for this slot have been fetched 
+  committeeValidatorCounts   Json? // Stores the number of validators per committee index as an array: [350, 340, ...]
 
   @@index([attestationsFetched, slot])
 }

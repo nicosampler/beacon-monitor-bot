@@ -84,20 +84,34 @@ async function executeEpochTransaction(uniqueSlots: number[], committeeUpserts: 
   const aggBits = [];
   const validators = [];
 
+  // Calculate committee counts for each slot
+  const committeeCounts = new Map<number, number[]>();
+
   for (const u of committeeUpserts) {
     slots.push(u.slot);
     positions.push(u.index);
     aggBits.push(u.aggregationBitsIndex);
     validators.push(u.validatorIndex);
+
+    // Count validators per committee
+    if (!committeeCounts.has(u.slot)) {
+      committeeCounts.set(u.slot, []);
+    }
+    const slotCounts = committeeCounts.get(u.slot)!;
+    slotCounts[u.index] = (slotCounts[u.index] || 0) + 1;
   }
 
   // Execute both operations in a single transaction
   await prisma.$transaction([
-    // Insert slots
+    // Insert slots with committee counts
     prisma.$executeRaw`
-      INSERT INTO "Slot" (slot, "attestationsFetched")
-      SELECT unnest(${uniqueSlots}::integer[]), false
-      ON CONFLICT (slot) DO NOTHING
+      INSERT INTO "Slot" (slot, "attestationsFetched", "committeeValidatorCounts")
+      SELECT 
+        unnest(${uniqueSlots}::integer[]), 
+        false,
+        unnest(${uniqueSlots.map((slot) => JSON.stringify(committeeCounts.get(slot) || []))}::jsonb[])
+      ON CONFLICT (slot) DO UPDATE SET
+        "committeeValidatorCounts" = EXCLUDED."committeeValidatorCounts"
     `,
     // Insert committees
     prisma.$executeRaw`

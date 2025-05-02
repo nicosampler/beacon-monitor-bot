@@ -76,6 +76,7 @@ export type GetAttestations = {
       };
     };
     signature: string;
+    committee_bits: string;
   }[];
 };
 

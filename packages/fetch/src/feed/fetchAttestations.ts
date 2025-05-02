@@ -29,7 +29,7 @@ export const fetchAttestation = async (slotNumber: number, logger: CustomLogger)
     const allUpdates: CommitteeUpdate[] = [];
     const allDeletes: CommitteeUpdate[] = [];
     for (const attestation of filteredAttestations) {
-      const processedAttestations = processAttestation(slotNumber, attestation);
+      const processedAttestations = await processAttestation(slotNumber, attestation);
       allUpdates.push(...processedAttestations.updates);
       allDeletes.push(...processedAttestations.deletes);
     }
@@ -136,7 +136,34 @@ interface AttestationResult {
   deletes: CommitteeUpdate[];
 }
 
-function processAttestation(slotNumber: number, attestation: Attestation): AttestationResult {
+/**
+ * Gets the number of validators in a committee for a specific slot
+ * @param slot - The slot number
+ * @param committeeIndex - The committee index
+ * @returns The number of validators in the committee
+ * @throws Error if no aggregationBitsIndex is found for the committee
+ */
+async function getValidatorsCountInCommittee(
+  slot: number,
+  committeeIndex: number,
+): Promise<number | null> {
+  const slotData = await prisma.slot.findUnique({
+    where: { slot },
+    select: { committeeValidatorCounts: true },
+  });
+
+  if (!slotData?.committeeValidatorCounts) {
+    return null;
+  }
+
+  const counts = slotData.committeeValidatorCounts as number[];
+  return counts[committeeIndex] ?? null;
+}
+
+async function processAttestation(
+  slotNumber: number,
+  attestation: Attestation,
+): Promise<AttestationResult> {
   const aggregationBits = convertBitsToString(
     convertHexStringToByteArray(attestation.aggregation_bits),
   );
@@ -144,21 +171,52 @@ function processAttestation(slotNumber: number, attestation: Attestation): Attes
   const updates: CommitteeUpdate[] = [];
   const deletes: CommitteeUpdate[] = [];
 
-  for (let i = 0; i < aggregationBits.length; i++) {
-    if (aggregationBits[i] === '1') {
-      const attestationDelay = slotNumber - Number(attestation.data.slot);
-      const attestationInfo = {
-        slot: +attestation.data.slot,
-        index: +attestation.data.index,
-        aggregationBitsIndex: i,
-        attestationDelay,
-      };
+  // Convert committee bits from hex to binary string
+  const committeeBits = convertBitsToString(
+    convertHexStringToByteArray(attestation.committee_bits),
+  );
 
-      if (attestationDelay <= env.BEACON_MAX_ATTESTATION_DELAY) {
-        deletes.push(attestationInfo);
-      } else {
-        updates.push(attestationInfo);
+  let currentAggregationIndex = 0;
+
+  // Process each committee
+  for (let committeeIndex = 0; committeeIndex < committeeBits.length; committeeIndex++) {
+    // Only process committees that contributed to aggregation_bits
+    if (committeeBits[committeeIndex] === '1') {
+      const validatorCount = await getValidatorsCountInCommittee(
+        Number(attestation.data.slot),
+        committeeIndex,
+      );
+
+      if (!validatorCount) {
+        throw `No validator count found for slot ${slotNumber} and committee index ${committeeIndex}`;
       }
+
+      // Get the section of aggregation_bits for this committee
+      const committeeAggregationBits = aggregationBits.slice(
+        currentAggregationIndex,
+        currentAggregationIndex + validatorCount,
+      );
+
+      // Process each validator's attestation in this committee
+      for (let i = 0; i < committeeAggregationBits.length; i++) {
+        if (committeeAggregationBits[i] === '1') {
+          const attestationDelay = slotNumber - Number(attestation.data.slot);
+          const attestationInfo = {
+            slot: +attestation.data.slot,
+            index: committeeIndex,
+            aggregationBitsIndex: i,
+            attestationDelay,
+          };
+
+          if (attestationDelay <= env.BEACON_MAX_ATTESTATION_DELAY) {
+            deletes.push(attestationInfo);
+          } else {
+            updates.push(attestationInfo);
+          }
+        }
+      }
+
+      currentAggregationIndex += validatorCount;
     }
   }
 
