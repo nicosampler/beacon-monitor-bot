@@ -19,6 +19,9 @@ docker container prune -f
 echo "Pruning unused Docker images..."
 docker image prune -f
 
+echo "Pruning build cache..."
+docker builder prune -f
+
 echo "Starting containers..."
 docker-compose up -d
 
