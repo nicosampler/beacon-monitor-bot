@@ -223,7 +223,7 @@ async function updateAndDeleteValidatorAttestations(
   slotNumber: number,
   logger: CustomLogger,
 ): Promise<void> {
-  const prismaBatchSize = 10000;
+  const prismaBatchSize = 5000;
 
   logger.info(
     `Processing ${attestations.updates.length} updates and ${attestations.deletes.length} deletes.`,
