@@ -25,11 +25,25 @@ export const fetchAttestation = async (slotNumber: number, logger: CustomLogger)
       (attestation) => +attestation.data.slot >= getOldestLookbackSlot(),
     );
 
+    // Get committee validator counts for the slot
+    const slotData = await prisma.slot.findUnique({
+      where: { slot: slotNumber },
+      select: { committeeValidatorCounts: true },
+    });
+    if (!slotData?.committeeValidatorCounts) {
+      throw new Error(`No committee validator counts found for slot ${slotNumber}`);
+    }
+    const committeeValidatorCounts = slotData.committeeValidatorCounts as number[];
+
     // Process all attestations. Separates them by updates and deletes depending on the attestation delay env.BEACON_MAX_ATTESTATION_DELAY.
     const allUpdates: CommitteeUpdate[] = [];
     const allDeletes: CommitteeUpdate[] = [];
     for (const attestation of filteredAttestations) {
-      const processedAttestations = await processAttestation(slotNumber, attestation);
+      const processedAttestations = await processAttestation(
+        slotNumber,
+        attestation,
+        committeeValidatorCounts,
+      );
       allUpdates.push(...processedAttestations.updates);
       allDeletes.push(...processedAttestations.deletes);
     }
@@ -136,33 +150,10 @@ interface AttestationResult {
   deletes: CommitteeUpdate[];
 }
 
-/**
- * Gets the number of validators in a committee for a specific slot
- * @param slot - The slot number
- * @param committeeIndex - The committee index
- * @returns The number of validators in the committee
- * @throws Error if no aggregationBitsIndex is found for the committee
- */
-async function getValidatorsCountInCommittee(
-  slot: number,
-  committeeIndex: number,
-): Promise<number | null> {
-  const slotData = await prisma.slot.findUnique({
-    where: { slot },
-    select: { committeeValidatorCounts: true },
-  });
-
-  if (!slotData?.committeeValidatorCounts) {
-    return null;
-  }
-
-  const counts = slotData.committeeValidatorCounts as number[];
-  return counts[committeeIndex] ?? null;
-}
-
 async function processAttestation(
   slotNumber: number,
   attestation: Attestation,
+  committeeValidatorCounts: number[],
 ): Promise<AttestationResult> {
   const aggregationBits = convertBitsToString(
     convertHexStringToByteArray(attestation.aggregation_bits),
@@ -180,23 +171,19 @@ async function processAttestation(
 
   // Process each committee
   for (let committeeIndex = 0; committeeIndex < committeeBits.length; committeeIndex++) {
+    const validatorCount = committeeValidatorCounts[committeeIndex];
+    if (!validatorCount) {
+      throw `No validator count found for slot ${slotNumber} and committee index ${committeeIndex}`;
+    }
+
+    // Get the section of aggregation_bits for this committee
+    const committeeAggregationBits = aggregationBits.slice(
+      currentAggregationIndex,
+      currentAggregationIndex + validatorCount,
+    );
+
     // Only process committees that contributed to aggregation_bits
     if (committeeBits[committeeIndex] === '1') {
-      const validatorCount = await getValidatorsCountInCommittee(
-        Number(attestation.data.slot),
-        committeeIndex,
-      );
-
-      if (!validatorCount) {
-        throw `No validator count found for slot ${slotNumber} and committee index ${committeeIndex}`;
-      }
-
-      // Get the section of aggregation_bits for this committee
-      const committeeAggregationBits = aggregationBits.slice(
-        currentAggregationIndex,
-        currentAggregationIndex + validatorCount,
-      );
-
       // Process each validator's attestation in this committee
       for (let i = 0; i < committeeAggregationBits.length; i++) {
         if (committeeAggregationBits[i] === '1') {
@@ -215,9 +202,11 @@ async function processAttestation(
           }
         }
       }
-
-      currentAggregationIndex += validatorCount;
     }
+
+    // Always increment the currentAggregationIndex by the validator count
+    // regardless of whether the committee contributed to aggregation bits
+    currentAggregationIndex += validatorCount;
   }
 
   return { updates, deletes };
@@ -234,7 +223,7 @@ async function updateAndDeleteValidatorAttestations(
   slotNumber: number,
   logger: CustomLogger,
 ): Promise<void> {
-  const prismaBatchSize = 5000;
+  const prismaBatchSize = 10000;
 
   logger.info(
     `Processing ${attestations.updates.length} updates and ${attestations.deletes.length} deletes.`,
@@ -249,14 +238,13 @@ async function updateAndDeleteValidatorAttestations(
           const updateQuery = Prisma.sql`
             UPDATE "Committee" c
             SET "attestationDelay" = v.delay
-            FROM (VALUES
-              ${Prisma.join(
-                batchUpdates.map(
-                  (u) =>
-                    Prisma.sql`(${u.slot}, ${u.index}, ${u.aggregationBitsIndex}, ${u.attestationDelay})`,
-                ),
-              )}
-            ) AS v(slot, index, "aggregationBitsIndex", delay)
+            FROM (
+              SELECT 
+                unnest(array[${Prisma.join(batchUpdates.map((u) => u.slot))}]) as slot,
+                unnest(array[${Prisma.join(batchUpdates.map((u) => u.index))}]) as index,
+                unnest(array[${Prisma.join(batchUpdates.map((u) => u.aggregationBitsIndex))}]) as "aggregationBitsIndex",
+                unnest(array[${Prisma.join(batchUpdates.map((u) => u.attestationDelay))}]) as delay
+            ) v
             WHERE c.slot = v.slot 
               AND c.index = v.index 
               AND c."aggregationBitsIndex" = v."aggregationBitsIndex";
