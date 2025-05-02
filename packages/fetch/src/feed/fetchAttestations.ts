@@ -231,6 +231,8 @@ async function updateAndDeleteValidatorAttestations(
 
   await prisma.$transaction(
     async (tx) => {
+      const queries: Prisma.Sql[] = [];
+
       // Process updates
       if (attestations.updates.length > 0) {
         const updateChunks = chunk(attestations.updates, prismaBatchSize);
@@ -249,12 +251,11 @@ async function updateAndDeleteValidatorAttestations(
               AND c.index = v.index 
               AND c."aggregationBitsIndex" = v."aggregationBitsIndex";
           `;
-
-          await tx.$executeRaw(updateQuery);
+          queries.push(updateQuery);
         }
       }
 
-      // Process deletes using CTE
+      // Process deletes
       if (attestations.deletes.length > 0) {
         const deleteChunks = chunk(attestations.deletes, prismaBatchSize);
         for (const batchDeletes of deleteChunks) {
@@ -271,10 +272,12 @@ async function updateAndDeleteValidatorAttestations(
               AND c.index = t.index
               AND c."aggregationBitsIndex" = t."aggregationBitsIndex";
           `;
-
-          await tx.$executeRaw(deleteQuery);
+          queries.push(deleteQuery);
         }
       }
+
+      // Execute all queries in parallel
+      await Promise.all(queries.map((query) => tx.$executeRaw(query)));
 
       // Update slot
       return tx.slot.update({
