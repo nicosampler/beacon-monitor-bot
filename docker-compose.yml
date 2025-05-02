@@ -13,13 +13,17 @@ services:
     shm_size: 1g
     command:
       - -c
-      - checkpoint_timeout=4min
+      - shared_buffers=2GB
       - -c
-      - checkpoint_completion_target=0.95
+      - work_mem=64MB
+      - -c
+      - effective_cache_size=12GB
       - -c
       - max_wal_size=5GB
       - -c
-      - shared_buffers=1GB
+      - checkpoint_timeout=4min
+      - -c
+      - checkpoint_completion_target=0.95
     networks:
       - app-network
     logging:
