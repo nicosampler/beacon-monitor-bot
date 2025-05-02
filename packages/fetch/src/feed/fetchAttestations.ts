@@ -271,25 +271,17 @@ async function updateAndDeleteValidatorAttestations(
         const deleteChunks = chunk(attestations.deletes, prismaBatchSize);
         for (const batchDeletes of deleteChunks) {
           const deleteQuery = Prisma.sql`
-            WITH rows_to_delete AS (
-              SELECT c.*
-              FROM "Committee" c
-              INNER JOIN (
-                VALUES ${Prisma.join(
-                  batchDeletes.map(
-                    (d) => Prisma.sql`(${d.slot}, ${d.index}, ${d.aggregationBitsIndex})`,
-                  ),
-                )}
-              ) AS t(slot, index, "aggregationBitsIndex")
-              ON c.slot = t.slot
-                AND c.index = t.index
-                AND c."aggregationBitsIndex" = t."aggregationBitsIndex"
-            )
-            DELETE FROM "Committee"
-            USING rows_to_delete
-            WHERE "Committee".slot = rows_to_delete.slot
-              AND "Committee".index = rows_to_delete.index
-              AND "Committee"."aggregationBitsIndex" = rows_to_delete."aggregationBitsIndex";
+            DELETE FROM "Committee" c
+            USING (
+              VALUES ${Prisma.join(
+                batchDeletes.map(
+                  (d) => Prisma.sql`(${d.slot}, ${d.index}, ${d.aggregationBitsIndex})`,
+                ),
+              )}
+            ) AS t(slot, index, "aggregationBitsIndex")
+            WHERE c.slot = t.slot
+              AND c.index = t.index
+              AND c."aggregationBitsIndex" = t."aggregationBitsIndex";
           `;
 
           await tx.$executeRaw(deleteQuery);
