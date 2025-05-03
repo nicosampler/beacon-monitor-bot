@@ -357,26 +357,37 @@ const aggregationBits = `11111111 11111111 11011111 11111111 01111111 11111111 1
 10111111 11111111 11111111 11111111 11111111 11111111 11111110 11111111
 111`.replace(/\s+/g, '');
 
-const committeeValidatorCounts = [
-  357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 358, 357, 357, 357, 357, 357, 357,
-  357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 358, 357, 357, 357,
-  357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 358, 357,
-  357, 357, 357, 357, 357, 357, 357,
-];
+// const committeeValidatorCounts = [
+//   357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 358, 357, 357, 357, 357, 357, 357,
+//   357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 358, 357, 357, 357,
+//   357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 357, 358, 357,
+//   357, 357, 357, 357, 357, 357, 357,
+// ];
 
-const findCommittee = 35;
+// const findCommittee = 35;
 
-// 1️⃣ Compute the starting offset
-const fromSlice = committeeValidatorCounts.slice(0, findCommittee).reduce((sum, v) => sum + v, 0);
+// // 1️⃣ Compute the starting offset
+// const fromSlice = committeeValidatorCounts.slice(0, findCommittee).reduce((sum, v) => sum + v, 0);
 
-// 2️⃣ Grab exactly N bits, where N = committeeValidatorCounts[findCommittee]
-const length = committeeValidatorCounts[findCommittee];
-const committeeBitsSlice = aggregationBits.slice(fromSlice, fromSlice + length);
+// // 2️⃣ Grab exactly N bits, where N = committeeValidatorCounts[findCommittee]
+// const length = committeeValidatorCounts[findCommittee];
+// const committeeBitsSlice = aggregationBits.slice(fromSlice, fromSlice + length);
 
-// 3️⃣ Collect the zero-positions
-const zeroIndices = [];
-for (let i = 0; i < committeeBitsSlice.length; i++) {
-  if (committeeBitsSlice[i] === '0') zeroIndices.push(i);
+// // 3️⃣ Collect the zero-positions
+// const zeroIndices = [];
+// for (let i = 0; i < committeeBitsSlice.length; i++) {
+//   if (committeeBitsSlice[i] === '0') zeroIndices.push(i);
+// }
+
+// console.log(zeroIndices);
+
+const amounts = [1, 2, 3, 4, 5];
+
+const data = '122333444455555';
+let currentAggregationIndex = 0;
+
+for (let index = 0; index < amounts.length; index++) {
+  const result = data.slice(currentAggregationIndex, currentAggregationIndex + amounts[index]);
+  console.log(result);
+  currentAggregationIndex += amounts[index];
 }
-
-console.log(zeroIndices);

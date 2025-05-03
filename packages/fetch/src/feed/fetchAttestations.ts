@@ -171,19 +171,18 @@ async function processAttestation(
 
   // Process each committee
   for (let committeeIndex = 0; committeeIndex < committeeBits.length; committeeIndex++) {
-    const validatorCount = committeeValidatorCounts[committeeIndex];
-    if (!validatorCount) {
+    if (!committeeValidatorCounts[committeeIndex]) {
       throw `No validator count found for slot ${slotNumber} and committee index ${committeeIndex}`;
     }
 
-    // Get the section of aggregation_bits for this committee
-    const committeeAggregationBits = aggregationBits.slice(
-      currentAggregationIndex,
-      currentAggregationIndex + validatorCount,
-    );
-
     // Only process committees that contributed to aggregation_bits
     if (committeeBits[committeeIndex] === '1') {
+      // Get the section of aggregation_bits for this committee
+      const committeeAggregationBits = aggregationBits.slice(
+        currentAggregationIndex,
+        currentAggregationIndex + committeeValidatorCounts[committeeIndex],
+      );
+
       // Process each validator's attestation in this committee
       for (let i = 0; i < committeeAggregationBits.length; i++) {
         if (committeeAggregationBits[i] === '1') {
@@ -202,11 +201,10 @@ async function processAttestation(
           }
         }
       }
-    }
 
-    // Always increment the currentAggregationIndex by the validator count
-    // regardless of whether the committee contributed to aggregation bits
-    currentAggregationIndex += validatorCount;
+      // Only increment the index if we processed this committee
+      currentAggregationIndex += committeeValidatorCounts[committeeIndex];
+    }
   }
 
   return { updates, deletes };
