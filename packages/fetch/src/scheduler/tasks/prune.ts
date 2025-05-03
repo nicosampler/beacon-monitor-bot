@@ -13,7 +13,7 @@ async function pruneTask(logger: CustomLogger) {
 
     await prisma.$executeRaw`VACUUM FULL "Committee"`;
     await prisma.$executeRaw`VACUUM FULL "HourlyValidatorStats"`;
-    await prisma.$executeRaw`VACUUM FULL "DailyValidatorStats"`;
+    //await prisma.$executeRaw`VACUUM FULL "DailyValidatorStats"`;
 
     logger.info('VACUUM FULL completed successfully');
   } catch (error) {

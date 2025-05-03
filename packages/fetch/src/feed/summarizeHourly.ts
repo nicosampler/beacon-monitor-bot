@@ -24,6 +24,7 @@ export async function hasUnprocessedSlots(endSlot: number): Promise<boolean> {
     where: {
       slot: endSlot,
       attestationsFetched: true,
+      blockAndSyncRewardsFetched: true,
     },
   });
   return slot == null;
