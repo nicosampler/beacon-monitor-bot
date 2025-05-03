@@ -8,7 +8,7 @@ import { scheduleFetchBlockAndSyncRewards } from '@/src/scheduler/tasks/fetchBlo
 import { scheduleFetchCommittee } from '@/src/scheduler/tasks/fetchCommittee.js';
 import { scheduleFetchValidatorsBalances } from '@/src/scheduler/tasks/fetchValidatorsBalances.js';
 import { scheduleFetchValidatorsInfo } from '@/src/scheduler/tasks/fetchValidatorsInfo.js';
-import { scheduleRepackCommittee } from '@/src/scheduler/tasks/repackCommittee.js';
+import { schedulePrune } from '@/src/scheduler/tasks/prune.js';
 import { scheduleSummarizeDaily } from '@/src/scheduler/tasks/summarizeDaily.js';
 import { scheduleSummarizeHourly } from '@/src/scheduler/tasks/summarizeHourly.js';
 
@@ -84,8 +84,8 @@ export function scheduleTasks() {
     runImmediately: true,
     preventOverrun: true,
   });
-  scheduleRepackCommittee({
-    id: 'RepackCommittee',
+  schedulePrune({
+    id: 'Prune',
     logsEnabled: true,
     intervalMs: ms('1h'),
     runImmediately: true,

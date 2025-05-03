@@ -7,20 +7,21 @@ import { TaskOptions } from '@/src/scheduler/tasks/types.js';
 
 const prisma = getPrisma();
 
-async function repackCommitteeTask(logger: CustomLogger) {
+async function pruneTask(logger: CustomLogger) {
   try {
-    logger.info('Starting pg_repack on Committee table');
+    logger.info('Starting VACUUM FULL');
 
-    // Execute pg_repack on the Committee table
-    await prisma.$executeRaw`SELECT pg_repack('"Committee"')`;
+    await prisma.$executeRaw`VACUUM FULL "Committee"`;
+    await prisma.$executeRaw`VACUUM FULL "HourlyValidatorStats"`;
+    await prisma.$executeRaw`VACUUM FULL "DailyValidatorStats"`;
 
-    logger.info('pg_repack completed successfully');
+    logger.info('VACUUM FULL completed successfully');
   } catch (error) {
-    logger.error('Error running pg_repack on Committee table:', error);
+    logger.error('Error running VACUUM FULL on tables:', error);
   }
 }
 
-export function scheduleRepackCommittee({
+export function schedulePrune({
   id,
   logsEnabled,
   intervalMs,
@@ -30,7 +31,7 @@ export function scheduleRepackCommittee({
   const logger = createLogger(id, logsEnabled);
 
   const task = new AsyncTask(`${id}_task`, () =>
-    repackCommitteeTask(logger).catch((e) => {
+    pruneTask(logger).catch((e) => {
       logger.error('TASK-CATCH', e);
     }),
   );
