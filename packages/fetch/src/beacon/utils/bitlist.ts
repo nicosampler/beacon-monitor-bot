@@ -70,6 +70,18 @@ export function convertBitsToString(list: Uint8Array): string {
   return buf;
 }
 
+export function convertBitsToStringForCommitteeBits(list: Uint8Array): string {
+  const totalBits = list.length * 8;
+  let buf = '';
+  for (let i = 0; i < totalBits; i++) {
+    const bit = isBitSet(list, i);
+    buf += bit ? '1' : '0';
+  }
+  return buf;
+}
+
+
+
 /**
  * Formats a string of bits into blocks separated by spaces, where each block represents a byte.
  * This function improves readability by grouping every 8 bits into a block, separated by a space.

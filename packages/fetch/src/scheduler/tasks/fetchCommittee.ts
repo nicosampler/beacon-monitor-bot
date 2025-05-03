@@ -4,7 +4,7 @@ import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/beacon/utils/misc
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 import { fetchCommittee } from '@/src/feed/fetchCommittee.js';
-import { db_getLastSlotInCommittee, db_getLastSlotWithAttestations } from '@/src/feed/utils.js';
+import { db_getLastSlot, db_getLastSlotWithAttestations } from '@/src/feed/utils.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
@@ -15,9 +15,9 @@ async function fetchNewCommittees(logger: CustomLogger): Promise<void> {
   const headSlot = getSlotNumberFromTimestamp(now.getTime());
   const headEpoch = getEpochFromSlot(headSlot);
 
-  const lastSlotInCommittee = await db_getLastSlotInCommittee();
+  const lastSlot = await db_getLastSlot();
 
-  const slotToFetch = lastSlotInCommittee ? lastSlotInCommittee.slot + 1 : getOldestLookbackSlot();
+  const slotToFetch = lastSlot ? lastSlot + 1 : getOldestLookbackSlot();
   const epochToFetch = getEpochFromSlot(slotToFetch);
 
   logger.addContext(`Epoch: ${epochToFetch}`);
@@ -32,15 +32,15 @@ async function fetchNewCommittees(logger: CustomLogger): Promise<void> {
   // skip if fetch attestations is delayed
   const lastSlotWithAttestations = await db_getLastSlotWithAttestations();
   if (
-    lastSlotInCommittee &&
+    lastSlot &&
     lastSlotWithAttestations &&
-    lastSlotInCommittee.slot - lastSlotWithAttestations.slot >= env.BEACON_SLOTS_PER_EPOCH * 25
+    lastSlot - lastSlotWithAttestations.slot >= env.BEACON_SLOTS_PER_EPOCH * 25
   ) {
     logger.info(`Skipping, last slot with attestations is too back in time`);
     return;
   }
 
-  await fetchCommittee(logger, epochToFetch, lastSlotInCommittee?.slot || -1);
+  await fetchCommittee(logger, epochToFetch, lastSlot || -1);
 
   logger.info(`Done!`);
 }

@@ -1,5 +1,3 @@
-import chunk from 'lodash/chunk.js';
-
 import { getCommittees } from '@/src/beacon/endpoints.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
@@ -51,16 +49,16 @@ function logCommitteeInfo(
 function prepareUpsertData(_committees: Committee[], lastSlotInCommittee: number) {
   // filter out committees that are not already in the committee table
   // as the response from the API contains slots previous to the fetchedSlot
-  const committees = _committees.filter((c) => +c.slot >= lastSlotInCommittee);
+  const committees = _committees.filter((c) => Number(c.slot) > lastSlotInCommittee);
 
   const uniqueSlots = Array.from(new Set(committees.map((c) => +c.slot)));
 
-  const slotUpserts = uniqueSlots.map((slot) => ({
+  const newSlots = uniqueSlots.map((slot) => ({
     slot,
     attestationsFetched: false,
   }));
 
-  const committeeUpserts = committees.flatMap((committee) =>
+  const newCommittees = committees.flatMap((committee) =>
     committee.validators.map((validatorIndex, index) => ({
       slot: +committee.slot,
       index: +committee.index, // index within the slot
@@ -71,8 +69,8 @@ function prepareUpsertData(_committees: Committee[], lastSlotInCommittee: number
 
   return {
     uniqueSlots,
-    slotUpserts,
-    committeeUpserts,
+    newSlots,
+    newCommittees,
   };
 }
 
@@ -135,6 +133,6 @@ export async function fetchCommittee(
 ): Promise<void> {
   const committees = await getCommittees(epochToFetch);
   const preparedData = prepareUpsertData(committees, lastSlotInCommittee);
-  logCommitteeInfo(logger, committees, preparedData.slotUpserts);
-  await executeEpochTransaction(preparedData.uniqueSlots, preparedData.committeeUpserts);
+  logCommitteeInfo(logger, committees, preparedData.newSlots);
+  await executeEpochTransaction(preparedData.uniqueSlots, preparedData.newCommittees);
 }
