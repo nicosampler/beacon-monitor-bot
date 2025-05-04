@@ -268,13 +268,14 @@ async function updateAndDeleteValidatorAttestations(
           const updateQuery = Prisma.sql`
             UPDATE "Committee" c
             SET "attestationDelay" = v.delay
-            FROM (
-              SELECT 
-                unnest(array[${Prisma.join(batchUpdates.map((u) => u.slot))}]) as slot,
-                unnest(array[${Prisma.join(batchUpdates.map((u) => u.index))}]) as index,
-                unnest(array[${Prisma.join(batchUpdates.map((u) => u.aggregationBitsIndex))}]) as "aggregationBitsIndex",
-                unnest(array[${Prisma.join(batchUpdates.map((u) => u.attestationDelay))}]) as delay
-            ) v
+            FROM (VALUES
+              ${Prisma.join(
+                batchUpdates.map(
+                  (u) =>
+                    Prisma.sql`(${u.slot}, ${u.index}, ${u.aggregationBitsIndex}, ${u.attestationDelay})`,
+                ),
+              )}
+            ) AS v(slot, index, "aggregationBitsIndex", delay)
             WHERE c.slot = v.slot 
               AND c.index = v.index 
               AND c."aggregationBitsIndex" = v."aggregationBitsIndex";
