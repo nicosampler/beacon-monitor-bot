@@ -1,4 +1,5 @@
-import { chunk } from 'lodash';
+import chunk from 'lodash/chunk.js';
+import ms from 'ms';
 
 import { getCommittees } from '@/src/beacon/endpoints.js';
 import { CustomLogger } from '@/src/lib/pino.js';
@@ -88,26 +89,64 @@ async function executeEpochTransaction(uniqueSlots: number[], committeeUpserts: 
     slotCounts[u.index] = (slotCounts[u.index] || 0) + 1;
   }
 
-  // First transaction: Insert slots with committee counts
-  await prisma.$executeRaw`
-    INSERT INTO "Slot" (slot, "attestationsFetched", "committeeValidatorCounts")
-    SELECT 
-      unnest(${uniqueSlots}::integer[]), 
-      false,
-      unnest(${uniqueSlots.map((slot) => JSON.stringify(committeeCounts.get(slot) || []))}::jsonb[])
-    ON CONFLICT (slot) DO UPDATE SET
-      "committeeValidatorCounts" = EXCLUDED."committeeValidatorCounts"
-  `;
+  // Execute everything in a single transaction with timeout
+  await prisma.$transaction(
+    async (tx) => {
+      // First: Insert slots with committee counts
+      await tx.$executeRaw`
+      INSERT INTO "Slot" (slot, "attestationsFetched", "committeeValidatorCounts")
+      SELECT 
+        unnest(${uniqueSlots}::integer[]), 
+        false,
+        unnest(${uniqueSlots.map((slot) => JSON.stringify(committeeCounts.get(slot) || []))}::jsonb[])
+      ON CONFLICT (slot) DO UPDATE SET
+        "committeeValidatorCounts" = EXCLUDED."committeeValidatorCounts"
+    `;
 
-  // Second transaction: Insert committees in batches
-  const batchSize = 10000;
-  const batches = chunk(committeeUpserts, batchSize);
-  for (const batch of batches) {
-    await prisma.committee.createMany({
-      data: batch,
-      skipDuplicates: true,
-    });
-  }
+      // Second: Create temporary table for bulk insert
+      await tx.$executeRaw`
+      CREATE TEMPORARY TABLE "temp_committee" (
+        slot INT,
+        index INT,
+        "aggregationBitsIndex" INT,
+        "validatorIndex" INT
+      ) ON COMMIT DROP
+    `;
+
+      // Third: Insert data into temporary table
+      const batchSize = 10000;
+      const batches = chunk(committeeUpserts, batchSize);
+      for (const batch of batches) {
+        const values = batch
+          .map((c) => `(${c.slot}, ${c.index}, ${c.aggregationBitsIndex}, ${c.validatorIndex})`)
+          .join(',');
+
+        await tx.$executeRawUnsafe(`
+        INSERT INTO "temp_committee" (slot, index, "aggregationBitsIndex", "validatorIndex")
+        VALUES ${values}
+      `);
+      }
+
+      // Fourth: Insert from temporary table to main table using WITH clause and LOCK
+      await tx.$executeRaw`
+      WITH max_slot AS (
+        SELECT slot as max_slot 
+        FROM "Committee" 
+        ORDER BY slot DESC 
+        LIMIT 1
+        FOR UPDATE
+      )
+      INSERT INTO "Committee" (slot, index, "aggregationBitsIndex", "validatorIndex")
+      SELECT tc.slot, tc.index, tc."aggregationBitsIndex", tc."validatorIndex"
+      FROM "temp_committee" tc, max_slot
+      WHERE tc.slot > COALESCE(max_slot.max_slot, 0)
+      ON CONFLICT (slot, index, "aggregationBitsIndex") DO NOTHING
+    `;
+    },
+    {
+      timeout: ms('1m'),
+    },
+  );
 }
 
 // New function to handle parallel fetching

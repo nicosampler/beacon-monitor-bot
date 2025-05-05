@@ -23,9 +23,11 @@ services:
       - -c
       - effective_cache_size=8GB
       - -c
-      - max_wal_size=2GB
+      - max_wal_size=4GB
       - -c
-      - checkpoint_timeout=5min
+      - min_wal_size=1GB
+      - -c
+      - checkpoint_timeout=2min
       - -c
       - checkpoint_completion_target=0.9
       - -c
