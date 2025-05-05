@@ -64,7 +64,6 @@ export const fetchAttestation = async (slotNumber: number, logger: CustomLogger)
 
     // Process all attestations. Separates them by updates and deletes depending on the attestation delay env.BEACON_MAX_ATTESTATION_DELAY.
     const allUpdates: CommitteeUpdate[] = [];
-    const allDeletes: CommitteeUpdate[] = [];
     for (const attestation of fetchedAttestations) {
       const processedAttestations = await processAttestation(
         slotNumber,
@@ -72,20 +71,33 @@ export const fetchAttestation = async (slotNumber: number, logger: CustomLogger)
         slotCommitteesValidatorsAmounts,
       );
       allUpdates.push(...processedAttestations.updates);
-      allDeletes.push(...processedAttestations.deletes);
     }
 
-    // Deduplicate and prioritize deletes over updates
-    const { updates: uniqueUpdates, deletes: uniqueDeletes } = deduplicateAttestations(
-      allUpdates,
-      allDeletes,
-    );
+    // if there are duplicates, keep the one with the lowest delay
+    const uniqueUpdates = allUpdates.reduce((acc, update) => {
+      const existingIndex = acc.findIndex(
+        (u) =>
+          u.slot === update.slot &&
+          u.index === update.index &&
+          u.aggregationBitsIndex === update.aggregationBitsIndex,
+      );
+
+      if (existingIndex === -1) {
+        // If no duplicate exists, add the update
+        acc.push(update);
+      } else if (update.attestationDelay < acc[existingIndex].attestationDelay) {
+        // If duplicate exists and new update has lower delay, replace it
+        acc[existingIndex] = update;
+      }
+
+      return acc;
+    }, [] as CommitteeUpdate[]);
 
     // Update or delete the validators from the committee table
     await updateAndDeleteValidatorAttestations(
       {
         updates: uniqueUpdates,
-        deletes: uniqueDeletes,
+        deletes: [],
       },
       slotNumber,
       logger,
@@ -97,56 +109,6 @@ export const fetchAttestation = async (slotNumber: number, logger: CustomLogger)
     throw error;
   }
 };
-
-/**
- * Deduplicates the updates and deletes of the attestations.
- * Some nodes might be delayed producing we might get attestations for a node indicating different delays.
- * We give priority to the attestation with the lowest delay.
- */
-function deduplicateAttestations(
-  allUpdates: CommitteeUpdate[],
-  allDeletes: CommitteeUpdate[],
-): AttestationResult {
-  // Helper function to check if entry exists
-  const entryExists = (arr: CommitteeUpdate[], value: CommitteeUpdate) => {
-    return arr.some(
-      (entry) =>
-        entry.slot === value.slot &&
-        entry.index === value.index &&
-        entry.aggregationBitsIndex === value.aggregationBitsIndex,
-    );
-  };
-
-  // Remove duplicates from deletes first (keeping first occurrence)
-  const uniqueDeletes = allDeletes.filter(
-    (del, index) =>
-      allDeletes.findIndex(
-        (d) =>
-          d.slot === del.slot &&
-          d.index === del.index &&
-          d.aggregationBitsIndex === del.aggregationBitsIndex,
-      ) === index,
-  );
-
-  // Filter updates: remove duplicates and any that exist in deletes
-  const uniqueUpdates = allUpdates.filter(
-    (update, index) =>
-      // Keep only first occurrence of each update
-      allUpdates.findIndex(
-        (u) =>
-          u.slot === update.slot &&
-          u.index === update.index &&
-          u.aggregationBitsIndex === update.aggregationBitsIndex,
-      ) === index &&
-      // Remove if exists in deletes (deletes take precedence)
-      !entryExists(uniqueDeletes, update),
-  );
-
-  return {
-    updates: uniqueUpdates,
-    deletes: uniqueDeletes,
-  };
-}
 
 async function getAttestation(slot: number, logger: CustomLogger) {
   const fetchedAttestations = await getAttestations(slot + 1);
@@ -224,11 +186,7 @@ async function processAttestation(
             aggregationBitsIndex: i,
             attestationDelay,
           };
-          if (attestationDelay <= env.BEACON_MAX_ATTESTATION_DELAY) {
-            deletes.push(attestationInfo);
-          } else {
-            updates.push(attestationInfo);
-          }
+          updates.push(attestationInfo);
         }
       }
 
@@ -251,8 +209,6 @@ async function updateAndDeleteValidatorAttestations(
   slotNumber: number,
   logger: CustomLogger,
 ): Promise<void> {
-  const prismaBatchSize = 5000;
-
   logger.info(
     `Processing ${attestations.updates.length} updates and ${attestations.deletes.length} deletes.`,
   );
@@ -263,7 +219,7 @@ async function updateAndDeleteValidatorAttestations(
 
       // Process updates
       if (attestations.updates.length > 0) {
-        const updateChunks = chunk(attestations.updates, prismaBatchSize);
+        const updateChunks = chunk(attestations.updates, 10000);
         for (const batchUpdates of updateChunks) {
           const updateQuery = Prisma.sql`
             UPDATE "Committee" c
@@ -286,7 +242,7 @@ async function updateAndDeleteValidatorAttestations(
 
       // Process deletes
       if (attestations.deletes.length > 0) {
-        const deleteChunks = chunk(attestations.deletes, prismaBatchSize);
+        const deleteChunks = chunk(attestations.deletes, 10000);
         for (const batchDeletes of deleteChunks) {
           const deleteQuery = Prisma.sql`
             DELETE FROM "Committee" c

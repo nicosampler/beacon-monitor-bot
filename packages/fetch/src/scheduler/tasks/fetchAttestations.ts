@@ -6,8 +6,11 @@ import { env } from '@/src/env.js';
 import { fetchAttestation as _fetchAttestations } from '@/src/feed/fetchAttestations.js';
 import { db_existCommitteeForSlot, db_getLastSlotWithAttestations } from '@/src/feed/utils.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
+import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
+
+const prisma = getPrisma();
 
 export const fetchAttestations = async (logger: CustomLogger) => {
   const now = new Date();
@@ -35,6 +38,19 @@ export const fetchAttestations = async (logger: CustomLogger) => {
       logger.info(`Skipping, no committee found for slot ${slotToFetch}.`);
       return;
     }
+
+    // TODO: move to another task (?)
+    await prisma.committee.deleteMany({
+      where: {
+        slot: {
+          lt: slotToFetch - env.BEACON_SLOTS_PER_EPOCH * 2,
+          // This time is enough to delete attestations and avoid the fetchAttestations task to create them again
+        },
+        attestationDelay: {
+          lte: env.BEACON_MAX_ATTESTATION_DELAY,
+        },
+      },
+    });
 
     return _fetchAttestations(slotToFetch, logger);
   } catch (error) {
