@@ -219,7 +219,7 @@ async function updateAndDeleteValidatorAttestations(
 
       // Process updates
       if (attestations.updates.length > 0) {
-        const updateChunks = chunk(attestations.updates, 10000);
+        const updateChunks = chunk(attestations.updates, 7000);
         for (const batchUpdates of updateChunks) {
           const updateQuery = Prisma.sql`
             UPDATE "Committee" c
