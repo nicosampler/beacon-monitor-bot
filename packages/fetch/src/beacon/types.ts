@@ -62,6 +62,8 @@ export type GetAttestations = {
   finalized: boolean;
   data: {
     aggregation_bits: string;
+    signature: string;
+    committee_bits: string;
     data: {
       slot: string;
       index: string;
@@ -75,8 +77,6 @@ export type GetAttestations = {
         root: string;
       };
     };
-    signature: string;
-    committee_bits: string;
   }[];
 };
 

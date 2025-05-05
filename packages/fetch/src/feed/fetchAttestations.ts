@@ -194,14 +194,15 @@ async function processAttestation(
     convertHexStringToByteArray(attestation.committee_bits),
   );
 
-  const slotCommitteeValidatorsAmount =
-    slotCommitteesValidatorsAmounts[Number(attestation.data.slot)];
+  const slot = Number(attestation.data.slot);
+
+  const slotCommitteeValidatorsAmount = slotCommitteesValidatorsAmounts[slot];
   if (!slotCommitteeValidatorsAmount) {
-    throw `No validator count found for slot ${slotNumber}`;
+    throw `No validator count found for slot ${slot}`;
   }
-  let currentAggregationIndex = 0;
 
   // Process each committee
+  let currentAggregationIndex = 0;
   for (let committeeBit = 0; committeeBit < committeeBits.length; committeeBit++) {
     const validatorsInCommittee = slotCommitteeValidatorsAmount[committeeBit];
 
@@ -216,14 +217,13 @@ async function processAttestation(
       // Process each validator's attestation in this committee
       for (let i = 0; i < committeeAggregationBits.length; i++) {
         if (committeeAggregationBits[i] === '1') {
-          const attestationDelay = slotNumber - Number(attestation.data.slot) - 1;
+          const attestationDelay = slotNumber - slot - 1;
           const attestationInfo = {
-            slot: +attestation.data.slot,
+            slot: slot,
             index: committeeBit,
             aggregationBitsIndex: i,
             attestationDelay,
           };
-
           if (attestationDelay <= env.BEACON_MAX_ATTESTATION_DELAY) {
             deletes.push(attestationInfo);
           } else {
