@@ -3,7 +3,12 @@ import _ from 'lodash';
 
 import { env } from '@/src/env.js';
 import { ValidatorStatuses } from '@/src/routes/types.js';
-import { getEpochFromSlot, VALIDATOR_STATUS } from '@/src/utils/beacon.js';
+import {
+  calculateSlotRange,
+  getEpochFromSlot,
+  getEpochSlots,
+  VALIDATOR_STATUS,
+} from '@/src/utils/beacon.js';
 
 function areConsecutiveDescending(arr: number[]): boolean {
   return _.every(arr, (val: number, idx: number, collection: number[]): boolean => {
@@ -25,10 +30,12 @@ export function getValidatorStatuses(
     exitedIds: [],
   };
 
-  const missedAttestationsByValidator = new Map<number, number[]>();
+  const missedEpochsByValidator = new Map<number, number[]>();
+  const sortedMissedAttestations = userMissedAttestations.sort((a, b) => a.slot - b.slot);
+  const lastMissedAttestationByValidator = new Map<number, number>();
 
   // Collect missed attestations per validator
-  for (const missedAttestation of userMissedAttestations) {
+  for (const missedAttestation of sortedMissedAttestations) {
     const missedAttestationEpoch = getEpochFromSlot(missedAttestation.slot);
     const validatorId = missedAttestation.validatorIndex;
 
@@ -37,15 +44,18 @@ export function getValidatorStatuses(
       continue;
     }
 
-    const validatorMissedAttestations = missedAttestationsByValidator.get(validatorId) || [];
+    const missedEpochs = missedEpochsByValidator.get(validatorId) || [];
 
     // Collect up to inactiveOnMissedAttestations
-    if (validatorMissedAttestations.length < inactiveOnMissedAttestations) {
-      validatorMissedAttestations.push(missedAttestationEpoch);
+    if (missedEpochs.length < inactiveOnMissedAttestations) {
+      missedEpochs.push(missedAttestationEpoch);
       // Keep array sorted in descending order
-      validatorMissedAttestations.sort((a, b) => b - a);
-      missedAttestationsByValidator.set(validatorId, validatorMissedAttestations);
+      missedEpochs.sort((a, b) => b - a);
+      missedEpochsByValidator.set(validatorId, missedEpochs);
     }
+
+    // Store the last missed attestation for this validator
+    lastMissedAttestationByValidator.set(validatorId, missedAttestation.slot);
   }
 
   // Process validators
@@ -79,12 +89,24 @@ export function getValidatorStatuses(
     }
 
     // Check missed attestations
-    const missedEpochs = missedAttestationsByValidator.get(validator.id) || [];
+    const missedEpochs = missedEpochsByValidator.get(validator.id) || [];
 
-    // Check for consecutive missed epochs
     if (missedEpochs.length >= inactiveOnMissedAttestations) {
       const epochsToCheck: number[] = missedEpochs.slice(0, inactiveOnMissedAttestations);
-      if (areConsecutiveDescending(epochsToCheck)) {
+
+      // The last missed attestation has to be in one epoch range.
+      // As all validators have to attest in one epoch range.
+      const safeSlotRange = {
+        end: maxSafeSlotToQuery - env.BEACON_MAX_ATTESTATION_DELAY,
+        start: maxSafeSlotToQuery - env.BEACON_MAX_ATTESTATION_DELAY - 16,
+      };
+      const lastMissedAttestation = lastMissedAttestationByValidator.get(validator.id);
+      const isLastMissedAttestationRecent =
+        lastMissedAttestation &&
+        lastMissedAttestation >= safeSlotRange.start &&
+        lastMissedAttestation <= safeSlotRange.end;
+
+      if (areConsecutiveDescending(epochsToCheck) && isLastMissedAttestationRecent) {
         result.inactiveIds.push(validator.id);
       }
     }

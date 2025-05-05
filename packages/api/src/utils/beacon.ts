@@ -132,3 +132,9 @@ export function getTimestampFromEpochNumber(epochNumber: number): number {
 
   return env.BEACON_GENESIS_TIMESTAMP + epochNumber * slotDuration;
 }
+
+export function calculateSlotRange(startTime: Date, endTime: Date) {
+  const startSlot = getSlotNumberFromTimestamp(startTime.getTime());
+  const endSlot = getSlotNumberFromTimestamp(endTime.getTime());
+  return { startSlot, endSlot };
+}

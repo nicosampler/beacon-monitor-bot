@@ -83,101 +83,6 @@ interface UserStats {
   validatorStats: ValidatorByStatus;
 }
 
-// async function slotsInfo() {
-//   //const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
-//   //const headSlot = currentSlot - Number(env.BEACON_DELAY_SLOTS_TO_HEAD);
-//   // const headEpoch = getEpochFromSlot(headSlot);
-//   // const headEpochSlots = getEpochSlots(headEpoch);
-//   // const maxSlotToQuery = headEpochSlots.startSlot - 1 - env.BEACON_SLOTS_PER_EPOCH;
-//   // const lastSlotProcessed = await prisma.slot.findFirst({
-//   //   where: { attestationsFetched: true },
-//   //   orderBy: { slot: 'desc' },
-//   // });
-//   // // The bot is syncing if the last slot processed is less than
-//   // // one complete epoch behind the head epoch
-//   // const syncing = (lastSlotProcessed?.slot || 0) < maxSlotToQuery;
-
-//   const lastSlotWithAttestations = await prisma.slot.findFirst({
-//     where: { attestationsFetched: true },
-//     orderBy: { slot: 'desc' },
-//   });
-
-//   const lastSlotProcessed = lastSlotWithAttestations?.slot || 0;
-
-//   // This should be equal to lastSlotProcessed, if lastSlotProcessed is behind
-//   // it means that the indexer is delayed.
-//   const headSlot = getSlotNumberFromTimestamp(new Date().getTime());
-
-//   // attestations for slot n come at slot n + 1
-//   const slotNComesAtNPlusOne = 1;
-//   const indexerIdealHead = headSlot - slotNComesAtNPlusOne - env.BEACON_DELAY_SLOTS_TO_HEAD;
-
-//   // A validator can safely attest to a slot up to env.BEACON_MAX_ATTESTATION_DELAY slots after.
-//   // is the attestation comes after it, is considered missed.
-//   const maxSafeSlotToQuery = lastSlotProcessed - env.BEACON_MAX_ATTESTATION_DELAY;
-
-//   // is syncing if the indexer is 1 epoch behind
-//   const syncing = lastSlotProcessed < indexerIdealHead - env.BEACON_SLOTS_PER_EPOCH;
-
-//   return {
-//     headSlot,
-//     maxSlotToQuery: maxSafeSlotToQuery,
-//     maxEpochToQuery: getEpochFromSlot(maxSafeSlotToQuery),
-//     syncing,
-//   };
-// }
-
-// function getValidatorStatuses(
-//   user: User & { validators: Validator[] },
-//   beaconActiveValidators: Validator[],
-//   userMissedAttestations: UserValidatorsInfo['missedAttestations'],
-//   maxEpochToQuery: number,
-// ): ValidatorByStatus {
-//   const inactiveIds: number[] = [];
-//   for (const validator of beaconActiveValidators) {
-//     // get the last missed attestations for each validator
-//     const recentMissed = userMissedAttestations
-//       .filter((entry) => entry.validatorIndex === validator.id)
-//       .slice(0, user.inactiveOnMissedAttestations)
-//       .map((entry) => getEpochFromSlot(entry.slot))
-//       .filter(
-//         // Get the last N epochs where N is the user's inactivity threshold.
-//         // Each validator attest once per epoch.
-//         (epoch) => epoch > maxEpochToQuery - user.inactiveOnMissedAttestations,
-//       );
-
-//     // Skip if not enough missed attestations
-//     if (recentMissed.length < user.inactiveOnMissedAttestations) {
-//       continue;
-//     }
-
-//     inactiveIds.push(validator.id);
-//   }
-
-//   const activeIds = beaconActiveValidators
-//     .filter((v) => !inactiveIds.includes(v.id))
-//     .map((v) => v.id);
-
-//   return {
-//     activeIds,
-//     inactiveIds,
-//     slashedIds: user.validators
-//       .filter(
-//         (v) =>
-//           v.status === VALIDATOR_STATUS.active_slashed ||
-//           v.status === VALIDATOR_STATUS.exited_slashed,
-//       )
-//       .map((v) => v.id),
-//     exitedIds: user.validators
-//       .filter(
-//         (v) =>
-//           v.status === VALIDATOR_STATUS.exited_unslashed ||
-//           v.status === VALIDATOR_STATUS.withdrawal_done,
-//       )
-//       .map((v) => v.id),
-//   };
-// }
-
 async function getUserAllStats(
   syncing: boolean,
   maxSlotToQuery: number,
@@ -435,10 +340,11 @@ function formatStatsMessage(
   const rewardsSection = [
     `Stats:`,
     `-----------------------------`,
-    `    APY%  ${env.BLOCKCHAIN_TOKEN_SYMBOL}   ${env.BLOCKCHAIN_FEE_REWARDS_SYMBOL}   Total`,
-    `d:  ${dailyApy}  ${formatNumber(stats.rewards.daily.consensus, 3)}  ${formatNumber(stats.rewards.daily.execution, 3)}  ${formatNumber(stats.rewards.daily.usd, 4, '$')}`,
-    `w:  ${weeklyApy}  ${formatNumber(stats.rewards.weekly.consensus, 3)}  ${formatNumber(stats.rewards.weekly.execution, 3)}  ${formatNumber(stats.rewards.weekly.usd, 4, '$')}`,
-    `m:  ${monthlyApy}  ${formatNumber(stats.rewards.monthly.consensus, 3)}  ${formatNumber(stats.rewards.monthly.execution, 3)}  ${formatNumber(stats.rewards.monthly.usd, 4, '$')}`,
+    `WIP: Adapting to Pectra`,
+    // `    APY%  ${env.BLOCKCHAIN_TOKEN_SYMBOL}   ${env.BLOCKCHAIN_FEE_REWARDS_SYMBOL}   Total`,
+    // `d:  ${dailyApy}  ${formatNumber(stats.rewards.daily.consensus, 3)}  ${formatNumber(stats.rewards.daily.execution, 3)}  ${formatNumber(stats.rewards.daily.usd, 4, '$')}`,
+    // `w:  ${weeklyApy}  ${formatNumber(stats.rewards.weekly.consensus, 3)}  ${formatNumber(stats.rewards.weekly.execution, 3)}  ${formatNumber(stats.rewards.weekly.usd, 4, '$')}`,
+    // `m:  ${monthlyApy}  ${formatNumber(stats.rewards.monthly.consensus, 3)}  ${formatNumber(stats.rewards.monthly.execution, 3)}  ${formatNumber(stats.rewards.monthly.usd, 4, '$')}`,
   ].join('\n');
 
   const footer = [
