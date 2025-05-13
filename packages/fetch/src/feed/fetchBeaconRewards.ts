@@ -1,10 +1,12 @@
 import { Prisma } from '@prisma/client';
 import chunk from 'lodash/chunk.js';
+import mergeWith from 'lodash/mergeWith.js';
 import ms from 'ms';
 
 import { getAttestationRewards } from '@/src/beacon/endpoints.js';
+import { AttestationRewards } from '@/src/beacon/types.js';
 import { getTimestampFromEpochNumber } from '@/src/beacon/utils/time.js';
-import { createEpoch } from '@/src/feed/utils.js';
+import { getAttestingValidatorIds, getHighestValidatorId } from '@/src/feed/utils.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
@@ -15,23 +17,22 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
   try {
     logger.info(`Processing epoch ${epoch}`);
 
-    // Create epoch record in db if it doesn't exist
-    await createEpoch(epoch);
-
-    // const highestValidatorId = await getHighestValidatorId();
-    // //Get all validator IDs that are not in final states
-    // logger.info(`Fetching non-final state validators`);
-    // const allValidatorIds = await getAttestingValidatorIds(highestValidatorId);
-    // //fetch beacon node to get the attestation rewards for all the validators in batches
-    // const validatorBatches = chunk(allValidatorIds, 100000);
-    // const response: AttestationRewards = {} as AttestationRewards;
-    // for (const batch of validatorBatches) {
-    //   const batchResponse = await getAttestationRewards(epoch, batch);
-    //   merge(response, batchResponse);
-    // }
-
-    // fetch beacon node to get the attestation rewards for all the validators
-    const response = await getAttestationRewards(epoch, []);
+    //Get all validator IDs that are not in final states
+    const highestValidatorId = await getHighestValidatorId();
+    const allValidatorIds = await getAttestingValidatorIds(highestValidatorId);
+    //fetch beacon node to get the attestation rewards for all the validators in batches
+    const validatorBatches = chunk(allValidatorIds, 100000);
+    let response: AttestationRewards = {
+      execution_optimistic: false,
+      data: { ideal_rewards: [], total_rewards: [] },
+    };
+    for (const batch of validatorBatches) {
+      const batchResponse = await getAttestationRewards(epoch, batch);
+      response = mergeWith(response, batchResponse, (currentValue, newValue, key) =>
+        // we only merge total_rewards as ideal_rewards are always the same for the whole epoch
+        key === 'total_rewards' ? currentValue.concat(newValue) : undefined,
+      );
+    }
 
     const epochTimestamp = getTimestampFromEpochNumber(epoch);
     const { date, hour } = convertToUTC(epochTimestamp);
@@ -91,23 +92,11 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
             "inactivity" = "HourlyValidatorStats"."inactivity" + EXCLUDED."inactivity"
         `;
 
-        // TODO: This seems to be unnecessary.
-        // was added to do some debugging and seems it was forgotten to be removed.
-
-        // check if rewards was fetched for this epoch
-        // const dbEpoch = await tx.epoch.findUnique({
-        //   where: { epoch },
-        // });
-
-        // if (dbEpoch.rewardsFetched) {
-        //   logger.warn(`Rewards already fetched for epoch ${epoch}`);
-        //   return;
-        // }
-
         // Update epoch status
-        await tx.epoch.update({
+        await tx.epoch.upsert({
           where: { epoch },
-          data: { rewardsFetched: true },
+          update: { rewardsFetched: true },
+          create: { epoch, rewardsFetched: true },
         });
       },
       {
@@ -116,11 +105,6 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
     );
     logger.info(`Done.`);
   } catch (error) {
-    // TODO: this seems to be unnecessary.
-    // if (error.message.includes("404 - Aborting")) {
-    //   logger.error(error.message, error);
-    //   return;
-    // }
     logger.error(`Error fetching or inserting beacon rewards for epoch ${epoch}`, error);
   }
 }

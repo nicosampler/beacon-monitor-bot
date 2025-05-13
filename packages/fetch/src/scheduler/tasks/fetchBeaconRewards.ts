@@ -22,11 +22,7 @@ async function fetchBeaconRewardsTask(logger: CustomLogger) {
 
   const oldestLookbackEpoch = Math.floor(getOldestLookbackSlot() / env.BEACON_SLOTS_PER_EPOCH);
   const lastProcessedEpoch = await db_getLastProcessedEpoch();
-
-  const epochToFetch = lastProcessedEpoch
-    ? Math.min(lastProcessedEpoch.epoch + 1, maxEpoch)
-    : oldestLookbackEpoch;
-
+  const epochToFetch = lastProcessedEpoch ? lastProcessedEpoch.epoch + 1 : oldestLookbackEpoch;
   if (epochToFetch > maxEpoch) {
     logger.info(`No new epochs to fetch`);
     return;
