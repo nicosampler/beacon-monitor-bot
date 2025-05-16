@@ -1,14 +1,11 @@
 import { User, Validator, WithdrawalAddress } from '@prisma/client';
 import format from 'date-fns/format';
-import { formatEther } from 'ethers/lib/utils.js';
-import memoizee from 'memoizee';
-import ms from 'ms';
+import { formatEther, formatUnits } from 'ethers/lib/utils.js';
 
 import { geSlotsInfo } from '@/src/api/slot.js';
 import { getUserValidatorsInfo } from '@/src/api/user.js';
-import { UserValidatorsInfo } from '@/src/apiTypes.js';
 import { getPrisma } from '@/src/config/prisma.js';
-import { TG_ERROR_SAME_MESSAGE, DAYS_IN_YEAR } from '@/src/constants/index.js';
+import { TG_ERROR_SAME_MESSAGE } from '@/src/constants/index.js';
 import { env } from '@/src/env.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { notifyInactiveValidators } from '@/src/scheduler/tasks/notifyInactiveValidators.js';
@@ -32,15 +29,40 @@ import {
   getWeeklyValidatorStatsMemoized,
 } from '@/src/scheduler/tasks/utils/weeklyValidatorStats.js';
 import { editMessageText, sendMessage } from '@/src/telegram/utils/messaging.js';
-import { epochsIn1h, getEpochFromSlot, VALIDATOR_STATUS } from '@/src/utils/beacon.js';
-import { getSlotNumberFromTimestamp } from '@/src/utils/beacon.js';
+import { epochsIn1h } from '@/src/utils/beacon.js';
 import { AppError } from '@/src/utils/errors/AppError.js';
 import { getWithdrawableAmountByUserId } from '@/src/utils/getWithdrawableAmountByUserId.js';
 import { formatNumber } from '@/src/utils/misc.js';
 
 const prisma = getPrisma();
-const scale = BigInt(10) ** BigInt(18);
-const tokenUnit = BigInt(32000000000); // TODO: move this to a env var. For ETH, it should be just 10**9
+
+// Function to escape special characters for MarkdownV2
+function escapeMarkdown(text: string): string {
+  // First escape all special characters
+  let escaped = text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+
+  // Then unescape the parts we want to keep as Markdown
+  // Unescape backticks for code blocks
+  escaped = escaped.replace(/\\`/g, '`');
+  // Unescape brackets for links
+  escaped = escaped.replace(/\\\[/g, '[').replace(/\\\]/g, ']');
+  escaped = escaped.replace(/\\\(/g, '(').replace(/\\\)/g, ')');
+  // Unescape asterisks for bold text
+  escaped = escaped.replace(/\\\*/g, '*');
+  // Unescape emojis and special characters
+  escaped = escaped
+    .replace(/\\📊/g, '📊')
+    .replace(/\\💎/g, '💎')
+    .replace(/\\🕒/g, '🕒')
+    .replace(/\\━/g, '━');
+
+  return escaped;
+}
+
+// 1 token = 1e9 gWei
+const gWei = BigInt(1e9);
+// 1 GNO = 32 mGNO, 1 ETH = 1 ETH
+const tokenMultiplier = env.BLOCKCHAIN_TOKEN_SYMBOL === 'GNO' ? BigInt(32) : BigInt(1);
 
 interface ValidatorByStatus {
   activeIds: number[];
@@ -166,7 +188,8 @@ function getUserBalance(validators: Validator[]) {
     BigInt(0),
   );
 
-  const total = Number(totalBalance) / Number(tokenUnit);
+  const total_bn = totalBalance / tokenMultiplier;
+  const total = Number(formatUnits(total_bn, 9));
 
   return {
     total: total.toFixed(2),
@@ -174,7 +197,27 @@ function getUserBalance(validators: Validator[]) {
   };
 }
 
-// Update calculateTableStats to include weekly stats
+// Helper function to convert gWei over mToken to token amount
+function convertRewardsToToken(stats: {
+  head: string;
+  target: string;
+  source: string;
+  inactivity: string;
+  syncCommittee: string;
+  blockReward: string;
+}) {
+  const totalInGwei =
+    BigInt(stats.head) +
+    BigInt(stats.target) +
+    BigInt(stats.source) +
+    BigInt(stats.inactivity) +
+    BigInt(stats.syncCommittee) +
+    BigInt(stats.blockReward);
+
+  const wei = (totalInGwei * gWei) / tokenMultiplier;
+  return Number(formatEther(wei));
+}
+
 async function getUserRewards(
   user: User & { validators: Validator[] },
   logger: CustomLogger,
@@ -201,96 +244,66 @@ async function getUserRewards(
     return null;
   }
 
-  // Calculate daily stats (existing code)
-  const totalDailyConsensus =
-    BigInt(dailyValidatorStats[0].head) +
-    BigInt(dailyValidatorStats[0].target) +
-    BigInt(dailyValidatorStats[0].source) +
-    BigInt(dailyValidatorStats[0].inactivity) +
-    BigInt(dailyValidatorStats[0].syncCommittee) +
-    BigInt(dailyValidatorStats[0].blockReward);
-
-  const totalDailyConsensusInWei = (BigInt(totalDailyConsensus) * scale) / tokenUnit;
-  const totalDailyConsensusEth = Number(formatEther(totalDailyConsensusInWei.toString()));
+  // Calculate daily stats
+  const totalDailyConsensus = convertRewardsToToken(dailyValidatorStats[0]);
   const totalDailyExecution = Number(formatEther(dailyExecutionRewards[0].total.toString()));
   const totalDailyUsd =
-    totalDailyConsensusEth * tokenPrice +
+    totalDailyConsensus * tokenPrice +
     (env.BLOCKCHAIN_FEE_REWARDS_IN_STABLE ? totalDailyExecution : totalDailyExecution * tokenPrice);
 
   // Calculate weekly stats
-  const totalWeeklyConsensus =
-    BigInt(weeklyValidatorStats[0].head) +
-    BigInt(weeklyValidatorStats[0].target) +
-    BigInt(weeklyValidatorStats[0].source) +
-    BigInt(weeklyValidatorStats[0].inactivity) +
-    BigInt(weeklyValidatorStats[0].syncCommittee) +
-    BigInt(weeklyValidatorStats[0].blockReward);
-
-  const totalWeeklyConsensusInWei = (BigInt(totalWeeklyConsensus) * scale) / tokenUnit;
-  const totalWeeklyConsensusEth = Number(formatEther(totalWeeklyConsensusInWei.toString()));
+  const totalWeeklyConsensus = convertRewardsToToken(weeklyValidatorStats[0]);
   const totalWeeklyExecution = Number(formatEther(weeklyExecutionRewards[0].total.toString()));
   const totalWeeklyUsd =
-    totalWeeklyConsensusEth * tokenPrice +
+    totalWeeklyConsensus * tokenPrice +
     (env.BLOCKCHAIN_FEE_REWARDS_IN_STABLE
       ? totalWeeklyExecution
       : totalWeeklyExecution * tokenPrice);
 
-  const totalMonthlyConsensus =
-    BigInt(monthlyValidatorStats[0].head) +
-    BigInt(monthlyValidatorStats[0].target) +
-    BigInt(monthlyValidatorStats[0].source) +
-    BigInt(monthlyValidatorStats[0].inactivity) +
-    BigInt(monthlyValidatorStats[0].syncCommittee) +
-    BigInt(monthlyValidatorStats[0].blockReward);
-
-  const totalMonthlyConsensusInWei = (BigInt(totalMonthlyConsensus) * scale) / tokenUnit;
-  const totalMonthlyConsensusEth = Number(formatEther(totalMonthlyConsensusInWei.toString()));
-
+  // Calculate monthly stats
+  const totalMonthlyConsensus = convertRewardsToToken(monthlyValidatorStats[0]);
   const totalMonthlyExecution = Number(formatEther(monthlyExecutionRewards[0].total.toString()));
-
   const totalMonthlyUsd =
-    totalMonthlyConsensusEth * tokenPrice +
+    totalMonthlyConsensus * tokenPrice +
     (env.BLOCKCHAIN_FEE_REWARDS_IN_STABLE
       ? totalMonthlyExecution
       : totalMonthlyExecution * tokenPrice);
 
-  const totalBalance =
-    Number(
-      user.validators.reduce(
-        (acc, validator) => acc + BigInt(validator.balance.toString()),
-        BigInt(0),
-      ),
-    ) / Number(tokenUnit);
-
-  // Calculate APY
-  const dailyApy = calculateAPY_daily(totalBalance, totalDailyConsensusEth + totalDailyExecution);
-
-  const weeklyApy = calculateAPY_weekly(
-    totalBalance,
-    totalWeeklyConsensusEth + totalWeeklyExecution, // Pasamos el total semanal directamente
+  // Calculate total balance in tokens
+  // The balance comes in gWei, so we need to convert it to tokens
+  const totalBalance = Number(
+    user.validators.reduce(
+      (acc, validator) => acc + BigInt(validator.balance.toString()),
+      BigInt(0),
+    ) /
+      gWei /
+      tokenMultiplier,
   );
 
+  // Calculate APY
+  const dailyApy = calculateAPY_daily(totalBalance, totalDailyConsensus + totalDailyExecution);
+  const weeklyApy = calculateAPY_weekly(totalBalance, totalWeeklyConsensus + totalWeeklyExecution);
   const monthlyApy = calculateMonthlyAPY(
     totalBalance,
-    totalMonthlyConsensusEth + totalMonthlyExecution,
+    totalMonthlyConsensus + totalMonthlyExecution,
   );
 
   return {
     daily: {
       apy: dailyApy,
-      consensus: totalDailyConsensusEth,
+      consensus: totalDailyConsensus,
       execution: totalDailyExecution,
       usd: totalDailyUsd,
     },
     weekly: {
       apy: weeklyApy,
-      consensus: totalWeeklyConsensusEth,
+      consensus: totalWeeklyConsensus,
       execution: totalWeeklyExecution,
       usd: totalWeeklyUsd,
     },
     monthly: {
       apy: monthlyApy,
-      consensus: totalMonthlyConsensusEth,
+      consensus: totalMonthlyConsensus,
       execution: totalMonthlyExecution,
       usd: totalMonthlyUsd,
     },
@@ -317,57 +330,65 @@ function formatStatsMessage(
     ? `⚪️ ${validatorStats.activeIds.length + validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`
     : `🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`;
 
-  const dailyApy = calculateAPY_daily(Number(balance.total), stats.rewards.daily.consensus).toFixed(
-    2,
-  );
+  // Handle null rewards case
+  if (!stats.rewards?.daily || !stats.rewards?.weekly || !stats.rewards?.monthly) {
+    const message = [
+      ...(status.syncing
+        ? [`${syncStatus}`, '', `\`${validatorStatus}\``]
+        : [`\`${validatorStatus}\``]),
+      '',
+      `*Last 1h perf:* ${performance == null ? '-' : `${performance.toFixed(2)}%`}`,
+      `*Bal:* ${env.BLOCKCHAIN_TOKEN_SYMBOL}${balance.total} $${balance.value}`,
+      `*Claimable:* ${env.BLOCKCHAIN_TOKEN_SYMBOL}${withdrawable.total} $${withdrawable.value}`,
+      '',
+      `*No rewards data available yet*`,
+      '',
+      `*${env.BLOCKCHAIN_TOKEN_SYMBOL}:* $${tokenPrice.toFixed(2)}`,
+      `*Updated:* ${format(new Date(), 'MM/dd hh:mmaaa')} UTC`,
+      '',
+      `📊 [View full Dashboard](${env.NODE_SENTINEL_URL}/${env.NODE_SENTINEL_CHAIN}/dashboard/${loginId})`,
+    ].join('\n');
 
-  const weeklyApy = calculateAPY_weekly(
-    Number(balance.total),
-    stats.rewards.weekly.consensus,
-  ).toFixed(2);
+    return escapeMarkdown(message);
+  }
 
-  const monthlyApy = calculateMonthlyAPY(
-    Number(balance.total),
-    stats.rewards.monthly.consensus,
-  ).toFixed(2);
+  const { daily, weekly, monthly } = stats.rewards;
 
   const mainStats = [
-    `Last 1h perf: ${performance == null ? '-' : `${performance.toFixed(2)}%`}`,
-    `Bal: ${balance.total} ${env.BLOCKCHAIN_TOKEN_SYMBOL} $${balance.value}`,
-    `Claimable: ${withdrawable.total} ${env.BLOCKCHAIN_TOKEN_SYMBOL} $${withdrawable.value}`,
+    `*Last 1h performance:* ${performance == null ? '-' : `${performance.toFixed(2)}%`}`,
+    `*Bal:* ${balance.total} ${env.BLOCKCHAIN_TOKEN_SYMBOL} $${balance.value}`,
+    `*Claimable:* ${withdrawable.total} ${env.BLOCKCHAIN_TOKEN_SYMBOL} $${withdrawable.value}`,
   ].join('\n');
 
   const rewardsSection = [
-    `Stats:`,
-    `-----------------------------`,
-    `WIP: Adapting to Pectra`,
-    // `    APY%  ${env.BLOCKCHAIN_TOKEN_SYMBOL}   ${env.BLOCKCHAIN_FEE_REWARDS_SYMBOL}   Total`,
-    // `d:  ${dailyApy}  ${formatNumber(stats.rewards.daily.consensus, 3)}  ${formatNumber(stats.rewards.daily.execution, 3)}  ${formatNumber(stats.rewards.daily.usd, 4, '$')}`,
-    // `w:  ${weeklyApy}  ${formatNumber(stats.rewards.weekly.consensus, 3)}  ${formatNumber(stats.rewards.weekly.execution, 3)}  ${formatNumber(stats.rewards.weekly.usd, 4, '$')}`,
-    // `m:  ${monthlyApy}  ${formatNumber(stats.rewards.monthly.consensus, 3)}  ${formatNumber(stats.rewards.monthly.execution, 3)}  ${formatNumber(stats.rewards.monthly.usd, 4, '$')}`,
+    `━━━━━━━━━━━━━━━━━`,
+    `     *APY%*   *${env.BLOCKCHAIN_TOKEN_SYMBOL}*    *${env.BLOCKCHAIN_FEE_REWARDS_SYMBOL}*    *Total*`,
+    `*d:*  ${formatNumber(daily.apy, 4).padStart(4)}   ${formatNumber(daily.consensus, 3).padStart(6)}  ${formatNumber(daily.execution, 3).padStart(6)}  ${formatNumber(daily.usd, 4, '$').padStart(8)}`,
+    `*w:* collecting data`,
+    `*m:* collecting data`,
+    // `*w:*  ${formatNumber(weekly.apy, 4).padStart(4)}   ${formatNumber(weekly.consensus, 3).padStart(6)}  ${formatNumber(weekly.execution, 3).padStart(6)}  ${formatNumber(weekly.usd, 4, '$').padStart(8)}`,
+    // `*m:*  ${formatNumber(monthly.apy, 4).padStart(4)}   ${formatNumber(monthly.consensus, 3).padStart(6)}  ${formatNumber(monthly.execution, 3).padStart(6)}  ${formatNumber(monthly.usd, 4, '$').padStart(8)}`,
   ].join('\n');
 
   const footer = [
-    `${env.BLOCKCHAIN_TOKEN_SYMBOL}: $${tokenPrice.toFixed(2)}`,
-    `Updated: ${format(new Date(), 'MM/dd hh:mmaaa')} UTC`,
+    `*${env.BLOCKCHAIN_TOKEN_SYMBOL}:* $${tokenPrice.toFixed(2)}`,
+    `*Updated:* ${format(new Date(), 'MM/dd hh:mmaaa')} UTC`,
   ].join('\n');
 
-  // Combine all sections with proper HTML formatting
-  return [
+  // Combine all sections with proper Markdown formatting
+  const message = [
     ...(status.syncing
-      ? [`${syncStatus}`, '', `<code>${validatorStatus}</code>`]
-      : [`<code>${validatorStatus}</code>`]),
-    '', // empty line
-    `<pre language="c++">`,
+      ? [`${syncStatus}`, '', `\`${validatorStatus}\``]
+      : [`\`${validatorStatus}\``]),
+    '',
     mainStats,
-    '', // empty line
+    `*Extra stats:* [web dashboard](${env.NODE_SENTINEL_URL}/${env.NODE_SENTINEL_CHAIN}/dashboard/${loginId})`,
     rewardsSection,
-    '', // empty line
+    '',
     footer,
-    `</pre>`,
-    '', // empty line
-    `📊 <a href="${env.NODE_SENTINEL_URL}/${env.NODE_SENTINEL_CHAIN}/dashboard/${loginId}">View full Dashboard</a>`,
   ].join('\n');
+
+  return escapeMarkdown(message);
 }
 
 async function updateOrSendMessage(
@@ -375,11 +396,10 @@ async function updateOrSendMessage(
   messageId: number | null,
   _message: string,
 ): Promise<number | undefined> {
-  //const message = `${_message}\n\n<a href="t.me/node_sentinel">Feedback & Support</a>`;
   if (messageId) {
     try {
       await editMessageText(chatId, messageId, _message, {
-        parse_mode: 'HTML',
+        parse_mode: 'MarkdownV2',
         link_preview_options: {
           is_disabled: true,
         },
@@ -399,7 +419,7 @@ async function updateOrSendMessage(
   try {
     const res = await sendMessage(chatId, _message, {
       disable_notification: true,
-      parse_mode: 'HTML',
+      parse_mode: 'MarkdownV2',
       link_preview_options: {
         is_disabled: true,
       },
