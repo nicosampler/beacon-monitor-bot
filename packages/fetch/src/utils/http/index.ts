@@ -9,14 +9,12 @@ export function logRequest(request: InternalAxiosRequestConfig): InternalAxiosRe
 }
 
 export function logResponse(response: AxiosResponse): AxiosResponse {
-  const logger = createLogger(null, false);
+  const logger = createLogger(null, true);
   const message = `<< ${
     response.status
   } ${response.config?.method?.toUpperCase()} ${response.config?.url}`;
 
-  if (response.status == 200) {
-    logger.info(message);
-  } else {
+  if (response.status !== 200) {
     logger.error(message, response.data);
   }
 

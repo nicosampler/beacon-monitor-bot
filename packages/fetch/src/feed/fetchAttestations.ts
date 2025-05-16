@@ -9,73 +9,54 @@ import {
   convertHexStringToByteArray,
 } from '@/src/beacon/utils/bitlist.js';
 import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
-import { env } from '@/src/env.js';
+import { db_getSlotCommitteesValidatorsAmount } from '@/src/feed/utils.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 
 const prisma = getPrisma();
 
-/**
- * Gets the committee validator counts for the last BEACON_SLOTS_PER_EPOCH slots
- * @param slotNumber The current slot number
- * @returns An object where keys are slot numbers and values are committee validator counts
- */
-async function getSlotCommitteesValidatorsAmount(slotNumber: number) {
-  const slots = await prisma.slot.findMany({
-    where: {
-      slot: {
-        lte: slotNumber,
-        gt: slotNumber - env.BEACON_SLOTS_PER_EPOCH * 2,
-      },
-    },
-    select: {
-      slot: true,
-      committeeValidatorCounts: true,
-    },
-    orderBy: {
-      slot: 'desc',
-    },
-  });
-
-  return slots.reduce(
-    (acc, slot) => {
-      acc[slot.slot] = slot.committeeValidatorCounts as number[];
-      return acc;
-    },
-    {} as Record<number, number[]>,
-  );
-}
-
 export const fetchAttestation = async (slotNumber: number, logger: CustomLogger) => {
   try {
     logger.info(`start.`);
 
-    // Fetch the slot's attestations from the API.
-    // If the slot is missed, updates the db and returns [].
+    // Fetch the slot's attestations
     let fetchedAttestations = await getAttestation(slotNumber, logger);
     if (!fetchedAttestations) return;
     // Filter out attestations that are older than the oldest lookback slot
+    // This is important to handle the base case for which we won't have epoch, committee, etc.
     fetchedAttestations = fetchedAttestations.filter(
       (attestation) => +attestation.data.slot >= getOldestLookbackSlot(),
     );
 
-    // Get amount of validators per committee for the last BEACON_SLOTS_PER_EPOCH slots
-    const slotCommitteesValidatorsAmounts = await getSlotCommitteesValidatorsAmount(slotNumber);
+    // Get amount of validators per committee
+    const slotCommitteesValidatorsAmounts = await db_getSlotCommitteesValidatorsAmount(slotNumber);
 
-    // Process all attestations. Separates them by updates and deletes depending on the attestation delay env.BEACON_MAX_ATTESTATION_DELAY.
+    // The beacon request brings attestations for different slots.
+    // we need to process each of them and calculate the delay for each attestation.
     const attestations: CommitteeUpdate[] = [];
     for (const attestation of fetchedAttestations) {
       const updates = await processAttestation(
         slotNumber,
         attestation,
         slotCommitteesValidatorsAmounts,
-        attestations,
       );
       attestations.push(...updates);
     }
 
-    // Update or delete the validators from the committee table
-    await persistToDB(attestations, slotNumber, logger);
+    // remove duplicates
+    const uniqueAttestations = new Map<string, CommitteeUpdate>();
+    for (const attestation of attestations) {
+      const key = `${attestation.slot}-${attestation.index}-${attestation.aggregationBitsIndex}`;
+      const existing = uniqueAttestations.get(key);
+
+      if (!existing || attestation.attestationDelay < existing.attestationDelay) {
+        uniqueAttestations.set(key, attestation);
+      }
+    }
+    const deduplicatedAttestations = Array.from(uniqueAttestations.values());
+
+    // Update committee table
+    await persistToDB(deduplicatedAttestations, slotNumber, logger);
 
     logger.info(`Done for slot ${slotNumber}.`);
   } catch (error) {
@@ -112,25 +93,29 @@ async function processAttestation(
   slotNumber: number,
   attestation: Attestation,
   slotCommitteesValidatorsAmounts: Record<number, number[]>,
-  existingUpdates: CommitteeUpdate[],
 ) {
+  const attestationSlot = Number(attestation.data.slot);
+
+  // aggregation_bits come in a hexadecimal format. we convert it to a binary string.
+  // each bit represents if the validator on a committee attested or not. First bit represents the first validator in the committee.
   const aggregationBits = convertBitsToString(
     convertHexStringToByteArray(attestation.aggregation_bits),
   );
 
-  const updates: CommitteeUpdate[] = [];
-
-  // Convert committee bits from hex to binary string
+  // committee_bits also comes in a hexadecimal format. we convert it to a binary string.
+  // each bit represents if the bits bring data for a committee or not.
   const committeeBits = convertBitsToStringForCommitteeBits(
     convertHexStringToByteArray(attestation.committee_bits),
   );
 
-  const attestationSlot = Number(attestation.data.slot);
-
+  // we need to know how many validators are in the committee for the slot.
+  // so we can extract the correct bits from the aggregation_bits.
   const slotCommitteeValidatorsAmount = slotCommitteesValidatorsAmounts[attestationSlot];
   if (!slotCommitteeValidatorsAmount) {
     throw `No validator count found for slot ${attestationSlot}`;
   }
+
+  const updates: CommitteeUpdate[] = [];
 
   // Process each committee
   let currentAggregationIndex = 0;
@@ -156,21 +141,7 @@ async function processAttestation(
             attestationDelay,
           };
 
-          // Check if this attestation already exists in existingUpdates
-          const existingIndex = existingUpdates.findIndex(
-            (u) =>
-              u.slot === attestationInfo.slot &&
-              u.index === attestationInfo.index &&
-              u.aggregationBitsIndex === attestationInfo.aggregationBitsIndex,
-          );
-
-          // Only add if it doesn't exist or if the new delay is lower
-          if (
-            existingIndex === -1 ||
-            attestationInfo.attestationDelay < existingUpdates[existingIndex].attestationDelay
-          ) {
-            updates.push(attestationInfo);
-          }
+          updates.push(attestationInfo);
         }
       }
 
@@ -217,7 +188,7 @@ async function persistToDB(
             WHERE c.slot = v.slot 
               AND c.index = v.index 
               AND c."aggregationBitsIndex" = v."aggregationBitsIndex"
-              AND c."attestationDelay" IS NULL;
+              AND (c."attestationDelay" IS NULL OR c."attestationDelay" > v.delay);
           `;
           queries.push(updateQuery);
         }

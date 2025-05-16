@@ -8,8 +8,9 @@ datasource db {
 }
 
 model Epoch {
-  epoch          Int     @id
-  rewardsFetched Boolean // Whether the rewards for this epoch have been fetched
+  epoch             Int      @id
+  rewardsFetched    Boolean // Whether the rewards for this epoch have been fetched
+  committeesFetched Boolean? @default(false) // Whether the committees for this epoch have been fetched
 }
 
 model Slot {

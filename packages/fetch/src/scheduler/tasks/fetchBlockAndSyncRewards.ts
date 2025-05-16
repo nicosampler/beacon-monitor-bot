@@ -4,7 +4,7 @@ import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/feed/fetchBlockAndSyncRewards.js';
-import { db_getLastSlotWithSyncRewards } from '@/src/feed/utils.js';
+import { db_getLastSlotWithSyncRewards, db_getSlotByNumber } from '@/src/feed/utils.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
@@ -17,13 +17,18 @@ export const fetchBlockAndSyncRewardsTask = async (logger: CustomLogger) => {
 
   // Get the last processed slot
   const lastProcessedSlot = await db_getLastSlotWithSyncRewards();
-
   const slotToFetch = lastProcessedSlot ? lastProcessedSlot.slot + 1 : oldestLookbackSlot;
 
   logger.addContext(`slot: ${slotToFetch}`);
 
   if (slotToFetch > maxSlotToFetch) {
     logger.info(`Skipping, greater than max slot to fetch ${maxSlotToFetch}`);
+    return;
+  }
+
+  const slot = await db_getSlotByNumber(slotToFetch);
+  if (!slot) {
+    logger.info(`Skipping, slot ${slotToFetch} not found in the database`);
     return;
   }
 

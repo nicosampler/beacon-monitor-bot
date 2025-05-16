@@ -1,10 +1,10 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
+import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 import { fetchAttestation as _fetchAttestations } from '@/src/feed/fetchAttestations.js';
-import { db_existCommitteeForSlot, db_getLastSlotWithAttestations } from '@/src/feed/utils.js';
+import { db_getLastSlotWithAttestations, db_hasEpochCommittees } from '@/src/feed/utils.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
@@ -19,13 +19,14 @@ export const fetchAttestations = async (logger: CustomLogger) => {
   const oldestLookbackSlot = getOldestLookbackSlot();
 
   try {
-    // Get the last processed slot
+    // Get the last slot for which we have attestations
     const lastProcessedSlot = await db_getLastSlotWithAttestations();
-
     const slotToFetch = lastProcessedSlot ? lastProcessedSlot.slot + 1 : oldestLookbackSlot;
+    const epochToFetch = getEpochFromSlot(slotToFetch);
 
-    logger.addContext(`for slot ${slotToFetch}`);
+    logger.addContext(`attestation: ${slotToFetch}`);
 
+    // Skip if the slot to fetch is greater than the max slot to fetch
     if (slotToFetch > maxSlotToFetch) {
       logger.info(
         `Skipping, slot to fetch ${slotToFetch} is greater than max slot to fetch ${maxSlotToFetch}`,
@@ -33,18 +34,21 @@ export const fetchAttestations = async (logger: CustomLogger) => {
       return;
     }
 
-    const existCommittee = await db_existCommitteeForSlot(slotToFetch);
-    if (!existCommittee) {
-      logger.info(`Skipping, no committee found for slot ${slotToFetch}.`);
+    // Skip if the committees for the slot have not been fetched
+    const hasEpochCommittees = await db_hasEpochCommittees(epochToFetch);
+    if (!hasEpochCommittees) {
+      logger.info(`Skipping, committees for epoch ${epochToFetch} not fetched.`);
       return;
     }
 
     // TODO: move to another task (?)
+    // We delete attestations that came "on-time" to reduce the amount of data in the database.
+    // Attestations for slot n can come one up to one epoch later.
+    // It's quite important to not delete data that could be re-inserted later.
     await prisma.committee.deleteMany({
       where: {
         slot: {
-          lt: slotToFetch - env.BEACON_SLOTS_PER_EPOCH * 2,
-          // This time is enough to delete attestations and avoid the fetchAttestations task to create them again
+          lt: slotToFetch - env.BEACON_SLOTS_PER_EPOCH * 3, // some buffer just in case
         },
         attestationDelay: {
           lte: env.BEACON_MAX_ATTESTATION_DELAY,

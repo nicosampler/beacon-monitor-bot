@@ -43,6 +43,13 @@ export const db_existCommitteeForSlot = async (slot: number) => {
   return res !== null;
 };
 
+export const db_hasEpochCommittees = async (epoch: number) => {
+  const res = await prisma.epoch.findFirst({
+    where: { epoch, committeesFetched: true },
+  });
+  return res !== null;
+};
+
 export const db_getLastSlotWithSyncRewards = async () =>
   await prisma.slot.findFirst({
     where: { blockAndSyncRewardsFetched: true },
@@ -76,8 +83,21 @@ export const db_getLastProcessedEpoch = async () =>
     select: { epoch: true },
   });
 
-export const createEpoch = async (epoch: number) =>
-  await prisma.epoch.upsert({
+export const db_getEpochByNumber = async (epoch: number) =>
+  prisma.epoch.findFirst({
+    where: { epoch },
+    select: { epoch: true },
+  });
+
+export const db_getLastEpochWithCommittees = async () =>
+  prisma.epoch.findFirst({
+    where: { committeesFetched: true },
+    orderBy: { epoch: 'desc' },
+    select: { epoch: true },
+  });
+
+export const db_createEpoch = async (epoch: number) =>
+  prisma.epoch.upsert({
     where: { epoch },
     create: { epoch, rewardsFetched: false },
     update: {},
@@ -100,6 +120,37 @@ export const db_getUnprocessedSlots = async ({
     orderBy,
     take,
   });
+
+/**
+ * Gets the committee validator counts for the last BEACON_SLOTS_PER_EPOCH slots
+ * @param slotNumber The current slot number
+ * @returns An object where keys are slot numbers and values are committee validator counts
+ */
+export async function db_getSlotCommitteesValidatorsAmount(slotNumber: number) {
+  const slots = await prisma.slot.findMany({
+    where: {
+      slot: {
+        lte: slotNumber,
+        gt: slotNumber - env.BEACON_SLOTS_PER_EPOCH * 2,
+      },
+    },
+    select: {
+      slot: true,
+      committeeValidatorCounts: true,
+    },
+    orderBy: {
+      slot: 'desc',
+    },
+  });
+
+  return slots.reduce(
+    (acc, slot) => {
+      acc[slot.slot] = slot.committeeValidatorCounts as number[];
+      return acc;
+    },
+    {} as Record<number, number[]>,
+  );
+}
 
 export async function updateLastSummaryUpdate<K extends keyof LastSummaryUpdate>(
   key: K,

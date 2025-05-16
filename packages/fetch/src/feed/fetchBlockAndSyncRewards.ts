@@ -95,6 +95,14 @@ export const fetchBlockAndSyncRewards = async (
     ]);
     const [syncCommitteeRewards, blockRewards] = await currentSlotRequests;
 
+    if (syncCommitteeRewards === 'SLOT MISSED' && blockRewards === 'SLOT MISSED') {
+      await prisma.slot.update({
+        where: { slot },
+        data: { blockAndSyncRewardsFetched: true },
+      });
+      return;
+    }
+
     // Prefetch future rewards to improve performance when the indexer is behind head
     prefetchFutureRewards(slot, maxSlotToFetch);
 
@@ -104,7 +112,11 @@ export const fetchBlockAndSyncRewards = async (
     await prisma.$transaction(
       async (tx) => {
         // Prepare rewards data
-        const syncRewards = prepareSyncRewards(syncCommitteeRewards.data, hour, date);
+        const syncRewards = prepareSyncRewards(
+          (syncCommitteeRewards as SyncCommitteeRewards).data,
+          hour,
+          date,
+        );
         const blockReward = prepareBlockRewards(blockRewards, hour, date);
 
         // Save sync committee rewards

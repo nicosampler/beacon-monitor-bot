@@ -4,7 +4,7 @@ import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { getEpochNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 import { fetchBeaconRewards } from '@/src/feed/fetchBeaconRewards.js'; // Assuming this function exists
-import { db_getLastProcessedEpoch } from '@/src/feed/utils.js';
+import { db_getEpochByNumber, db_getLastProcessedEpoch } from '@/src/feed/utils.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
@@ -28,7 +28,13 @@ async function fetchBeaconRewardsTask(logger: CustomLogger) {
     return;
   }
 
-  logger.addContext(`Epoch: ${epochToFetch}`);
+  const dbEpoch = await db_getEpochByNumber(epochToFetch);
+  if (!dbEpoch) {
+    logger.info(`Epoch ${epochToFetch} not found in the database`);
+    return;
+  }
+
+  logger.addContext(`FetchBeaconRewards for epoch: ${epochToFetch}`);
   logger.info(`Fetching. HeadEpoch: ${maxEpoch}.`);
 
   await fetchBeaconRewards(epochToFetch, logger);

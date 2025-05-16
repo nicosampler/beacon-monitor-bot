@@ -93,10 +93,9 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
         `;
 
         // Update epoch status
-        await tx.epoch.upsert({
+        await tx.epoch.update({
           where: { epoch },
-          update: { rewardsFetched: true },
-          create: { epoch, rewardsFetched: true },
+          data: { rewardsFetched: true },
         });
       },
       {
