@@ -13,9 +13,9 @@ export const fetchBlockAndSyncRewardsTask = async (logger: CustomLogger) => {
   const now = new Date();
   const currentSlot = getSlotNumberFromTimestamp(now.getTime());
   const maxSlotToFetch = currentSlot - env.BEACON_DELAY_SLOTS_TO_HEAD;
-  const oldestLookbackSlot = getOldestLookbackSlot();
 
-  // Get the last processed slot
+  // Get slot to fetch
+  const oldestLookbackSlot = getOldestLookbackSlot();
   const lastProcessedSlot = await db_getLastSlotWithSyncRewards();
   const slotToFetch = lastProcessedSlot ? lastProcessedSlot.slot + 1 : oldestLookbackSlot;
 

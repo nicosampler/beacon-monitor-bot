@@ -363,8 +363,7 @@ function formatStatsMessage(
   const rewardsSection = [
     `━━━━━━━━━━━━━━━━━`,
     `     *APY%*   *${env.BLOCKCHAIN_TOKEN_SYMBOL}*    *${env.BLOCKCHAIN_FEE_REWARDS_SYMBOL}*    *Total*`,
-    `WIP`,
-    // `*d:*  ${formatNumber(daily.apy, 4).padStart(4)}   ${formatNumber(daily.consensus, 3).padStart(6)}  ${formatNumber(daily.execution, 3).padStart(6)}  ${formatNumber(daily.usd, 4, '$').padStart(8)}`,
+    `*d:*  ${formatNumber(daily.apy, 4).padStart(4)}   ${formatNumber(daily.consensus, 3).padStart(6)}  ${formatNumber(daily.execution, 3).padStart(6)}  ${formatNumber(daily.usd, 4, '$').padStart(8)}`,
     // `*w:* collecting data`,
     // `*m:* collecting data`,
     // `*w:*  ${formatNumber(weekly.apy, 4).padStart(4)}   ${formatNumber(weekly.consensus, 3).padStart(6)}  ${formatNumber(weekly.execution, 3).padStart(6)}  ${formatNumber(weekly.usd, 4, '$').padStart(8)}`,

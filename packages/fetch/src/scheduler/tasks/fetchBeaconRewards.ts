@@ -23,6 +23,8 @@ async function fetchBeaconRewardsTask(logger: CustomLogger) {
   const oldestLookbackEpoch = Math.floor(getOldestLookbackSlot() / env.BEACON_SLOTS_PER_EPOCH);
   const lastProcessedEpoch = await db_getLastProcessedEpoch();
   const epochToFetch = lastProcessedEpoch ? lastProcessedEpoch.epoch + 1 : oldestLookbackEpoch;
+  logger.addContext(`FetchBeaconRewards for epoch: ${epochToFetch}`);
+
   if (epochToFetch > maxEpoch) {
     logger.info(`No new epochs to fetch`);
     return;
@@ -34,7 +36,6 @@ async function fetchBeaconRewardsTask(logger: CustomLogger) {
     return;
   }
 
-  logger.addContext(`FetchBeaconRewards for epoch: ${epochToFetch}`);
   logger.info(`Fetching. HeadEpoch: ${maxEpoch}.`);
 
   await fetchBeaconRewards(epochToFetch, logger);

@@ -43,7 +43,7 @@ export function registerMainMenu(bot: BotType) {
   // Support link
   menu.url({
     text: '🆘 Support channel',
-    url: 'https://t.me/GBC_validators_bot_support',
+    url: 'https://t.me/node_sentinel',
   });
 
   // settings menu
