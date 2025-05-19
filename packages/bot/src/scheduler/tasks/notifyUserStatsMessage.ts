@@ -60,7 +60,7 @@ function escapeMarkdown(text: string): string {
 }
 
 // 1 token = 1e9 gWei
-const gWei = BigInt(1e9);
+const gWei = BigInt(10) ** BigInt(9);
 // 1 GNO = 32 mGNO, 1 ETH = 1 ETH
 const tokenMultiplier = env.BLOCKCHAIN_TOKEN_SYMBOL === 'GNO' ? BigInt(32) : BigInt(1);
 
@@ -198,7 +198,7 @@ function getUserBalance(validators: Validator[]) {
 }
 
 // Helper function to convert gWei over mToken to token amount
-function convertRewardsToToken(stats: {
+function getFormattedRewards(stats: {
   head: string;
   target: string;
   source: string;
@@ -215,7 +215,10 @@ function convertRewardsToToken(stats: {
     BigInt(stats.blockReward);
 
   const wei = (totalInGwei * gWei) / tokenMultiplier;
-  return Number(formatEther(wei));
+  return {
+    wei,
+    token: Number(formatEther(wei)),
+  };
 }
 
 async function getUserRewards(
@@ -245,26 +248,35 @@ async function getUserRewards(
   }
 
   // Calculate daily stats
-  const totalDailyConsensus = convertRewardsToToken(dailyValidatorStats[0]);
+  const totalDailyConsensus = getFormattedRewards(dailyValidatorStats[0]);
   const totalDailyExecution = Number(formatEther(dailyExecutionRewards[0].total.toString()));
+  const totalDailyExecutionInToken = env.BLOCKCHAIN_FEE_REWARDS_IN_STABLE
+    ? totalDailyExecution / tokenPrice
+    : totalDailyExecution;
   const totalDailyUsd =
-    totalDailyConsensus * tokenPrice +
+    totalDailyConsensus.token * tokenPrice +
     (env.BLOCKCHAIN_FEE_REWARDS_IN_STABLE ? totalDailyExecution : totalDailyExecution * tokenPrice);
 
   // Calculate weekly stats
-  const totalWeeklyConsensus = convertRewardsToToken(weeklyValidatorStats[0]);
+  const totalWeeklyConsensus = getFormattedRewards(weeklyValidatorStats[0]);
   const totalWeeklyExecution = Number(formatEther(weeklyExecutionRewards[0].total.toString()));
+  const totalWeeklyExecutionInToken = env.BLOCKCHAIN_FEE_REWARDS_IN_STABLE
+    ? totalWeeklyExecution / tokenPrice
+    : totalWeeklyExecution;
   const totalWeeklyUsd =
-    totalWeeklyConsensus * tokenPrice +
+    totalWeeklyConsensus.token * tokenPrice +
     (env.BLOCKCHAIN_FEE_REWARDS_IN_STABLE
       ? totalWeeklyExecution
       : totalWeeklyExecution * tokenPrice);
 
   // Calculate monthly stats
-  const totalMonthlyConsensus = convertRewardsToToken(monthlyValidatorStats[0]);
+  const totalMonthlyConsensus = getFormattedRewards(monthlyValidatorStats[0]);
   const totalMonthlyExecution = Number(formatEther(monthlyExecutionRewards[0].total.toString()));
+  const totalMonthlyExecutionInToken = env.BLOCKCHAIN_FEE_REWARDS_IN_STABLE
+    ? totalMonthlyExecution / tokenPrice
+    : totalMonthlyExecution;
   const totalMonthlyUsd =
-    totalMonthlyConsensus * tokenPrice +
+    totalMonthlyConsensus.token * tokenPrice +
     (env.BLOCKCHAIN_FEE_REWARDS_IN_STABLE
       ? totalMonthlyExecution
       : totalMonthlyExecution * tokenPrice);
@@ -281,29 +293,35 @@ async function getUserRewards(
   );
 
   // Calculate APY
-  const dailyApy = calculateAPY_daily(totalBalance, totalDailyConsensus + totalDailyExecution);
-  const weeklyApy = calculateAPY_weekly(totalBalance, totalWeeklyConsensus + totalWeeklyExecution);
+  const dailyApy = calculateAPY_daily(
+    totalBalance,
+    totalDailyConsensus.token + totalDailyExecutionInToken,
+  );
+  const weeklyApy = calculateAPY_weekly(
+    totalBalance,
+    totalWeeklyConsensus.token + totalWeeklyExecutionInToken,
+  );
   const monthlyApy = calculateMonthlyAPY(
     totalBalance,
-    totalMonthlyConsensus + totalMonthlyExecution,
+    totalMonthlyConsensus.token + totalMonthlyExecutionInToken,
   );
 
   return {
     daily: {
       apy: dailyApy,
-      consensus: totalDailyConsensus,
+      consensus: totalDailyConsensus.token,
       execution: totalDailyExecution,
       usd: totalDailyUsd,
     },
     weekly: {
       apy: weeklyApy,
-      consensus: totalWeeklyConsensus,
+      consensus: totalWeeklyConsensus.token,
       execution: totalWeeklyExecution,
       usd: totalWeeklyUsd,
     },
     monthly: {
       apy: monthlyApy,
-      consensus: totalMonthlyConsensus,
+      consensus: totalMonthlyConsensus.token,
       execution: totalMonthlyExecution,
       usd: totalMonthlyUsd,
     },
@@ -363,11 +381,10 @@ function formatStatsMessage(
   const rewardsSection = [
     `━━━━━━━━━━━━━━━━━`,
     `     *APY%*   *${env.BLOCKCHAIN_TOKEN_SYMBOL}*    *${env.BLOCKCHAIN_FEE_REWARDS_SYMBOL}*    *Total*`,
-    `wip`,
-    //`*d:*  ${formatNumber(daily.apy, 4).padStart(4)}   ${formatNumber(daily.consensus, 3).padStart(6)}  ${formatNumber(daily.execution, 3).padStart(6)}  ${formatNumber(daily.usd, 4, '$').padStart(8)}`,
-    // `*w:* collecting data`,
-    // `*m:* collecting data`,
-    // `*w:*  ${formatNumber(weekly.apy, 4).padStart(4)}   ${formatNumber(weekly.consensus, 3).padStart(6)}  ${formatNumber(weekly.execution, 3).padStart(6)}  ${formatNumber(weekly.usd, 4, '$').padStart(8)}`,
+    `*d:*  ${formatNumber(daily.apy, 4).padStart(4)}   ${formatNumber(daily.consensus, 3).padStart(6)}  ${formatNumber(daily.execution, 3).padStart(6)}  ${formatNumber(daily.usd, 4, '$').padStart(8)}`,
+    `*w:*  collecting data`,
+    //`*w:*  ${formatNumber(weekly.apy, 4).padStart(4)}   ${formatNumber(weekly.consensus, 3).padStart(6)}  ${formatNumber(weekly.execution, 3).padStart(6)}  ${formatNumber(weekly.usd, 4, '$').padStart(8)}`,
+    `*m:*  collecting data`,
     // `*m:*  ${formatNumber(monthly.apy, 4).padStart(4)}   ${formatNumber(monthly.consensus, 3).padStart(6)}  ${formatNumber(monthly.execution, 3).padStart(6)}  ${formatNumber(monthly.usd, 4, '$').padStart(8)}`,
   ].join('\n');
 

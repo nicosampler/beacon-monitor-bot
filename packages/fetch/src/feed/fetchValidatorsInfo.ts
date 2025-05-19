@@ -27,7 +27,7 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
       // Process batches sequentially
       for (const validatorIds of apiValidatorBatches) {
         logger.info(`Processing batch of ${validatorIds.length} validators`);
-        const batchResult = await getValidatorsInfo('head', validatorIds, ['active']);
+        const batchResult = await getValidatorsInfo('head', validatorIds);
         allValidatorsInfo.push(...batchResult);
       }
     } catch (error) {
@@ -38,7 +38,7 @@ export async function fetchValidatorsInfo(logger: CustomLogger) {
     // Database operations in transaction
     try {
       // Insert data in batches with upsert
-      logger.info(`Upserting validators info in DB`);
+      logger.info(`Upsert validators info in DB`);
       const insertBatches = chunk(allValidatorsInfo, 5000);
       for (const batch of insertBatches) {
         await prisma.$executeRaw`
