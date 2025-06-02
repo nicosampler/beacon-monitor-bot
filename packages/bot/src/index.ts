@@ -10,7 +10,6 @@ import { help } from './telegram/commands/help.js';
 import { bot } from '@/src/config/index.js';
 import { getPrisma } from '@/src/config/prisma.js';
 import { getInitialSession } from '@/src/config/session.js';
-import { setUserUnblockedBot_db } from '@/src/prisma/users.js';
 import { dashboard } from '@/src/telegram/commands/dashboard.js';
 import { headsUp } from '@/src/telegram/commands/headsUp.js';
 import { sendBill } from '@/src/telegram/commands/sendBill.js';
@@ -25,17 +24,8 @@ async function main() {
 
   scheduleUsersTasks();
 
-  // unblock user when they interact with the bot
-  bot.use(async (ctx, next) => {
-    if (ctx.from?.id) {
-      try {
-        await setUserUnblockedBot_db(ctx.from.id);
-      } catch (error) {
-        console.error(`Error unblocking user ${ctx.from.id}: ${error}.`);
-      }
-    }
-    return next();
-  });
+  // create user if not exists, also unblock user when they interact with the bot
+  bot.use(userMiddleware);
 
   // Plugins
   bot.use(session({ initial: getInitialSession }));
