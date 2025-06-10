@@ -1,7 +1,7 @@
 import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
-import { getCommittees } from '@/src/beacon/endpoints.js';
+import { beacon_getCommittees } from '@/src/beacon/endpoints.js';
 import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
@@ -27,10 +27,10 @@ export async function fetchCommittee(
   epochToFetch: number,
   //lastSlot: number,
 ): Promise<void> {
-  const committees = await getCommittees(epochToFetch);
+  const committees = await beacon_getCommittees(epochToFetch);
   const preparedData = await prepareUpsertData(committees);
   logCommitteeInfo(logger, committees, preparedData.newSlots);
-  await executeEpochTransaction(epochToFetch, preparedData.newSlots, preparedData.newCommittees);
+  await saveCommittee(epochToFetch, preparedData.newSlots, preparedData.newCommittees);
 }
 
 async function prepareUpsertData(committees: Committee[]) {
@@ -57,6 +57,10 @@ async function prepareUpsertData(committees: Committee[]) {
       });
     });
   });
+
+  if (newSlots.length === 0 || newCommittees.length === 0) {
+    throw new Error('No new slots or committees to save');
+  }
 
   return {
     newSlots,
@@ -94,11 +98,7 @@ function logCommitteeInfo(
   logger.info(`New slots [${slotUpserts}] - Committees: ${logMessage || 'null'}`);
 }
 
-async function executeEpochTransaction(
-  epoch: number,
-  slots: number[],
-  committees: CommitteeUpsert[],
-) {
+async function saveCommittee(epoch: number, slots: number[], committees: CommitteeUpsert[]) {
   // we need to save on the Slot table the number of validators in each committee.
   const validatorsInCommitteePerSlot = new Map<number, number[]>();
   for (const u of committees) {

@@ -3,7 +3,7 @@ import { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import createLogger from '@/src/lib/pino.js';
 
 export function logRequest(request: InternalAxiosRequestConfig): InternalAxiosRequestConfig {
-  const logger = createLogger(null, false);
+  const logger = createLogger(null, true);
   logger.info(`${request.method?.toUpperCase()} ${request.url}`);
   return request;
 }

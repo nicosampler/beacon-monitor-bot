@@ -11,7 +11,12 @@
     "lint": "pnpm -r run lint",
     "lint:fix": "pnpm -r run lint:fix",
     "type-check": "pnpm -r exec tsc --noEmit",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "sync:apiTypes": "cp packages/api/src/routes/types.ts packages/bot/src/apiTypes.ts",
+    "env.dev.gnosis": "cp .env.dev.gnosis .env",
+    "env.dev.mainnet": "cp .env.dev.mainnet .env",
+    "env.prod.gnosis": "cp .env.prod.gnosis .env",
+    "env.prod.mainnet": "cp .env.prod.mainnet .env"
   },
   "dependencies": {
     "@prisma/client": "5.15.0"

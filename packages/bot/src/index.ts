@@ -14,6 +14,7 @@ import { dashboard } from '@/src/telegram/commands/dashboard.js';
 import { headsUp } from '@/src/telegram/commands/headsUp.js';
 import { sendBill } from '@/src/telegram/commands/sendBill.js';
 import { registerMainMenu } from '@/src/telegram/menus/index.js';
+import { userMiddleware } from '@/src/telegram/middleware/userMiddleware.js';
 import { removeMessage } from '@/src/telegram/utils/messaging.js';
 // import { webDashboard } from "@/src/telegram/commands/webDashboard.js";
 

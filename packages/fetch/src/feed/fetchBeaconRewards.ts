@@ -5,8 +5,10 @@ import ms from 'ms';
 
 import { getAttestationRewards } from '@/src/beacon/endpoints.js';
 import { AttestationRewards } from '@/src/beacon/types.js';
+import { getEpochSlots } from '@/src/beacon/utils/misc.js';
 import { getTimestampFromEpochNumber } from '@/src/beacon/utils/time.js';
-import { getAttestingValidatorIds, getHighestValidatorId } from '@/src/feed/utils.js';
+import { fetchValidatorsBalances } from '@/src/feed/fetchValidatorsBalances.js';
+import { db_getValidatorsIdsToFetchInfo } from '@/src/feed/utils.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
@@ -17,10 +19,13 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
   try {
     logger.info(`Processing epoch ${epoch}`);
 
-    //Get all validator IDs that are not in final states
-    const highestValidatorId = await getHighestValidatorId();
-    const allValidatorIds = await getAttestingValidatorIds(highestValidatorId);
+    // We fetch balances for all the active validators
+    // This is needed to calculate the missed rewards.
+    const { startSlot } = getEpochSlots(epoch);
+    await fetchValidatorsBalances(logger, startSlot);
+
     //fetch beacon node to get the attestation rewards for all the validators in batches
+    const allValidatorIds = await db_getValidatorsIdsToFetchInfo();
     const validatorBatches = chunk(allValidatorIds, 100000);
     let response: AttestationRewards = {
       execution_optimistic: false,
@@ -28,6 +33,8 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
     };
     for (const batch of validatorBatches) {
       const batchResponse = await getAttestationRewards(epoch, batch);
+      // promise all [getAttestationRewards(epoch, batch), getValidatorsBalances(ids)]
+
       response = mergeWith(response, batchResponse, (currentValue, newValue, key) =>
         // we only merge total_rewards as ideal_rewards are always the same for the whole epoch
         key === 'total_rewards' ? currentValue.concat(newValue) : undefined,
@@ -47,6 +54,7 @@ export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
       inactivity: BigInt(validatorInfo.inactivity || '0'),
     }));
 
+    logger.info(`Saving rewards data to database`);
     await prisma.$transaction(
       async (tx) => {
         // Create temporary table to store rewards data

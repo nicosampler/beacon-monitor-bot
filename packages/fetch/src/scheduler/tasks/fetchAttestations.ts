@@ -12,7 +12,7 @@ import { TaskOptions } from '@/src/scheduler/tasks/types.js';
 
 const prisma = getPrisma();
 
-export const fetchAttestations = async (logger: CustomLogger) => {
+export const fetchAttestationsTask = async (logger: CustomLogger) => {
   const now = new Date();
   const currentSlot = getSlotNumberFromTimestamp(now.getTime());
   const maxSlotToFetch = currentSlot - env.BEACON_DELAY_SLOTS_TO_HEAD;
@@ -22,19 +22,17 @@ export const fetchAttestations = async (logger: CustomLogger) => {
     // Get the last slot for which we have attestations
     const lastProcessedSlot = await db_getLastSlotWithAttestations();
     const slotToFetch = lastProcessedSlot ? lastProcessedSlot.slot + 1 : oldestLookbackSlot;
-    const epochToFetch = getEpochFromSlot(slotToFetch);
 
     logger.addContext(`attestation: ${slotToFetch}`);
 
     // Skip if the slot to fetch is greater than the max slot to fetch
     if (slotToFetch > maxSlotToFetch) {
-      logger.info(
-        `Skipping, slot to fetch ${slotToFetch} is greater than max slot to fetch ${maxSlotToFetch}`,
-      );
+      logger.info(`Skipping, is greater than max slot to fetch ${maxSlotToFetch}`);
       return;
     }
 
     // Skip if the committees for the slot have not been fetched
+    const epochToFetch = getEpochFromSlot(slotToFetch);
     const hasEpochCommittees = await db_hasEpochCommittees(epochToFetch);
     if (!hasEpochCommittees) {
       logger.info(`Skipping, committees for epoch ${epochToFetch} not fetched.`);
@@ -72,7 +70,7 @@ export function scheduleFetchAttestations({
   const logger = createLogger(id, logsEnabled);
 
   const task = new AsyncTask(`${id}_task`, () => {
-    return fetchAttestations(logger).catch((e) => logger.error('TASK-CATCH', e));
+    return fetchAttestationsTask(logger).catch((e) => logger.error('TASK-CATCH', e));
   });
 
   scheduler.addSimpleIntervalJob(

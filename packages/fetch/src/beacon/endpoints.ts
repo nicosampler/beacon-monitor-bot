@@ -125,7 +125,7 @@ function isIndexerDelayed({ value, type }: { value: number; type: 'slot' | 'epoc
 }
 
 // Restore original endpoint functions
-export async function getCommittees(
+export async function beacon_getCommittees(
   epoch: number,
   stateId = 'head',
 ): Promise<GetCommittees['data']> {
@@ -160,39 +160,40 @@ export async function getAttestations(
   );
 }
 
-export async function getValidatorsBalances(
+export async function beacon_getValidatorsBalances(
   stateId: string | number,
+  validatorIds: string[],
 ): Promise<GetValidatorsBalances['data']> {
+  if (validatorIds.length === 0) {
+    throw new Error('No validator IDs provided');
+  }
+
   return makeBeaconRequest(
     async (url) => {
-      const res = await instance.get<GetValidatorsBalances>(
+      const res = await instance.post<GetValidatorsBalances>(
         `${url}/eth/v1/beacon/states/${stateId}/validator_balances`,
+        validatorIds,
       );
       return res.data.data;
     },
     undefined,
-    { priority: 'secondary' },
+    { priority: 'primary' },
   );
 }
 
-export async function getValidatorsInfo(
+export async function beacon_getValidators(
   stateId: string | number,
-  validatorIds: number[],
-  status?: string[], //ValidatorStatus[],
+  validatorIds: string[] | null,
+  statuses: string[] | null,
 ): Promise<GetValidators['data']> {
   return makeBeaconRequest(
     async (url) => {
-      // Construct query parameters
-      const params = new URLSearchParams();
-      // Join all validator IDs with commas
-      params.append('id', validatorIds.join(','));
-      if (status) {
-        params.append('status', status.join(','));
-      }
-
-      const res = await instance.get<GetValidators>(
+      const res = await instance.post<GetValidators>(
         `${url}/eth/v1/beacon/states/${stateId}/validators`,
-        { params },
+        {
+          ids: validatorIds,
+          statuses,
+        },
       );
       return res.data.data;
     },

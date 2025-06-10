@@ -1,9 +1,19 @@
-truncate "DailyExecutionRewards";
-truncate "DailyValidatorStats";
 truncate "Epoch";
+truncate "Slot" cascade;
+truncate "Committee" cascade;
+-- truncate "Validator" cascade;
+
 truncate "ExecutionRewards";
-truncate "HourlyExecutionRewards";
+
 truncate "HourlyValidatorStats";
 truncate "HourlyBlockAndSyncRewards";
+truncate "HourlyExecutionRewards";
+
+truncate "DailyExecutionRewards";
+truncate "DailyValidatorStats";
+
 truncate "LastSummaryUpdate";
-truncate "Slot" cascade;
+
+truncate "User" cascade;
+truncate "WithdrawalAddress" cascade;
+truncate "FeeRewardAddress" cascade;

@@ -96,7 +96,7 @@ export const db_getLastEpochWithCommittees = async () =>
     select: { epoch: true },
   });
 
-export const db_createEpoch = async (epoch: number) =>
+export const db_upsertEpoch = async (epoch: number) =>
   prisma.epoch.upsert({
     where: { epoch },
     create: { epoch, rewardsFetched: false },
@@ -224,17 +224,22 @@ export const getActiveValidators = memoizee(
   },
 );
 
-export async function getAttestingValidatorIds(highestValidatorId: number): Promise<number[]> {
+export async function db_getMaxValidatorId() {
+  const res = await prisma.validator.findFirst({
+    orderBy: { id: 'desc' },
+    select: { id: true },
+  });
+
+  return res?.id ?? 0;
+}
+
+export async function db_getFinalValidatorIds(): Promise<number[]> {
   const finalStateValidators = await prisma.validator.findMany({
     where: {
       status: {
         in: [
-          VALIDATOR_STATUS.pending_initialized,
-          VALIDATOR_STATUS.pending_queued,
-          VALIDATOR_STATUS.active_slashed,
           VALIDATOR_STATUS.exited_unslashed,
           VALIDATOR_STATUS.exited_slashed,
-          VALIDATOR_STATUS.withdrawal_possible,
           VALIDATOR_STATUS.withdrawal_done,
         ],
       },
@@ -242,10 +247,31 @@ export async function getAttestingValidatorIds(highestValidatorId: number): Prom
     select: { id: true },
   });
 
-  // Create array of all validator IDs and filter out those in final states
-  // Using a map for faster access
-  const finalStateValidatorIds = new Set(finalStateValidators.map((v) => v.id));
-  return Array.from({ length: highestValidatorId + 1 }, (_, i) => i).filter(
-    (id) => !finalStateValidatorIds.has(id),
-  );
+  return finalStateValidators.map((v) => v.id);
+}
+
+export async function db_getValidatorsIdsToFetchInfo(): Promise<number[]> {
+  const validators = await prisma.validator.findMany({
+    where: {
+      OR: [
+        {
+          status: {
+            in: [
+              VALIDATOR_STATUS.pending_initialized,
+              VALIDATOR_STATUS.pending_queued,
+              VALIDATOR_STATUS.active_ongoing,
+              VALIDATOR_STATUS.active_exiting,
+              VALIDATOR_STATUS.active_slashed,
+            ],
+          },
+        },
+        {
+          status: null,
+        },
+      ],
+    },
+    select: { id: true },
+  });
+
+  return validators.map((v) => v.id);
 }

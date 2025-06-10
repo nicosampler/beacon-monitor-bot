@@ -9,6 +9,4 @@ migration_lock.toml
 
 test.ts
 
-.env
-.env.prod
-.env.test
+.env*

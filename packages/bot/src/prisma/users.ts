@@ -4,6 +4,12 @@ import { AppError } from '@/src/utils/errors/AppError.js';
 const prisma = getPrisma();
 
 export function getUser_db(userId: number) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+  });
+}
+
+export function getUserOrFail_db(userId: number) {
   return prisma.user
     .findUniqueOrThrow({
       where: { id: userId },

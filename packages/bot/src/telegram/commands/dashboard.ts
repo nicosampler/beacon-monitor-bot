@@ -19,7 +19,7 @@ export async function dashboard(ctx: MyContext) {
         userId,
         `You haven't added any withdrawal address yet. Please add one first.
       
-You can add one in: /menu > Validators management > Add withdrawal address.`,
+You can add one by going to: /menu > Validators management > Add withdrawal address`,
       );
       return;
     }

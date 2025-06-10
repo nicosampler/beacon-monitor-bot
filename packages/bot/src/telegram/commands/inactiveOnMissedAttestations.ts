@@ -3,7 +3,7 @@ import { Conversation } from '@grammyjs/conversations';
 import { getDataFromContext } from '../utils/getUserIdFromCtx.js';
 
 import { MyContext } from '@/src/config/session.js';
-import { getUser_db, updateUserById_db } from '@/src/prisma/users.js';
+import { getUserOrFail_db, updateUserById_db } from '@/src/prisma/users.js';
 import { sendMessage } from '@/src/telegram/utils/messaging.js';
 import { AppError } from '@/src/utils/errors/AppError.js';
 import { handleError } from '@/src/utils/errors/handleError.js';
@@ -41,7 +41,7 @@ export async function inactiveOnMissedAttestations(
   try {
     // get uerId
     const { userId } = await getDataFromContext(ctx);
-    const user = await getUser_db(userId);
+    const user = await getUserOrFail_db(userId);
     if (!user) {
       throw new AppError('User not found', 'NOT_FOUND');
     }

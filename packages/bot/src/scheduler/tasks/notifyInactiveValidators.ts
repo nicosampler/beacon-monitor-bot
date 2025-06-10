@@ -2,7 +2,7 @@ import { User } from '@prisma/client';
 import { InlineKeyboard } from 'grammy';
 
 import { ALERT_REPEAT_INTERVAL_MINUTES } from '@/src/constants/index.js';
-import { getUser_db, updateUserById_db } from '@/src/prisma/users.js';
+import { getUserOrFail_db, updateUserById_db } from '@/src/prisma/users.js';
 import { sendMessage } from '@/src/telegram/utils/messaging.js';
 import { isNotificationAllowed } from '@/src/utils/misc.js';
 
@@ -10,7 +10,7 @@ export async function notifyInactiveValidators(user: User, inactiveIds: number[]
   if (!inactiveIds.length) return;
 
   // only notify once every 30 minutes
-  const dbUser = await getUser_db(Number(user.id));
+  const dbUser = await getUserOrFail_db(Number(user.id));
   if (!isNotificationAllowed(dbUser.inactiveNotif, ALERT_REPEAT_INTERVAL_MINUTES)) {
     return;
   }

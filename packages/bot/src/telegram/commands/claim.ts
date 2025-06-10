@@ -5,7 +5,7 @@ import { Message } from 'grammy/types';
 import { signer } from '@/src/config/provider.js';
 import { CLAIM_COOL_DOWN_DAYS } from '@/src/constants/index.js';
 import { env } from '@/src/env.js';
-import { getUser_db, updateUserById_db } from '@/src/prisma/users.js';
+import { getUserOrFail_db, updateUserById_db } from '@/src/prisma/users.js';
 import { getWithdrawalAddresses_db } from '@/src/prisma/withdrawalAddresses.js';
 import { getDataFromContext } from '@/src/telegram/utils/getUserIdFromCtx.js';
 import { editMessageText, replyMessage } from '@/src/telegram/utils/messaging.js';
@@ -15,7 +15,7 @@ import depositInstance from '@/src/utils/evm/deposit.js';
 
 async function _calculateClaimCoolDown(userId: number) {
   try {
-    const userDB = await getUser_db(userId);
+    const userDB = await getUserOrFail_db(userId);
     return addDays(userDB.lastClaimed || new Date('01/01/2020'), CLAIM_COOL_DOWN_DAYS);
   } catch (error) {
     throw new AppError('Error calculating claim cool down', 'BD_ERROR', error);

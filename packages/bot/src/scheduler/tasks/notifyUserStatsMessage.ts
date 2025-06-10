@@ -463,6 +463,11 @@ export async function notifyUserStatsMessage(
     return;
   }
 
+  if (!user.validators.length) {
+    logger.info(`user has no validators`);
+    return;
+  }
+
   const stats = await getUserAllStats(
     syncing,
     maxSafeSlotToQuery,

@@ -20,17 +20,18 @@ const fetchWithdrawableAmount = async (userId: number) => {
     const withdrawalAddresses = await getWithdrawalAddresses_db(userId);
     const withdrawalAddressesChunks = chunk(withdrawalAddresses, 15);
 
-    const amounts: BigNumber[] = [];
+    // const amounts: BigNumber[] = [];
 
-    multicallProvider.isMulticallEnabled = true;
-    for (const chunk of withdrawalAddressesChunks) {
-      const promises = chunk.map(({ address }) => depositInstance.withdrawableAmount(address));
-      amounts.push(...(await Promise.all(promises)));
-      await sleep(100);
-    }
-    multicallProvider.isMulticallEnabled = false;
+    // multicallProvider.isMulticallEnabled = true;
+    // for (const chunk of withdrawalAddressesChunks) {
+    //   const promises = chunk.map(({ address }) => depositInstance.withdrawableAmount(address));
+    //   amounts.push(...(await Promise.all(promises)));
+    //   await sleep(100);
+    // }
+    // multicallProvider.isMulticallEnabled = false;
 
-    const totalAmount = amounts.reduce((acc, amount) => acc.add(amount), ethers.constants.Zero);
+    // const totalAmount = amounts.reduce((acc, amount) => acc.add(amount), ethers.constants.Zero);
+    const totalAmount = ethers.constants.Zero;
 
     return +formatEther(totalAmount.toString());
   } catch (error) {

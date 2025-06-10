@@ -1,73 +1,121 @@
 import { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
+import chunk from 'lodash/chunk.js';
+import ms from 'ms';
 
-import { getValidatorsBalances } from '@/src/beacon/endpoints.js';
-import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
-import { env } from '@/src/env.js';
+import { beacon_getValidatorsBalances } from '@/src/beacon/endpoints.js';
+import { db_getFinalValidatorIds, db_getMaxValidatorId } from '@/src/feed/utils.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 
 const prisma = getPrisma();
 
-function logValidatorBalances(
+// Function to save validator balances to database
+async function saveValidatorBalancesToDatabase(
+  validatorBalances: Array<{ index: string; balance: string }>,
   logger: CustomLogger,
-  validatorCount: number,
-  updateCount: number,
-  insertCount: number,
-): void {
-  logger.info(
-    `Processed ${validatorCount} validators (${updateCount} updates, ${insertCount} inserts)`,
-  );
-}
-
-/*
- * We fetch the highest validator ID from the database to determine which validators
- * need to be updated vs. inserted. This approach is based on two key assumptions:
- * 1. New validators are always added with incrementing IDs.
- * 2. The getValidatorsBalances function returns results ordered by validator index.
- *
- * By comparing each validator's index to the highest ID in our database:
- * - Validators with index <= highestValidatorId are existing and need updates.
- * - Validators with index > highestValidatorId are new and need to be inserted.
- *
- * We use raw SQL queries for both updates and inserts to maximize efficiency.
- * Each operation (update or insert) is performed in a single transaction with up to 5000 records.
- */
-export const fetchValidatorsBalances = async (logger: CustomLogger): Promise<void> => {
-  const slotNumber = getSlotNumberFromTimestamp(Date.now()) - env.BEACON_SLOTS_PER_EPOCH;
+) {
+  logger.info('Saving result to db.');
   try {
-    logger.info(`Fetching for state ${slotNumber}`);
-    const validatorBalances = await getValidatorsBalances(slotNumber);
-
-    logger.info(`Processing ${validatorBalances.length} validator balances`);
-
-    const batchSize = 5000;
-    let processedCount = 0;
-
-    // Process all validators in batches
-    for (let i = 0; i < validatorBalances.length; i += batchSize) {
-      const batch = validatorBalances.slice(i, i + batchSize);
-      const upsertQuery = Prisma.sql`
-        INSERT INTO "Validator" ("id", "balance")
-        VALUES ${Prisma.join(
-          batch.map((v) => Prisma.sql`(${parseInt(v.index)}, ${new Decimal(v.balance)})`),
-        )}
-        ON CONFLICT ("id") DO UPDATE
-        SET "balance" = EXCLUDED.balance;
+    await prisma.$transaction(
+      async (tx) => {
+        // Create temporary table
+        await tx.$executeRaw`
+        CREATE TEMPORARY TABLE "TempValidator" (LIKE "Validator") ON COMMIT DROP
       `;
 
-      const result = await prisma.$executeRaw(upsertQuery);
-      processedCount += result;
-    }
+        // Process data in batches of 5000
+        const batches = chunk(validatorBalances, 5000);
 
-    logValidatorBalances(
-      logger,
-      validatorBalances.length,
-      processedCount,
-      validatorBalances.length - processedCount,
+        for (const batch of batches) {
+          await tx.$executeRaw`
+          INSERT INTO "TempValidator" (id, balance)
+          VALUES ${Prisma.join(
+            batch.map(
+              (data) =>
+                Prisma.sql`(
+                  ${parseInt(data.index)}, 
+                  ${new Decimal(data.balance)}
+                )`,
+            ),
+            ', ',
+          )}
+        `;
+        }
+
+        // Merge data from temporary table to main table
+        await tx.$executeRaw`
+        INSERT INTO "Validator" (id, balance)
+        SELECT id, balance
+        FROM "TempValidator"
+        ON CONFLICT (id) DO UPDATE SET
+          "balance" = EXCLUDED.balance
+      `;
+      },
+      {
+        timeout: ms('1m'),
+      },
     );
+
+    logger.info(`Successfully saved ${validatorBalances.length} validator balances to database`);
   } catch (error) {
-    logger.error(`Error in fetchValidatorsBalances for state ${slotNumber}`, error);
+    logger.error(`Error saving validator balances to database`, error);
     throw error;
   }
-};
+}
+
+export async function fetchValidatorsBalances(
+  logger: CustomLogger,
+  slot: string | number = 'head',
+) {
+  const start = Date.now();
+  logger.info(`Started at ${new Date(start).toISOString()}`);
+  try {
+    const totalValidators = await db_getMaxValidatorId();
+    if (totalValidators == 0) {
+      logger.info('No validators ids to fetch');
+      return;
+    }
+
+    const batchSize = 1000000;
+
+    // Get final state validators
+    const finalStateValidatorsIds = await db_getFinalValidatorIds();
+    const finalStateValidatorsSet = new Set(finalStateValidatorsIds);
+
+    // Generate all validator IDs and filter out final state validators
+    const allValidatorIds = Array.from({ length: totalValidators }, (_, i) => i).filter(
+      (id) => !finalStateValidatorsSet.has(id),
+    );
+
+    // Create chunks of batchSize
+    const batches = chunk(allValidatorIds, batchSize);
+    let allValidatorBalances: Awaited<ReturnType<typeof beacon_getValidatorsBalances>> = [];
+
+    for (const batchIds of batches) {
+      try {
+        const batchResult = await beacon_getValidatorsBalances(
+          slot,
+          batchIds.map((id) => String(id)),
+        );
+
+        allValidatorBalances = [...allValidatorBalances, ...batchResult];
+
+        if (batchResult.length < batchSize) {
+          break;
+        }
+      } catch (error) {
+        logger.error(`Error processing batch`, error);
+      }
+    }
+
+    logger.info(
+      `All validator balances fetched in ${((Date.now() - start) / 1000 / 60).toFixed(2)} minutes`,
+    );
+
+    // Save all collected data to database
+    await saveValidatorBalancesToDatabase(allValidatorBalances, logger);
+  } catch (error) {
+    logger.error(`Error fetching validator balances info`, error);
+  }
+}

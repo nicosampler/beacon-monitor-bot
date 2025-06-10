@@ -42,11 +42,12 @@ model Committee {
 }
 
 model Validator {
-  id                Int     @id
+  id                Int      @id
   status            Int?
-  balance           Decimal @db.Decimal(78, 0)
+  balance           Decimal  @db.Decimal(78, 0)
+  effectiveBalance  Decimal? @db.Decimal(78, 0)
   withdrawalAddress String?
-  users             User[]  @relation("UserToValidator")
+  users             User[]   @relation("UserToValidator")
 
   @@index([withdrawalAddress])
   @@index([status])

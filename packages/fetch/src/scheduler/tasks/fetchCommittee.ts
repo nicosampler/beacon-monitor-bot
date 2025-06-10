@@ -4,7 +4,7 @@ import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/beacon/utils/misc
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { fetchCommittee } from '@/src/feed/fetchCommittee.js';
 import {
-  db_createEpoch,
+  db_upsertEpoch,
   db_getLastEpochWithCommittees,
   db_getLastSlotWithAttestations,
 } from '@/src/feed/utils.js';
@@ -12,11 +12,10 @@ import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
 
-// Add new function to calculate next slots to fetch`
 async function fetchNewCommittees(logger: CustomLogger): Promise<void> {
+  // calculate slot and epoch for head and oldestLookback
   const oldestLookbackSlot = getOldestLookbackSlot();
   const oldestLookbackEpoch = getEpochFromSlot(oldestLookbackSlot);
-
   const now = new Date();
   const headSlot = getSlotNumberFromTimestamp(now.getTime());
   const headEpoch = getEpochFromSlot(headSlot);
@@ -45,7 +44,7 @@ async function fetchNewCommittees(logger: CustomLogger): Promise<void> {
   }
 
   // create epoch
-  await db_createEpoch(epochToFetch);
+  await db_upsertEpoch(epochToFetch);
 
   // fetch committee for the epoch
   logger.info(`FetchCommittee: Distance to head: ${headEpoch - epochToFetch} epochs`);
