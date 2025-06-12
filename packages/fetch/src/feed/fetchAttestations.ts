@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
-import { getAttestations } from '@/src/beacon/endpoints.js';
+import { beacon_getAttestations } from '@/src/beacon/endpoints.js';
 import {
   convertBitsToString,
   convertBitsToStringForCommitteeBits,
@@ -66,7 +66,7 @@ export const fetchAttestation = async (slotNumber: number, logger: CustomLogger)
 };
 
 async function getAttestation(slot: number, logger: CustomLogger) {
-  const fetchedAttestations = await getAttestations(slot + 1);
+  const fetchedAttestations = await beacon_getAttestations(slot + 1);
 
   if (fetchedAttestations === 'SLOT MISSED') {
     await prisma.slot.update({

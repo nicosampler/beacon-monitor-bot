@@ -141,7 +141,7 @@ export async function beacon_getCommittees(
   );
 }
 
-export async function getAttestations(
+export async function beacon_getAttestations(
   slot: number,
 ): Promise<GetAttestations['data'] | 'SLOT MISSED'> {
   type AttestationsResponse = GetAttestations['data'];
@@ -198,11 +198,11 @@ export async function beacon_getValidators(
       return res.data.data;
     },
     undefined,
-    { priority: 'secondary' },
+    { priority: 'primary' },
   );
 }
 
-export async function getAttestationRewards(
+export async function beacon_getAttestationRewards(
   epoch: number,
   validatorIds: number[],
 ): Promise<AttestationRewards> {
@@ -215,11 +215,11 @@ export async function getAttestationRewards(
       return res.data;
     },
     undefined,
-    { priority: isIndexerDelayed({ value: epoch, type: 'epoch' }) ? 'primary' : 'secondary' },
+    { priority: 'primary' },
   );
 }
 
-export const getBlockRewards = memoizee(
+export const beacon_getBlockRewards = memoizee(
   async function getBlockRewards(slot: number) {
     return makeBeaconRequest<BlockRewards | 'SLOT MISSED'>(
       async (url) => {
@@ -237,7 +237,7 @@ export const getBlockRewards = memoizee(
   },
 );
 
-export const getSyncCommitteeRewards = memoizee(
+export const beacon_getSyncCommitteeRewards = memoizee(
   async function getSyncCommitteeRewards(slot: number, validatorIds: string[]) {
     return makeBeaconRequest<SyncCommitteeRewards | 'SLOT MISSED'>(
       async (url) => {

@@ -1,117 +1,170 @@
 import { Prisma } from '@prisma/client';
 import chunk from 'lodash/chunk.js';
-import mergeWith from 'lodash/mergeWith.js';
 import ms from 'ms';
 
-import { getAttestationRewards } from '@/src/beacon/endpoints.js';
+import { beacon_getAttestationRewards } from '@/src/beacon/endpoints.js';
 import { AttestationRewards } from '@/src/beacon/types.js';
-import { getEpochSlots } from '@/src/beacon/utils/misc.js';
 import { getTimestampFromEpochNumber } from '@/src/beacon/utils/time.js';
-import { fetchValidatorsBalances } from '@/src/feed/fetchValidatorsBalances.js';
-import { db_getValidatorsIdsToFetchInfo } from '@/src/feed/utils.js';
+import {
+  db_getValidatorsIdsToFetchInfo,
+  db_getValidatorsEffectiveBalances,
+} from '@/src/feed/utils.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
 
 const prisma = getPrisma();
 
-export async function fetchBeaconRewards(epoch: number, logger: CustomLogger) {
+// Helper functions
+function createIdealRewardsMap(
+  epochRewards: AttestationRewards,
+): Map<string, AttestationRewards['data']['ideal_rewards'][number]> {
+  return new Map(
+    epochRewards.data.ideal_rewards.map((reward) => [reward.effective_balance, reward]),
+  );
+}
+
+function formatValidatorReward(
+  validatorInfo: AttestationRewards['data']['total_rewards'][number],
+  effectiveBalance: string,
+  idealRewards: AttestationRewards['data']['ideal_rewards'][number],
+  date: string,
+  hour: number,
+): string {
+  if (effectiveBalance === '0') {
+    return `(${Number(validatorInfo.validator_index)}, '${date}', ${hour}, 0, 0, 0, 0)`;
+  }
+
+  const head = BigInt(validatorInfo.head || '0');
+  const target = BigInt(validatorInfo.target || '0');
+  const source = BigInt(validatorInfo.source || '0');
+  const inactivity = BigInt(validatorInfo.inactivity || '0');
+
+  return `(${Number(validatorInfo.validator_index)}, '${date}', ${hour}, ${head}, ${target}, ${source}, ${inactivity})`;
+}
+
+// Database operations
+async function truncateTempTable(): Promise<void> {
+  await prisma.$executeRaw`TRUNCATE TABLE "EpochRewardsTemp"`;
+}
+
+async function insertBatchIntoTempTable(
+  batch: AttestationRewards['data']['total_rewards'],
+  validatorsBalancesMap: Map<string, string>,
+  idealRewardsMap: Map<string, AttestationRewards['data']['ideal_rewards'][number]>,
+  date: string,
+  hour: number,
+): Promise<void> {
+  const values = batch
+    .map((validatorInfo) => {
+      const effectiveBalance = validatorsBalancesMap.get(validatorInfo.validator_index) || '0';
+      const idealRewards = idealRewardsMap.get(effectiveBalance)!;
+      return formatValidatorReward(validatorInfo, effectiveBalance, idealRewards, date, hour);
+    })
+    .join(',');
+
+  await prisma.$executeRaw`
+    INSERT INTO "EpochRewardsTemp" 
+      ("validatorIndex", "date", "hour", "head", "target", "source", "inactivity")
+    VALUES ${Prisma.raw(values)}
+  `;
+}
+
+async function mergeAndUpdateEpoch(tx: Prisma.TransactionClient, epoch: number): Promise<void> {
+  // Merge data from temporary table to main table
+  await tx.$executeRaw`
+    INSERT INTO "HourlyValidatorStats" 
+      ("validatorIndex", "date", "hour", "head", "target", "source", "inactivity")
+    SELECT 
+      "validatorIndex", "date", "hour", "head", "target", "source", "inactivity"
+    FROM "EpochRewardsTemp"
+    ON CONFLICT ("validatorIndex", "date", "hour") DO UPDATE SET
+      "head" = COALESCE("HourlyValidatorStats"."head", 0) + COALESCE(EXCLUDED."head", 0),
+      "target" = COALESCE("HourlyValidatorStats"."target", 0) + COALESCE(EXCLUDED."target", 0),
+      "source" = COALESCE("HourlyValidatorStats"."source", 0) + COALESCE(EXCLUDED."source", 0),
+      "inactivity" = COALESCE("HourlyValidatorStats"."inactivity", 0) + COALESCE(EXCLUDED."inactivity", 0)
+  `;
+
+  // Update epoch status
+  await tx.epoch.update({
+    where: { epoch },
+    data: { rewardsFetched: true },
+  });
+}
+
+// Main function
+export async function fetchBeaconRewards(logger: CustomLogger, epoch: number) {
+  const start = Date.now();
   try {
-    logger.info(`Processing epoch ${epoch}`);
-
-    // We fetch balances for all the active validators
-    // This is needed to calculate the missed rewards.
-    const { startSlot } = getEpochSlots(epoch);
-    await fetchValidatorsBalances(logger, startSlot);
-
-    //fetch beacon node to get the attestation rewards for all the validators in batches
-    const allValidatorIds = await db_getValidatorsIdsToFetchInfo();
-    const validatorBatches = chunk(allValidatorIds, 100000);
-    let response: AttestationRewards = {
-      execution_optimistic: false,
-      data: { ideal_rewards: [], total_rewards: [] },
-    };
-    for (const batch of validatorBatches) {
-      const batchResponse = await getAttestationRewards(epoch, batch);
-      // promise all [getAttestationRewards(epoch, batch), getValidatorsBalances(ids)]
-
-      response = mergeWith(response, batchResponse, (currentValue, newValue, key) =>
-        // we only merge total_rewards as ideal_rewards are always the same for the whole epoch
-        key === 'total_rewards' ? currentValue.concat(newValue) : undefined,
-      );
-    }
+    logger.info(`Fetching rewards.`);
 
     const epochTimestamp = getTimestampFromEpochNumber(epoch);
     const { date, hour } = convertToUTC(epochTimestamp);
 
-    // Process rewards data
-    const rewardsData = response.data.total_rewards.map((validatorInfo) => ({
-      validatorIndex: Number(validatorInfo.validator_index),
-      epoch: epoch,
-      head: BigInt(validatorInfo.head || '0'),
-      target: BigInt(validatorInfo.target || '0'),
-      source: BigInt(validatorInfo.source || '0'),
-      inactivity: BigInt(validatorInfo.inactivity || '0'),
-    }));
+    // 1. Truncate temp table
+    await truncateTempTable();
 
-    logger.info(`Saving rewards data to database`);
+    // Get all validator ids to fetch info
+    const allValidatorIds = await db_getValidatorsIdsToFetchInfo();
+    let idealRewardsMap: Map<string, AttestationRewards['data']['ideal_rewards'][number]> | null =
+      null;
+
+    // Process all validators in batches
+    const validatorBatches = chunk(allValidatorIds, 1000000);
+    allValidatorIds.length = 0;
+
+    // 2. Load data into temp table
+    for (const batch of validatorBatches) {
+      // Get effective balances for the validators in the batch
+      const validatorsEffectiveBalances = await db_getValidatorsEffectiveBalances(batch);
+      const validatorsBalancesMap = new Map(
+        validatorsEffectiveBalances.map((balance) => [
+          balance.id.toString(),
+          balance.effectiveBalance?.toString() || '0',
+        ]),
+      );
+      validatorsEffectiveBalances.length = 0;
+
+      // Get attestation rewards for this batch
+      const epochRewards = await beacon_getAttestationRewards(epoch, batch);
+
+      // Create ideal rewards map if this is the first batch
+      if (!idealRewardsMap) {
+        idealRewardsMap = createIdealRewardsMap(epochRewards);
+      }
+
+      // Save rewards data in temp table
+      const rewardBatches = chunk(epochRewards.data.total_rewards, 12_000);
+      for (const rewardBatch of rewardBatches) {
+        await insertBatchIntoTempTable(
+          rewardBatch,
+          validatorsBalancesMap,
+          idealRewardsMap!,
+          date,
+          hour,
+        );
+      }
+      batch.length = 0;
+    }
+
+    // 3. Execute merge and update in a transaction
     await prisma.$transaction(
       async (tx) => {
-        // Create temporary table to store rewards data
-        await tx.$executeRaw`
-          CREATE TEMPORARY TABLE temp_validator_stats (
-            LIKE "HourlyValidatorStats" INCLUDING ALL
-          ) ON COMMIT DROP
-        `;
-
-        // Insert rewards data into temporary table in batches
-        const batches = chunk(rewardsData, 250000);
-        const batchPromises = batches.map((batch) => {
-          const values = batch
-            .map(
-              (reward) =>
-                `(${reward.validatorIndex}, ${hour}, '${date}', ${reward.head}, ${reward.target}, ${reward.source}, ${reward.inactivity})`,
-            )
-            .join(',');
-
-          return tx.$executeRaw`
-            INSERT INTO temp_validator_stats (
-              "validatorIndex",
-              "hour",
-              "date",
-              "head",
-              "target",
-              "source",
-              "inactivity"
-            ) VALUES ${Prisma.raw(values)}
-          `;
-        });
-        await Promise.all(batchPromises);
-
-        // merge temporary table with main table
-        await tx.$executeRaw`
-          INSERT INTO "HourlyValidatorStats"
-          SELECT * FROM temp_validator_stats
-          ON CONFLICT ("validatorIndex", "hour", "date") 
-          DO UPDATE SET
-            "head" = "HourlyValidatorStats"."head" + EXCLUDED."head",
-            "target" = "HourlyValidatorStats"."target" + EXCLUDED."target",
-            "source" = "HourlyValidatorStats"."source" + EXCLUDED."source",
-            "inactivity" = "HourlyValidatorStats"."inactivity" + EXCLUDED."inactivity"
-        `;
-
-        // Update epoch status
-        await tx.epoch.update({
-          where: { epoch },
-          data: { rewardsFetched: true },
-        });
+        await mergeAndUpdateEpoch(tx, epoch);
       },
       {
-        timeout: ms('10m'),
+        timeout: ms('3m'),
       },
     );
-    logger.info(`Done.`);
+
+    // 4. Final truncate if everything went well
+    await truncateTempTable();
+
+    logger.info(
+      `All Epoch rewards processed in ${((Date.now() - start) / 1000 / 60).toFixed(2)} minutes`,
+    );
   } catch (error) {
-    logger.error(`Error fetching or inserting beacon rewards for epoch ${epoch}`, error);
+    logger.error('Error processing rewards:', error);
+    throw error;
   }
 }

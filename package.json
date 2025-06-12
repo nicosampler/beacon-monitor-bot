@@ -14,15 +14,18 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "sync:apiTypes": "cp packages/api/src/routes/types.ts packages/bot/src/apiTypes.ts",
     "env.dev.gnosis": "cp .env.dev.gnosis .env",
-    "env.dev.mainnet": "cp .env.dev.mainnet .env",
+    "env.dev.ethereum": "cp .env.dev.ethereum .env",
     "env.prod.gnosis": "cp .env.prod.gnosis .env",
-    "env.prod.mainnet": "cp .env.prod.mainnet .env"
+    "env.prod.ethereum": "cp .env.prod.ethereum .env",
+    "clean-db": "tsx cleanDatabase.ts"
   },
   "dependencies": {
-    "@prisma/client": "5.15.0"
+    "@prisma/client": "5.15.0",
+    "zod": "^3.25.61"
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
+    "@t3-oss/env-core": "^0.9.2",
     "@types/node": "^22.13.10",
     "@typescript-eslint/eslint-plugin": "^8.5.0",
     "@typescript-eslint/parser": "^8.5.0",
@@ -34,6 +37,7 @@
     "pnpm": "^9.2.0",
     "prettier": "^3.2.5",
     "prisma": "5.15.0",
+    "tsx": "^4.7.1",
     "typescript": "^5.4.5",
     "typescript-eslint": "^8.5.0"
   }

@@ -3,9 +3,9 @@ import ms from 'ms';
 import { scheduleCleanupCommittee } from '@/src/scheduler/tasks/cleanupCommittee.js';
 import { scheduleFetchExecutionRewards } from '@/src/scheduler/tasks/executionRewards.js';
 import { scheduleFetchAttestations } from '@/src/scheduler/tasks/fetchAttestations.js';
-import { scheduleFetchBeaconRewards } from '@/src/scheduler/tasks/fetchBeaconRewards.js';
 import { scheduleFetchBlockAndSyncRewards } from '@/src/scheduler/tasks/fetchBlockAndSyncRewards.js';
 import { scheduleFetchCommittee } from '@/src/scheduler/tasks/fetchCommittee.js';
+import { scheduleFetchEpochInfo } from '@/src/scheduler/tasks/fetchEpochInfo.js';
 import { scheduleFetchValidators } from '@/src/scheduler/tasks/fetchValidators.js';
 // import { scheduleFetchValidatorsBalances } from '@/src/scheduler/tasks/fetchValidatorsBalances.js';
 import { schedulePrune } from '@/src/scheduler/tasks/prune.js';
@@ -17,7 +17,7 @@ export function scheduleTasks() {
   scheduleFetchCommittee({
     id: 'FetchCommittee',
     logsEnabled: false,
-    intervalMs: ms('5s'),
+    intervalMs: ms('5m'),
     runImmediately: true,
     preventOverrun: true,
   });
@@ -35,8 +35,8 @@ export function scheduleTasks() {
   //   runImmediately: true,
   //   preventOverrun: true,
   // });
-  scheduleFetchBeaconRewards({
-    id: 'FetchBeaconRewards',
+  scheduleFetchEpochInfo({
+    id: 'FetchEpochInfo',
     logsEnabled: true,
     intervalMs: ms('5s'),
     runImmediately: true,
@@ -46,13 +46,6 @@ export function scheduleTasks() {
   //   id: 'FetchBlockAndSyncRewards',
   //   logsEnabled: false,
   //   intervalMs: ms('2s'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
-  // scheduleFetchValidators({
-  //   id: 'FetchValidatorsInfo',
-  //   logsEnabled: true,
-  //   intervalMs: ms('1h'),
   //   runImmediately: true,
   //   preventOverrun: true,
   // });

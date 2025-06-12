@@ -8,9 +8,11 @@ datasource db {
 }
 
 model Epoch {
-  epoch             Int      @id
-  rewardsFetched    Boolean // Whether the rewards for this epoch have been fetched
-  committeesFetched Boolean? @default(false) // Whether the committees for this epoch have been fetched
+  epoch                     Int      @id
+  validatorsInfoFetched     Boolean? @default(false) // Whether the validators for this epoch have been fetched
+  validatorsBalancesFetched Boolean? @default(false) // Whether the validators balances for this epoch have been fetched
+  rewardsFetched            Boolean? @default(false) // Whether the rewards for this epoch have been fetched
+  committeesFetched         Boolean? @default(false) // Whether the committees for this epoch have been fetched
 }
 
 model Slot {
@@ -80,6 +82,19 @@ model HourlyValidatorStats {
 
   @@id([validatorIndex, date, hour])
   @@index([date, hour])
+}
+
+model EpochRewardsTemp {
+  validatorIndex Int
+  hour           Int // 0-23
+  date           DateTime @db.Date // dd-mm-yyyy
+
+  head       BigInt?
+  target     BigInt?
+  source     BigInt?
+  inactivity BigInt?
+
+  @@id([validatorIndex, date, hour])
 }
 
 model HourlyBlockAndSyncRewards {

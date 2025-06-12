@@ -5,7 +5,7 @@ import ms from 'ms';
 
 import { extractError, beacon_getValidators } from '@/src/beacon/endpoints.js';
 import { VALIDATOR_STATUS } from '@/src/constants/index.js';
-import { db_getFinalValidatorIds, db_getMaxValidatorId } from '@/src/feed/utils.js';
+import { db_getFinalValidatorIds } from '@/src/feed/utils.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 
@@ -24,8 +24,7 @@ async function saveValidatorsToDatabase(
         CREATE TEMPORARY TABLE "TempValidator" (LIKE "Validator") ON COMMIT DROP
       `;
 
-        // Process data in batches of 10000
-        const batches = chunk(validatorsInfo, 5000);
+        const batches = chunk(validatorsInfo, 6000);
         logger.info(`Processing ${batches.length} batches of validators`);
 
         for (const batch of batches) {
@@ -63,7 +62,7 @@ async function saveValidatorsToDatabase(
       `;
       },
       {
-        timeout: ms('1m'),
+        timeout: ms('2m'),
       },
     );
 
@@ -74,13 +73,12 @@ async function saveValidatorsToDatabase(
   }
 }
 
-export async function fetchValidators(logger: CustomLogger) {
+export async function fetchValidators(logger: CustomLogger, slotToFetch: number) {
   const start = Date.now();
-  logger.info(`Started at ${new Date(start).toISOString()}`);
+  logger.info(`Fetching validators.`);
   try {
-    const batchSize = 50000;
-    const maxValidatorIdKnown = await db_getMaxValidatorId();
-    const totalValidators = maxValidatorIdKnown == 0 ? 2000000 : maxValidatorIdKnown + batchSize;
+    const batchSize = 1_000_000;
+    const totalValidators = 3_000_000;
 
     // Get final state validators
     const finalStateValidatorsIds = await db_getFinalValidatorIds();
@@ -97,7 +95,7 @@ export async function fetchValidators(logger: CustomLogger) {
     for (const batchIds of batches) {
       try {
         const batchResult = await beacon_getValidators(
-          'head',
+          slotToFetch,
           batchIds.map((id) => String(id)),
           null,
         );

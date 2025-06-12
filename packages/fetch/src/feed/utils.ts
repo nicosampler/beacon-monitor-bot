@@ -86,7 +86,6 @@ export const db_getLastProcessedEpoch = async () =>
 export const db_getEpochByNumber = async (epoch: number) =>
   prisma.epoch.findFirst({
     where: { epoch },
-    select: { epoch: true },
   });
 
 export const db_getLastEpochWithCommittees = async () =>
@@ -250,19 +249,22 @@ export async function db_getFinalValidatorIds(): Promise<number[]> {
   return finalStateValidators.map((v) => v.id);
 }
 
+export async function db_getValidatorsEffectiveBalances(validatorIds: number[]) {
+  return prisma.validator.findMany({
+    where: {
+      id: { in: validatorIds },
+    },
+    select: { id: true, effectiveBalance: true },
+  });
+}
+
 export async function db_getValidatorsIdsToFetchInfo(): Promise<number[]> {
   const validators = await prisma.validator.findMany({
     where: {
       OR: [
         {
           status: {
-            in: [
-              VALIDATOR_STATUS.pending_initialized,
-              VALIDATOR_STATUS.pending_queued,
-              VALIDATOR_STATUS.active_ongoing,
-              VALIDATOR_STATUS.active_exiting,
-              VALIDATOR_STATUS.active_slashed,
-            ],
+            in: [VALIDATOR_STATUS.active_ongoing, VALIDATOR_STATUS.active_exiting],
           },
         },
         {

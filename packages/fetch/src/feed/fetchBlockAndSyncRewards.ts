@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import ms from 'ms';
 
-import { getBlockRewards, getSyncCommitteeRewards } from '@/src/beacon/endpoints.js';
+import { beacon_getBlockRewards, beacon_getSyncCommitteeRewards } from '@/src/beacon/endpoints.js';
 import { SyncCommitteeRewards, type BlockRewards } from '@/src/beacon/types.js';
 import { getTimestampFromSlotNumber } from '@/src/beacon/utils/time.js';
 import { CustomLogger } from '@/src/lib/pino.js';
@@ -61,8 +61,8 @@ function prefetchFutureRewards(slot: number, maxSlotToFetch: number) {
   for (let i = 1; i <= 5; i++) {
     const futureSlot = slot + i;
     if (futureSlot > maxSlotToFetch) break;
-    getSyncCommitteeRewards(futureSlot, []);
-    getBlockRewards(futureSlot);
+    beacon_getSyncCommitteeRewards(futureSlot, []);
+    beacon_getBlockRewards(futureSlot);
   }
 }
 
@@ -90,8 +90,8 @@ export const fetchBlockAndSyncRewards = async (
 
     // fetch sync committee and block rewards for current slot
     const currentSlotRequests = Promise.all([
-      getSyncCommitteeRewards(slot, []),
-      getBlockRewards(slot),
+      beacon_getSyncCommitteeRewards(slot, []),
+      beacon_getBlockRewards(slot),
     ]);
     const [syncCommitteeRewards, blockRewards] = await currentSlotRequests;
 

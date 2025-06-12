@@ -24,9 +24,7 @@ async function saveValidatorBalancesToDatabase(
         CREATE TEMPORARY TABLE "TempValidator" (LIKE "Validator") ON COMMIT DROP
       `;
 
-        // Process data in batches of 5000
-        const batches = chunk(validatorBalances, 5000);
-
+        const batches = chunk(validatorBalances, 12_000);
         for (const batch of batches) {
           await tx.$executeRaw`
           INSERT INTO "TempValidator" (id, balance)
@@ -64,12 +62,9 @@ async function saveValidatorBalancesToDatabase(
   }
 }
 
-export async function fetchValidatorsBalances(
-  logger: CustomLogger,
-  slot: string | number = 'head',
-) {
+export async function fetchValidatorsBalances(logger: CustomLogger, slot: number) {
   const start = Date.now();
-  logger.info(`Started at ${new Date(start).toISOString()}`);
+  logger.info(`Fetching validators balances.`);
   try {
     const totalValidators = await db_getMaxValidatorId();
     if (totalValidators == 0) {
@@ -77,7 +72,7 @@ export async function fetchValidatorsBalances(
       return;
     }
 
-    const batchSize = 1000000;
+    const batchSize = 1_000_000;
 
     // Get final state validators
     const finalStateValidatorsIds = await db_getFinalValidatorIds();
