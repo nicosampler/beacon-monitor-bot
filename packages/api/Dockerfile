@@ -2,6 +2,9 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Install required dependencies
+RUN apk add --no-cache openssl
+
 # Copy necessary files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY prisma/schema.prisma ./prisma/schema.prisma
