@@ -1,0 +1,89 @@
+import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
+
+import { beacon_getSyncCommittees } from '@/src/beacon/endpoints.js';
+import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
+import {
+  getEpochNumberFromTimestamp,
+  getSyncCommitteePeriodStartEpoch,
+} from '@/src/beacon/utils/time.js';
+import { env } from '@/src/env.js';
+import createLogger, { CustomLogger } from '@/src/lib/pino.js';
+import { getPrisma } from '@/src/lib/prisma.js';
+import { scheduler } from '@/src/lib/scheduler.js';
+import { TaskOptions } from '@/src/scheduler/tasks/types.js';
+import { db_getLastProcessedSyncCommittee } from '@/src/utils/db.js';
+
+const prisma = getPrisma();
+
+async function fetchSyncCommitteesTask(logger: CustomLogger) {
+  const oldestLookbackSlot = getOldestLookbackSlot();
+  const oldestLookbackEpoch = getEpochFromSlot(oldestLookbackSlot);
+
+  const currentEpoch = getEpochNumberFromTimestamp(Date.now());
+
+  // Find the last processed sync committee
+  const lastProcessedSyncCommittee = await db_getLastProcessedSyncCommittee();
+
+  // Calculate the epoch to fetch
+  const epochToFetchTmp = lastProcessedSyncCommittee
+    ? lastProcessedSyncCommittee.toEpoch + 1
+    : oldestLookbackEpoch;
+  // Ensure we're fetching from the start of a sync committee period
+  const epochToFetch = getSyncCommitteePeriodStartEpoch(epochToFetchTmp);
+
+  // Check if the epoch we want to fetch has already been processed
+  if (lastProcessedSyncCommittee && epochToFetch <= lastProcessedSyncCommittee.toEpoch) {
+    logger.info(
+      `Epoch ${epochToFetch} has already been processed (up to ${lastProcessedSyncCommittee.toEpoch})`,
+    );
+    return;
+  }
+
+  logger.addContext(`EpochToFetch: ${epochToFetch}`);
+
+  if (epochToFetch > currentEpoch) {
+    logger.info(`Too soon to fetch`);
+    return;
+  }
+
+  logger.info('Fetching sync committee data');
+
+  try {
+    // Fetch sync committee data for the period
+    const syncCommitteeData = await beacon_getSyncCommittees(epochToFetch);
+
+    // Store the sync committee data in the database
+    await prisma.syncCommittee.create({
+      data: {
+        fromEpoch: epochToFetch,
+        toEpoch: epochToFetch + env.BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD - 1,
+        validators: syncCommitteeData.validators,
+        validatorAggregates: syncCommitteeData.validator_aggregates,
+      },
+    });
+
+    logger.info('Successfully stored sync committee data');
+  } catch (error) {
+    logger.error('Failed to fetch or store sync committee data', error);
+    throw error;
+  }
+}
+
+export function scheduleFetchSyncCommittees({
+  id,
+  logsEnabled,
+  intervalMs,
+  runImmediately,
+  preventOverrun,
+}: TaskOptions) {
+  const logger = createLogger(id, logsEnabled);
+  const task = new AsyncTask(`${id}_task`, () => {
+    return fetchSyncCommitteesTask(logger).catch((e) => logger.error('TASK-CATCH', e));
+  });
+  scheduler.addSimpleIntervalJob(
+    new SimpleIntervalJob({ milliseconds: intervalMs, runImmediately }, task, {
+      id,
+      preventOverrun,
+    }),
+  );
+}

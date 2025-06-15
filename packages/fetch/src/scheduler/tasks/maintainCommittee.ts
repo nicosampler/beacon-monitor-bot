@@ -1,6 +1,6 @@
 import { SimpleIntervalJob, AsyncTask } from 'toad-scheduler';
 
-import { maintainCommittee } from '@/src/feed/maintainCommittee.js';
+import { maintainCommittee } from '@/src/beacon/feed/maintainCommittee.js';
 import createLogger from '@/src/lib/pino.js';
 
 const ID = 'maintainCommitteeTable';

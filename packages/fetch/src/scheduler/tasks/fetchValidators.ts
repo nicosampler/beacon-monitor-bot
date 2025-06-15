@@ -1,6 +1,6 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { fetchValidators } from '@/src/feed/fetchValidators.js';
+import { fetchValidators } from '@/src/beacon/feed/fetchValidators.js';
 import createLogger from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';

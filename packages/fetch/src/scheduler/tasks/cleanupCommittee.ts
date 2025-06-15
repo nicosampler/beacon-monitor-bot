@@ -1,6 +1,6 @@
 import { SimpleIntervalJob, AsyncTask } from 'toad-scheduler';
 
-import { cleanupCommittee } from '@/src/feed/cleanupCommittee.js';
+import { cleanupCommittee } from '@/src/beacon/feed/cleanupCommittee.js';
 import createLogger from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';

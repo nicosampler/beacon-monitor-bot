@@ -26,6 +26,15 @@ model Slot {
   @@index([attestationsFetched, slot])
 }
 
+model SyncCommittee {
+  fromEpoch           Int
+  toEpoch             Int
+  validators          Json // Array of validator indices as strings: ["1", "2", "3", ...]
+  validatorAggregates Json // Array of arrays of validator indices as strings: [["1", "2"], ["3", "4"], ...]
+
+  @@id([fromEpoch, toEpoch])
+}
+
 // Committee is a list of validators that were assigned to a slot.
 // It hold at least the last 1h missed attestations.
 // Then it is summarized into HourlyValidatorStats.

@@ -23,7 +23,7 @@ export const env = createEnv({
 
     // Node Sentinel
     NODE_SENTINEL_URL: z.string().url(),
-    NODE_SENTINEL_CHAIN: z.enum(['gnosis', 'mainnet']),
+    NODE_SENTINEL_CHAIN: z.enum(['gnosis', 'ethereum']),
     NODE_SENTINEL_PRIVATE_KEY: z.string(),
     NODE_SENTINEL_API_URL: z.string().url(),
     NODE_SENTINEL_API_PORT: z.number().int().positive().default(3005),
@@ -32,6 +32,7 @@ export const env = createEnv({
     BEACON_GENESIS_TIMESTAMP: z.number().int().positive(),
     BEACON_SLOT_DURATION_IN_SECONDS: z.number().int().positive(),
     BEACON_SLOTS_PER_EPOCH: z.number().int().positive(),
+    BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD: z.number().int().positive(),
     BEACON_DELAY_SLOTS_TO_HEAD: z.number().int().positive(),
     BEACON_LOOKBACK_SLOT: z.number().int().min(0),
     BEACON_MAX_ATTESTATION_DELAY: z.number().int().min(5),
@@ -68,6 +69,9 @@ export const env = createEnv({
     BEACON_GENESIS_TIMESTAMP: Number(_env['BEACON_GENESIS_TIMESTAMP']),
     BEACON_SLOT_DURATION_IN_SECONDS: Number(_env['BEACON_SLOT_DURATION_IN_SECONDS']),
     BEACON_SLOTS_PER_EPOCH: Number(_env['BEACON_SLOTS_PER_EPOCH']),
+    BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD: Number(
+      _env['BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD'],
+    ),
     BEACON_DELAY_SLOTS_TO_HEAD: Number(_env['BEACON_DELAY_SLOTS_TO_HEAD']),
     BEACON_LOOKBACK_SLOT: Number(_env['BEACON_LOOKBACK_SLOT']),
     BEACON_MAX_ATTESTATION_DELAY: Number(_env['BEACON_MAX_ATTESTATION_DELAY']),

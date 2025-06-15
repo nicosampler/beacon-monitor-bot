@@ -1,13 +1,17 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
+import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/beacon/feed/fetchBlockAndSyncRewards.js';
 import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
-import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/feed/fetchBlockAndSyncRewards.js';
-import { db_getLastSlotWithSyncRewards, db_getSlotByNumber } from '@/src/feed/utils.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
+import {
+  db_areValidatorsFetched,
+  db_getLastSlotWithSyncRewards,
+  db_getSlotByNumber,
+} from '@/src/utils/db.js';
 
 export const fetchBlockAndSyncRewardsTask = async (logger: CustomLogger) => {
   const now = new Date();
@@ -23,6 +27,11 @@ export const fetchBlockAndSyncRewardsTask = async (logger: CustomLogger) => {
 
   if (slotToFetch > maxSlotToFetch) {
     logger.info(`Skipping, greater than max slot to fetch ${maxSlotToFetch}`);
+    return;
+  }
+
+  if (!db_areValidatorsFetched()) {
+    logger.info(`Skipping, validators not fetched`);
     return;
   }
 

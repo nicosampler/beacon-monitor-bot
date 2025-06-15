@@ -5,7 +5,7 @@ import ms from 'ms';
 
 import { extractError, beacon_getValidators } from '@/src/beacon/endpoints.js';
 import { VALIDATOR_STATUS } from '@/src/constants/index.js';
-import { db_getFinalValidatorIds } from '@/src/feed/utils.js';
+import { db_getFinalValidatorIds } from '@/src/utils/db.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 

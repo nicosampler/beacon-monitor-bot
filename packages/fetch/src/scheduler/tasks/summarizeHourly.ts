@@ -3,7 +3,7 @@ import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
 import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { getTimestampFromSlotNumber } from '@/src/beacon/utils/time.js';
-import { summarizeHourly } from '@/src/feed/summarizeHourly.js';
+import { summarizeHourly } from '@/src/beacon/feed/summarizeHourly.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';

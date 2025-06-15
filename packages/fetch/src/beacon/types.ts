@@ -152,3 +152,12 @@ export type SyncCommitteeRewards = {
     reward: string;
   }[];
 };
+
+export type GetSyncCommittees = {
+  execution_optimistic: boolean;
+  finalized: boolean;
+  data: {
+    validators: string[];
+    validator_aggregates: string[][];
+  };
+};

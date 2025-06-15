@@ -12,6 +12,7 @@ import {
   GetValidatorsBalances,
   SyncCommitteeRewards,
   EndpointOptions,
+  GetSyncCommittees,
 } from '@/src/beacon/types.js';
 import { instance } from '@/src/beacon/utils/instance.js';
 import { getEpochSlots } from '@/src/beacon/utils/misc.js';
@@ -111,17 +112,14 @@ function isIndexerDelayed({ value, type }: { value: number; type: 'slot' | 'epoc
   let slot: number;
 
   if (type === 'epoch') {
-    const { endSlot } = getEpochSlots(value);
-    slot = endSlot;
+    const { startSlot } = getEpochSlots(value);
+    slot = startSlot;
   } else {
     slot = value;
   }
 
-  const slotTimestamp = getTimestampFromSlotNumber(slot);
-  const currentTimestamp = Date.now();
-
-  // Return true if the slot timestamp is more than 10 minutes behind current time
-  return currentTimestamp - slotTimestamp > ms('4m');
+  const currentSlot = getSlotNumberFromTimestamp(Date.now());
+  return currentSlot - slot > 250;
 }
 
 // Restore original endpoint functions
@@ -138,6 +136,21 @@ export async function beacon_getCommittees(
     },
     undefined,
     { priority: isIndexerDelayed({ value: epoch, type: 'epoch' }) ? 'primary' : 'secondary' },
+  );
+}
+
+export async function beacon_getSyncCommittees(epoch: number): Promise<GetSyncCommittees['data']> {
+  const { startSlot } = getEpochSlots(epoch);
+
+  return makeBeaconRequest(
+    async (url) => {
+      const res = await instance.get<GetSyncCommittees>(
+        `${url}/eth/v1/beacon/states/${startSlot}/sync_committees?epoch=${epoch}`,
+      );
+      return res.data.data;
+    },
+    undefined,
+    { priority: 'secondary' },
   );
 }
 

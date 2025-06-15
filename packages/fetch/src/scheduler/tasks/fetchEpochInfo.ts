@@ -1,19 +1,19 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
+import { fetchBeaconRewards } from '@/src/beacon/feed/fetchBeaconRewards.js'; // Assuming this function exists
+import { fetchValidators } from '@/src/beacon/feed/fetchValidators.js';
+import { fetchValidatorsBalances } from '@/src/beacon/feed/fetchValidatorsBalances.js';
 import { getEpochSlots, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import {
   getEpochNumberFromTimestamp,
   getSlotNumberFromTimestamp,
 } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
-import { fetchBeaconRewards } from '@/src/feed/fetchBeaconRewards.js'; // Assuming this function exists
-import { fetchValidators } from '@/src/feed/fetchValidators.js';
-import { fetchValidatorsBalances } from '@/src/feed/fetchValidatorsBalances.js';
-import { db_getEpochByNumber, db_getLastProcessedEpoch, db_upsertEpoch } from '@/src/feed/utils.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
+import { db_getEpochByNumber, db_getLastProcessedEpoch, db_upsertEpoch } from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 

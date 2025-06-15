@@ -9,9 +9,9 @@ import {
   convertHexStringToByteArray,
 } from '@/src/beacon/utils/bitlist.js';
 import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
-import { db_getSlotCommitteesValidatorsAmount } from '@/src/feed/utils.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
+import { db_getSlotCommitteesValidatorsAmount } from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 

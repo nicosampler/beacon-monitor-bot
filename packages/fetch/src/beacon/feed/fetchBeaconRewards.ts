@@ -5,10 +5,7 @@ import ms from 'ms';
 import { beacon_getAttestationRewards } from '@/src/beacon/endpoints.js';
 import { AttestationRewards } from '@/src/beacon/types.js';
 import { getTimestampFromEpochNumber } from '@/src/beacon/utils/time.js';
-import {
-  db_getValidatorsIdsToFetchInfo,
-  db_getValidatorsEffectiveBalances,
-} from '@/src/feed/utils.js';
+import { db_getAttestingValidatorsIds, db_getValidatorsEffectiveBalances } from '@/src/utils/db.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
@@ -105,7 +102,7 @@ export async function fetchBeaconRewards(logger: CustomLogger, epoch: number) {
     await truncateTempTable();
 
     // Get all validator ids to fetch info
-    const allValidatorIds = await db_getValidatorsIdsToFetchInfo();
+    const allValidatorIds = await db_getAttestingValidatorsIds();
     let idealRewardsMap: Map<string, AttestationRewards['data']['ideal_rewards'][number]> | null =
       null;
 

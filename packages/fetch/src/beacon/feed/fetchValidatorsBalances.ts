@@ -4,7 +4,7 @@ import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
 import { beacon_getValidatorsBalances } from '@/src/beacon/endpoints.js';
-import { db_getFinalValidatorIds, db_getMaxValidatorId } from '@/src/feed/utils.js';
+import { db_getFinalValidatorIds, db_getMaxValidatorId } from '@/src/utils/db.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 

@@ -3,10 +3,12 @@ import ms from 'ms';
 
 import { beacon_getBlockRewards, beacon_getSyncCommitteeRewards } from '@/src/beacon/endpoints.js';
 import { SyncCommitteeRewards, type BlockRewards } from '@/src/beacon/types.js';
+import { getEpochFromSlot } from '@/src/beacon/utils/misc.js';
 import { getTimestampFromSlotNumber } from '@/src/beacon/utils/time.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
+import { db_getSyncCommitteeValidators } from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 
@@ -57,14 +59,14 @@ function prepareBlockRewards(
  * This is particularly useful when the bot has been down and needs to catch up with rewards.
  * The requests are deduplicated by memoizee, so we can safely fire them in advance.
  */
-function prefetchFutureRewards(slot: number, maxSlotToFetch: number) {
-  for (let i = 1; i <= 5; i++) {
-    const futureSlot = slot + i;
-    if (futureSlot > maxSlotToFetch) break;
-    beacon_getSyncCommitteeRewards(futureSlot, []);
-    beacon_getBlockRewards(futureSlot);
-  }
-}
+// function prefetchFutureRewards(slot: number, maxSlotToFetch: number) {
+//   for (let i = 1; i <= 5; i++) {
+//     const futureSlot = slot + i;
+//     if (futureSlot > maxSlotToFetch) break;
+//     beacon_getSyncCommitteeRewards(futureSlot, []);
+//     beacon_getBlockRewards(futureSlot);
+//   }
+// }
 
 export const fetchBlockAndSyncRewards = async (
   slot: number,
@@ -86,11 +88,17 @@ export const fetchBlockAndSyncRewards = async (
       return;
     }
 
-    logger.info('api call sync & block rewards');
+    // Check if the sync committee exists for this epoch
+    const epoch = getEpochFromSlot(slot);
+    const syncCommitteeValidators = await db_getSyncCommitteeValidators(epoch);
+    if (!syncCommitteeValidators) {
+      logger.warn(`Sync committee not found for epoch ${epoch}`);
+      return;
+    }
 
     // fetch sync committee and block rewards for current slot
     const currentSlotRequests = Promise.all([
-      beacon_getSyncCommitteeRewards(slot, []),
+      beacon_getSyncCommitteeRewards(slot, syncCommitteeValidators),
       beacon_getBlockRewards(slot),
     ]);
     const [syncCommitteeRewards, blockRewards] = await currentSlotRequests;
@@ -104,7 +112,7 @@ export const fetchBlockAndSyncRewards = async (
     }
 
     // Prefetch future rewards to improve performance when the indexer is behind head
-    prefetchFutureRewards(slot, maxSlotToFetch);
+    // prefetchFutureRewards(slot, maxSlotToFetch);
 
     logger.info(`Saving rewards`);
     const timestamp = getTimestampFromSlotNumber(slot);

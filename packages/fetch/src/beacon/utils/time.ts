@@ -52,3 +52,13 @@ export function getTimestampFromEpochNumber(epochNumber: number): number {
 
   return GENESIS_TIMESTAMP + epochNumber * slotDuration;
 }
+
+/**
+ * Calculates the start epoch of the sync committee period that contains the given epoch
+ * @param epoch The epoch to find the sync committee period start for
+ * @returns The start epoch of the sync committee period
+ */
+export function getSyncCommitteePeriodStartEpoch(epoch: number): number {
+  const periodsPerEpoch = env.BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
+  return Math.floor(epoch / periodsPerEpoch) * periodsPerEpoch;
+}

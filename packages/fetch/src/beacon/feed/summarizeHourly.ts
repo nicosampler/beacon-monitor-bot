@@ -8,7 +8,7 @@ import {
   getTimestampFromSlotNumber,
 } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
-import { updateLastSummaryUpdate } from '@/src/feed/utils.js';
+import { updateLastSummaryUpdate } from '@/src/utils/db.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { convertToUTC } from '@/src/utils/date/index.js';

@@ -57,6 +57,11 @@ export const db_getLastSlotWithSyncRewards = async () =>
     select: { slot: true },
   });
 
+export const db_areValidatorsFetched = async () => {
+  const res = await prisma.validator.findFirst();
+  return res !== null;
+};
+
 export const db_getSlotByNumbers = async (slots: number[]) => {
   const res = await prisma.slot.findMany({
     where: { slot: { in: slots } },
@@ -258,7 +263,7 @@ export async function db_getValidatorsEffectiveBalances(validatorIds: number[]) 
   });
 }
 
-export async function db_getValidatorsIdsToFetchInfo(): Promise<number[]> {
+export async function db_getAttestingValidatorsIds(): Promise<number[]> {
   const validators = await prisma.validator.findMany({
     where: {
       OR: [
@@ -276,4 +281,41 @@ export async function db_getValidatorsIdsToFetchInfo(): Promise<number[]> {
   });
 
   return validators.map((v) => v.id);
+}
+
+export async function db_getLastProcessedSyncCommittee() {
+  return prisma.syncCommittee.findFirst({
+    orderBy: {
+      fromEpoch: 'desc',
+    },
+  });
+}
+
+/**
+ * Gets flattened validators from a sync committee that contains the given epoch
+ * @param epoch The epoch to check
+ * @returns A flattened array of validator indices if found, null otherwise
+ */
+export async function db_getSyncCommitteeValidators(epoch: number): Promise<string[] | null> {
+  const committee = await prisma.syncCommittee.findFirst({
+    where: {
+      fromEpoch: {
+        lte: epoch,
+      },
+      toEpoch: {
+        gte: epoch,
+      },
+    },
+  });
+
+  if (!committee) {
+    return null;
+  }
+
+  // Flatten both validators and validatorAggregates arrays
+  const validators = committee.validators as string[];
+  const aggregateValidators = (committee.validatorAggregates as string[][]).flat();
+
+  // Combine and remove duplicates
+  return [...new Set([...validators, ...aggregateValidators])];
 }
