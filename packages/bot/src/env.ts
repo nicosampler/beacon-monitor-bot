@@ -57,6 +57,8 @@ export const env = createEnv({
 
     // Blockchain
     BLOCKCHAIN_TOKEN_SYMBOL: z.string(),
+    BLOCKCHAIN_CL_REWARDS_SYMBOL: z.string(),
+    BLOCKCHAIN_EL_REWARDS_SYMBOL: z.string(),
     BLOCKCHAIN_FEE_REWARDS_IN_STABLE: z.preprocess((val) => val === 'true', z.boolean()),
     BLOCKCHAIN_FEE_REWARDS_SYMBOL: z.string(),
     BLOCKCHAIN_SC_DEPOSIT_ADDRESS: z.string(),

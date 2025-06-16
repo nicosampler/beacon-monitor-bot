@@ -73,10 +73,7 @@ interface ValidatorByStatus {
 
 interface UserStats {
   performance1h: number | null;
-  balance: {
-    total: string;
-    value: string;
-  };
+  balance: number;
   withdrawable: {
     total: string;
     value: string;
@@ -142,7 +139,7 @@ async function getUserAllStats(
   //   (v) =>
   //     v.status === VALIDATOR_STATUS.active_ongoing || v.status === VALIDATOR_STATUS.active_exiting,
   // );
-  const [performance1h, balanceStats, tableStats, withdrawable] = await Promise.all([
+  const [performance1h, balance, tableStats, withdrawable] = await Promise.all([
     //getValidatorStatuses(user, beaconActiveValidators, missedAttestations, maxEpochToQuery),
     get1hPerformance(syncing, missedAttestations.length, beaconActiveValidators),
     getUserBalance(user.validators),
@@ -153,10 +150,7 @@ async function getUserAllStats(
   return {
     performance1h,
     validatorStats: validatorStatuses,
-    balance: {
-      total: balanceStats.total,
-      value: balanceStats.value,
-    },
+    balance,
     withdrawable: {
       total: withdrawable.toFixed(2),
       value: (withdrawable * tokenPrice).toFixed(0),
@@ -189,12 +183,7 @@ function getUserBalance(validators: Validator[]) {
   );
 
   const total_bn = totalBalance / tokenMultiplier;
-  const total = Number(formatUnits(total_bn, 9));
-
-  return {
-    total: total.toFixed(2),
-    value: (total * tokenPrice).toFixed(0),
-  };
+  return Number(formatUnits(total_bn, 9));
 }
 
 // Helper function to convert gWei over mToken to token amount
@@ -328,6 +317,23 @@ async function getUserRewards(
   };
 }
 
+// Helper function to format table columns
+function formatTableColumn(
+  value: string | number,
+  width: number,
+  align: 'left' | 'center' | 'right' = 'center',
+): string {
+  const strValue = String(value);
+  const padding = width - strValue.length;
+
+  if (padding <= 0) return strValue;
+
+  const leftPad = align === 'center' ? Math.floor(padding / 2) : align === 'right' ? padding : 0;
+  const rightPad = padding - leftPad;
+
+  return ' '.repeat(leftPad) + strValue + ' '.repeat(rightPad);
+}
+
 function formatStatsMessage(
   loginId: string,
   stats: UserStats,
@@ -356,7 +362,7 @@ function formatStatsMessage(
         : [`\`${validatorStatus}\``]),
       '',
       `*Last 1h perf:* ${performance == null ? '-' : `${performance.toFixed(2)}%`}`,
-      `*Bal:* ${env.BLOCKCHAIN_TOKEN_SYMBOL}${balance.total} $${balance.value}`,
+      `*Bal:* ${env.BLOCKCHAIN_TOKEN_SYMBOL}${balance} $${formatNumber(balance * tokenPrice, 2)}`,
       env.NODE_SENTINEL_CHAIN == 'gnosis'
         ? `*Claimable:* ${env.BLOCKCHAIN_TOKEN_SYMBOL}${withdrawable.total} $${withdrawable.value}`
         : '',
@@ -376,17 +382,20 @@ function formatStatsMessage(
 
   const mainStats = [
     `*Last 1h performance:* ${performance == null ? '-' : `${performance.toFixed(2)}%`}`,
-    `*Bal:* ${balance.total} ${env.BLOCKCHAIN_TOKEN_SYMBOL} $${balance.value}`,
-    `*Claimable:* ${withdrawable.total} ${env.BLOCKCHAIN_TOKEN_SYMBOL} $${withdrawable.value}`,
+    `*Bal:* ${formatNumber(balance)} ${env.BLOCKCHAIN_TOKEN_SYMBOL} $${formatNumber(balance * tokenPrice)}`,
+    env.NODE_SENTINEL_CHAIN == 'gnosis'
+      ? `*Claimable:* ${env.BLOCKCHAIN_TOKEN_SYMBOL}${withdrawable.total} $${withdrawable.value}`
+      : '',
   ].join('\n');
 
   const rewardsSection = [
     `━━━━━━━━━━━━━━━━━`,
-    `     *APY%*   *${env.BLOCKCHAIN_TOKEN_SYMBOL}*    *${env.BLOCKCHAIN_FEE_REWARDS_SYMBOL}*    *Total*`,
-    `*d:*  ${formatNumber(daily.apy, 4).padStart(4)}   ${formatNumber(daily.consensus, 3).padStart(6)}  ${formatNumber(daily.execution, 3).padStart(6)}  ${formatNumber(daily.usd, 4, '$').padStart(8)}`,
-    `*w:*  ${formatNumber(weekly.apy, 4).padStart(4)}   ${formatNumber(weekly.consensus, 3).padStart(6)}  ${formatNumber(weekly.execution, 3).padStart(6)}  ${formatNumber(weekly.usd, 4, '$').padStart(8)}`,
-    `*m:*  collecting data`,
-    // `*m:*  ${formatNumber(monthly.apy, 4).padStart(4)}   ${formatNumber(monthly.consensus, 3).padStart(6)}  ${formatNumber(monthly.execution, 3).padStart(6)}  ${formatNumber(monthly.usd, 4, '$').padStart(8)}`,
+    `${formatTableColumn('', 4)}${formatTableColumn('APY%', 7)}${formatTableColumn(env.BLOCKCHAIN_CL_REWARDS_SYMBOL, 9)}${formatTableColumn(env.BLOCKCHAIN_EL_REWARDS_SYMBOL, 9)}${formatTableColumn('Total', 10)}`,
+    `${formatTableColumn('*d:*', 4)}${formatTableColumn(formatNumber(daily.apy, 4), 7)}${formatTableColumn(formatNumber(daily.consensus, 3), 9)}${formatTableColumn(formatNumber(daily.execution, 3), 9)}${formatTableColumn(formatNumber(daily.usd, 4, '$'), 10)}`,
+    `${formatTableColumn('*w:*', 4)} collecting data`,
+    //`${formatTableColumn('*w:*', 4)}${formatTableColumn(formatNumber(weekly.apy, 4), 7)}${formatTableColumn(formatNumber(weekly.consensus, 3), 9)}${formatTableColumn(formatNumber(weekly.execution, 3), 9)}${formatTableColumn(formatNumber(weekly.usd, 4, '$'), 10)}`,
+    `${formatTableColumn('*m:*', 4)} collecting data`,
+    // `${formatTableColumn('*m:*', 4)}${formatTableColumn(formatNumber(monthly.apy, 4), 7)}${formatTableColumn(formatNumber(monthly.consensus, 3), 9)}${formatTableColumn(formatNumber(monthly.execution, 3), 9)}${formatTableColumn(formatNumber(monthly.usd, 4, '$'), 10)}`,
   ].join('\n');
 
   const footer = [

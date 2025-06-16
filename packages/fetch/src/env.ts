@@ -36,10 +36,9 @@ export const env = createEnv({
       .transform((val) => val * (process.env.NODE_SENTINEL_CHAIN === 'gnosis' ? 1 : 1000)),
     BEACON_SLOT_DURATION_IN_SECONDS: z.number().int().positive(),
     BEACON_SLOTS_PER_EPOCH: z.number().int().positive(),
-    BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD: z.number().int().positive(),
     BEACON_DELAY_SLOTS_TO_HEAD: z.number().int().positive(),
     BEACON_LOOKBACK_SLOT: z.number().int().min(0),
-    BEACON_MAX_ATTESTATION_DELAY: z.number().int().min(5),
+    BEACON_MAX_ATTESTATION_DELAY: z.number().int().min(2),
     // Beacon API
     BEACON_API_URL: z.string().url(),
     BEACON_API_BKP_URL: z.string().url(),
@@ -58,6 +57,8 @@ export const env = createEnv({
 
     // Blockchain
     BLOCKCHAIN_TOKEN_SYMBOL: z.string(),
+    BLOCKCHAIN_CL_REWARDS_SYMBOL: z.string(),
+    BLOCKCHAIN_EL_REWARDS_SYMBOL: z.string(),
     BLOCKCHAIN_FEE_REWARDS_IN_STABLE: z.preprocess((val) => val === 'true', z.boolean()),
     BLOCKCHAIN_FEE_REWARDS_SYMBOL: z.string(),
     BLOCKCHAIN_SC_DEPOSIT_ADDRESS: z.string(),
@@ -73,9 +74,6 @@ export const env = createEnv({
     BEACON_GENESIS_TIMESTAMP: Number(_env['BEACON_GENESIS_TIMESTAMP']),
     BEACON_SLOT_DURATION_IN_SECONDS: Number(_env['BEACON_SLOT_DURATION_IN_SECONDS']),
     BEACON_SLOTS_PER_EPOCH: Number(_env['BEACON_SLOTS_PER_EPOCH']),
-    BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD: Number(
-      _env['BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD'],
-    ),
     BEACON_DELAY_SLOTS_TO_HEAD: Number(_env['BEACON_DELAY_SLOTS_TO_HEAD']),
     BEACON_LOOKBACK_SLOT: Number(_env['BEACON_LOOKBACK_SLOT']),
     BEACON_MAX_ATTESTATION_DELAY: Number(_env['BEACON_MAX_ATTESTATION_DELAY']),

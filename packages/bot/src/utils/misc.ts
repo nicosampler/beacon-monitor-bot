@@ -11,15 +11,30 @@ export function formatNumber(value: number, maxDigits = 5, symbol?: string): str
   const integerPart = Math.floor(value);
   const integerPartLength = integerPart.toString().length;
 
-  if (integerPartLength >= maxDigits) {
-    return `${symbol ? symbol : ''}${integerPart.toLocaleString()}`;
+  // If the number is larger than maxDigits, show it completely without decimals
+  if (integerPartLength > maxDigits) {
+    return `${symbol ? symbol : ''}${integerPart.toLocaleString('en-US')}`;
   } else {
     const maxDecimalDigits = maxDigits - integerPartLength;
     const roundedValue = value.toFixed(maxDecimalDigits);
     const finalNumber = parseFloat(roundedValue);
-    const finalNumberString = finalNumber.toFixed(maxDecimalDigits);
 
-    return `${symbol ? symbol : ''}${finalNumberString}`;
+    // If integer part is larger than maxDigits, show without decimals
+    if (integerPartLength >= maxDigits) {
+      return `${symbol ? symbol : ''}${integerPart.toLocaleString('en-US')}`;
+    }
+
+    const finalNumberString = finalNumber.toLocaleString('en-US', {
+      minimumFractionDigits: maxDecimalDigits,
+      maximumFractionDigits: maxDecimalDigits,
+      minimumIntegerDigits: 1,
+    });
+
+    // Pad with zeros to maintain fixed width
+    const totalLength = maxDigits + (finalNumberString.includes('.') ? 1 : 0); // +1 for decimal point
+    const paddedNumber = finalNumberString.padStart(totalLength, '0');
+
+    return `${symbol ? symbol : ''}${paddedNumber}`;
   }
 }
 

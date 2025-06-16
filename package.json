@@ -13,6 +13,7 @@
     "type-check": "pnpm -r exec tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "sync:apiTypes": "cp packages/api/src/routes/types.ts packages/bot/src/apiTypes.ts",
+    "sync:env.ts": "cp master-env.ts packages/api/src/env.ts && cp master-env.ts packages/fetch/src/env.ts && cp master-env.ts packages/bot/src/env.ts",
     "env.dev.gnosis": "cp .env.dev.gnosis .env",
     "env.dev.ethereum": "cp .env.dev.ethereum .env",
     "env.prod.gnosis": "cp .env.prod.gnosis .env",
