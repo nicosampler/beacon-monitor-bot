@@ -24,7 +24,7 @@ Get real-time visibility into your validators' performance and health, with inst
 • Your performance drops
 
 *💬 Need help?*
-Join our support community: [Node Sentinel Support Group](https://t.me/+It8jmqe4k6s4ODAx)`;
+[Join our community](https://t.me/+It8jmqe4k6s4ODAx)`;
 
   try {
     await ctx.reply(message, { parse_mode: 'Markdown' });
