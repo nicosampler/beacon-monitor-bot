@@ -29,7 +29,11 @@ export const env = createEnv({
     NODE_SENTINEL_API_PORT: z.number().int().positive().default(3005),
     NODE_SENTINEL_API_SECRET_KEY: z.string(),
     // Beacon
-    BEACON_GENESIS_TIMESTAMP: z.number().int().positive(),
+    BEACON_GENESIS_TIMESTAMP: z
+      .number()
+      .int()
+      .positive()
+      .transform((val) => val * (process.env.NODE_SENTINEL_CHAIN === 'gnosis' ? 1 : 1000)),
     BEACON_SLOT_DURATION_IN_SECONDS: z.number().int().positive(),
     BEACON_SLOTS_PER_EPOCH: z.number().int().positive(),
     BEACON_DELAY_SLOTS_TO_HEAD: z.number().int().positive(),

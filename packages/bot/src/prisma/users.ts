@@ -164,23 +164,35 @@ export function updateUserMessageId_db(userId: number, messageId: number) {
     });
 }
 
-export function deleteAddress(userId: number, address: string) {
-  return prisma.user
-    .update({
-      where: { id: userId },
-      data: {
-        withdrawalAddresses: {
-          disconnect: {
-            address: address,
+export async function deleteAddress(userId: number, address: string) {
+  return prisma
+    .$transaction([
+      // Delete the withdrawal and fee reward addresses
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          withdrawalAddresses: {
+            delete: {
+              address,
+            },
+          },
+          feeRewardAddresses: {
+            delete: {
+              address,
+            },
           },
         },
-        feeRewardAddresses: {
-          disconnect: {
-            address: address,
-          },
-        },
-      },
-    })
+      }),
+      // Delete only the relations in _UserToValidator
+      prisma.$executeRaw`
+      DELETE FROM "_UserToValidator" 
+      WHERE "A" = ${userId} 
+      AND "B" IN (
+        SELECT id FROM "Validator" 
+        WHERE "withdrawalAddress" = ${address}
+      )
+    `,
+    ])
     .catch((error) => {
       throw new AppError('Error removing address from user', 'BD_ERROR', error);
     });

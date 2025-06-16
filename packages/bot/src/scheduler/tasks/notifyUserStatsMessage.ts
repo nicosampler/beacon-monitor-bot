@@ -357,7 +357,9 @@ function formatStatsMessage(
       '',
       `*Last 1h perf:* ${performance == null ? '-' : `${performance.toFixed(2)}%`}`,
       `*Bal:* ${env.BLOCKCHAIN_TOKEN_SYMBOL}${balance.total} $${balance.value}`,
-      `*Claimable:* ${env.BLOCKCHAIN_TOKEN_SYMBOL}${withdrawable.total} $${withdrawable.value}`,
+      env.NODE_SENTINEL_CHAIN == 'gnosis'
+        ? `*Claimable:* ${env.BLOCKCHAIN_TOKEN_SYMBOL}${withdrawable.total} $${withdrawable.value}`
+        : '',
       '',
       `*No rewards data available yet*`,
       '',
