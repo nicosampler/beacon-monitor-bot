@@ -7,4 +7,6 @@ export const provider = new ethers.providers.JsonRpcProvider(env.EXECUTION_RPC_U
 
 export const multicallProvider = emp.MulticallWrapper.wrap(provider);
 
-export const signer = new ethers.Wallet(env.NODE_SENTINEL_PRIVATE_KEY, provider);
+export const signer = env.NODE_SENTINEL_PRIVATE_KEY
+  ? new ethers.Wallet(env.NODE_SENTINEL_PRIVATE_KEY, provider)
+  : null;

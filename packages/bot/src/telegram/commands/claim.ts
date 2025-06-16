@@ -23,6 +23,7 @@ async function _calculateClaimCoolDown(userId: number) {
 }
 
 async function _claimRewards(withdrawalAddresses: string[]) {
+  if (!signer) return null;
   try {
     const tx = await depositInstance.connect(signer)['claimWithdrawals'](withdrawalAddresses);
     return (await tx.wait()).transactionHash;
@@ -34,6 +35,11 @@ async function _claimRewards(withdrawalAddresses: string[]) {
 export async function claim(ctx: Context) {
   let tmpReply: Message.TextMessage | undefined = undefined;
   try {
+    if (!signer) {
+      await replyMessage(ctx, 'Claiming is not available for this network');
+      return;
+    }
+
     tmpReply = await replyMessage(ctx, `Claiming... Please be patient, it may take a few minutes!`);
 
     // get user id
