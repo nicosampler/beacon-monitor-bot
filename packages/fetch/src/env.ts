@@ -24,7 +24,7 @@ export const env = createEnv({
     // Node Sentinel
     NODE_SENTINEL_URL: z.string().url(),
     NODE_SENTINEL_CHAIN: z.enum(['gnosis', 'ethereum']),
-    NODE_SENTINEL_PRIVATE_KEY: z.string(),
+    NODE_SENTINEL_PRIVATE_KEY: z.string().optional(),
     NODE_SENTINEL_API_URL: z.string().url(),
     NODE_SENTINEL_API_PORT: z.number().int().positive().default(3005),
     NODE_SENTINEL_API_SECRET_KEY: z.string(),
