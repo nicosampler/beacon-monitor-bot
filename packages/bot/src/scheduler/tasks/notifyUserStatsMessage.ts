@@ -232,8 +232,28 @@ async function getUserRewards(
   ]);
   logger.info(`stats done`);
 
+  // If no daily stats, return default values instead of null
   if (!dailyValidatorStats.length) {
-    return null;
+    return {
+      daily: {
+        apy: 0,
+        consensus: 0,
+        execution: 0,
+        usd: 0,
+      },
+      weekly: {
+        apy: 0,
+        consensus: 0,
+        execution: 0,
+        usd: 0,
+      },
+      monthly: {
+        apy: 0,
+        consensus: 0,
+        execution: 0,
+        usd: 0,
+      },
+    };
   }
 
   // Calculate daily stats
@@ -354,48 +374,22 @@ function formatStatsMessage(
     ? `⚪️ ${validatorStats.activeIds.length + validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`
     : `🟢 ${validatorStats.activeIds.length} | 🟡 ${validatorStats.inactiveIds.length} | 🚫 ${validatorStats.slashedIds.length} | 🔚 ${validatorStats.exitedIds.length}`;
 
-  // Handle null rewards case
-  if (!stats.rewards?.daily || !stats.rewards?.weekly || !stats.rewards?.monthly) {
-    const message = [
-      ...(status.syncing
-        ? [`${syncStatus}`, '', `\`${validatorStatus}\``]
-        : [`\`${validatorStatus}\``]),
-      '',
-      `*Last 1h perf:* ${performance == null ? '-' : `${performance.toFixed(2)}%`}`,
-      `*Bal:* ${env.BLOCKCHAIN_TOKEN_SYMBOL}${balance} $${formatNumber(balance * tokenPrice, 2)}`,
-      env.NODE_SENTINEL_CHAIN == 'gnosis'
-        ? `*Claimable:* ${env.BLOCKCHAIN_TOKEN_SYMBOL}${withdrawable.total} $${withdrawable.value}`
-        : '',
-      '',
-      `*No rewards data available yet*`,
-      '',
-      `*${env.BLOCKCHAIN_TOKEN_SYMBOL}:* $${tokenPrice.toFixed(2)}`,
-      `*Updated:* ${format(new Date(), 'MM/dd hh:mmaaa')} UTC`,
-      '',
-      `📊 [View full Dashboard](${env.NODE_SENTINEL_URL}/${env.NODE_SENTINEL_CHAIN}/dashboard/${loginId})`,
-    ].join('\n');
-
-    return escapeMarkdown(message);
-  }
-
-  const { daily, weekly, monthly } = stats.rewards;
-
   const mainStats = [
     `*Last 1h performance:* ${performance == null ? '-' : `${performance.toFixed(2)}%`}`,
     `*Bal:* ${formatNumber(balance)} ${env.BLOCKCHAIN_TOKEN_SYMBOL} $${formatNumber(balance * tokenPrice)}`,
-    env.NODE_SENTINEL_CHAIN == 'gnosis'
+    env.NODE_SENTINEL_CHAIN === 'gnosis'
       ? `*Claimable:* ${env.BLOCKCHAIN_TOKEN_SYMBOL}${withdrawable.total} $${withdrawable.value}`
-      : '',
-  ].join('\n');
+      : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   const rewardsSection = [
     `━━━━━━━━━━━━━━━━━`,
     `${formatTableColumn('', 4)}${formatTableColumn('APY%', 7)}${formatTableColumn(env.BLOCKCHAIN_CL_REWARDS_SYMBOL, 9)}${formatTableColumn(env.BLOCKCHAIN_EL_REWARDS_SYMBOL, 9)}${formatTableColumn('Total', 10)}`,
-    `${formatTableColumn('*d:*', 4)}${formatTableColumn(formatNumber(daily.apy, 4), 7)}${formatTableColumn(formatNumber(daily.consensus, 3), 9)}${formatTableColumn(formatNumber(daily.execution, 3), 9)}${formatTableColumn(formatNumber(daily.usd, 4, '$'), 10)}`,
-    `${formatTableColumn('*w:*', 4)} collecting data`,
-    //`${formatTableColumn('*w:*', 4)}${formatTableColumn(formatNumber(weekly.apy, 4), 7)}${formatTableColumn(formatNumber(weekly.consensus, 3), 9)}${formatTableColumn(formatNumber(weekly.execution, 3), 9)}${formatTableColumn(formatNumber(weekly.usd, 4, '$'), 10)}`,
-    `${formatTableColumn('*m:*', 4)} collecting data`,
-    // `${formatTableColumn('*m:*', 4)}${formatTableColumn(formatNumber(monthly.apy, 4), 7)}${formatTableColumn(formatNumber(monthly.consensus, 3), 9)}${formatTableColumn(formatNumber(monthly.execution, 3), 9)}${formatTableColumn(formatNumber(monthly.usd, 4, '$'), 10)}`,
+    `${formatTableColumn('*d:*', 4)}${formatTableColumn(formatNumber(stats.rewards?.daily?.apy ?? 0, 4), 7)}${formatTableColumn(formatNumber(stats.rewards?.daily?.consensus ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.daily?.execution ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.daily?.usd ?? 0, 4, '$'), 10)}`,
+    `${formatTableColumn('*w:*', 4)}${formatTableColumn(formatNumber(stats.rewards?.weekly?.apy ?? 0, 4), 7)}${formatTableColumn(formatNumber(stats.rewards?.weekly?.consensus ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.weekly?.execution ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.weekly?.usd ?? 0, 4, '$'), 10)}`,
+    `${formatTableColumn('*m:*', 4)}${formatTableColumn(formatNumber(stats.rewards?.monthly?.apy ?? 0, 4), 7)}${formatTableColumn(formatNumber(stats.rewards?.monthly?.consensus ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.monthly?.execution ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.monthly?.usd ?? 0, 4, '$'), 10)}`,
   ].join('\n');
 
   const footer = [
