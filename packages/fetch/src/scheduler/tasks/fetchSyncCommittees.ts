@@ -31,6 +31,12 @@ async function fetchSyncCommitteesTask(logger: CustomLogger) {
   // Ensure we're fetching from the start of a sync committee period
   const epochToFetch = getSyncCommitteePeriodStartEpoch(epochToFetchTmp);
 
+  logger.warn(`
+currentEpoch: ${currentEpoch}
+lastProcessedSyncCommittee - from: ${lastProcessedSyncCommittee?.fromEpoch} to: ${lastProcessedSyncCommittee?.toEpoch}
+epochToFetchTmp: ${epochToFetchTmp}
+epochToFetch: ${epochToFetch}`);
+
   // Check if the epoch we want to fetch has already been processed
   if (lastProcessedSyncCommittee && epochToFetch <= lastProcessedSyncCommittee.toEpoch) {
     logger.info(
@@ -49,18 +55,6 @@ async function fetchSyncCommitteesTask(logger: CustomLogger) {
   logger.info('Fetching sync committee data');
 
   try {
-    if (isNaN(epochToFetch)) {
-      logger.warn(`EpochToFetch is NaN.
-         
-        currentEpoch: ${currentEpoch}
-        lastProcessedSyncCommittee - from: ${lastProcessedSyncCommittee?.fromEpoch} to: ${lastProcessedSyncCommittee?.toEpoch}
-        epochToFetchTmp: ${epochToFetchTmp}
-        epochToFetch: ${epochToFetch}
-      `);
-
-      return;
-    }
-
     // Fetch sync committee data for the period
     const syncCommitteeData = await beacon_getSyncCommittees(epochToFetch);
 
