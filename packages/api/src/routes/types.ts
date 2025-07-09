@@ -2,6 +2,21 @@ export type ErrorResponse = {
   error: string;
 };
 
+export type ValidatorIdsErrorResponse = {
+  error: string;
+  found: number;
+  requested: number;
+  notFoundIds: number[];
+};
+
+export type WithdrawalAddressesErrorResponse = {
+  error: string;
+  requestedAddresses?: string[];
+  found?: number;
+  requested?: number;
+  notFoundAddresses?: string[];
+};
+
 export type UserValidators = {
   username: string;
   validatorStatuses: {
@@ -109,4 +124,36 @@ export type SlotInfoResponse = {
   delay: number;
   maxSafeSlotToQuery: number;
   maxSafeEpochToQuery: number;
+};
+
+// Add withdrawal addresses endpoint
+export type AddWithdrawalAddressesRequest = {
+  addresses: string[];
+};
+
+export type AddWithdrawalAddressesResponse = {
+  newValidators: number[];
+  count: number;
+};
+
+// User endpoints
+export type UserRequest = {
+  loginId: string;
+};
+
+export type UserResponse = {
+  id: number;
+  username: string;
+  validators: number[];
+};
+
+// Validator endpoints
+export type ValidatorRequest = {
+  validatorId: number;
+};
+
+export type ValidatorResponse = {
+  id: number;
+  withdrawalAddress: string;
+  status: 'active' | 'inactive' | 'slashed' | 'exited';
 };

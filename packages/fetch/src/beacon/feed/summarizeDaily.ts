@@ -5,9 +5,9 @@ import ms from 'ms';
 import { getEpochFromSlot } from '@/src/beacon/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
-import { updateLastSummaryUpdate } from '@/src/utils/db.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
+import { updateLastSummaryUpdate } from '@/src/utils/db.js';
 
 export type AggregateHourlyStats = Awaited<ReturnType<typeof aggregateHourlyStats>>[number];
 
@@ -30,14 +30,15 @@ interface HourlyStats {
   };
 }
 
-export async function hasAllBlockAndEpochRewards(date: Date): Promise<boolean> {
-  const nextDay = addDays(date, 1);
-  const nextDaySlot = getSlotNumberFromTimestamp(nextDay.getTime()) + env.BEACON_SLOTS_PER_EPOCH;
+export async function hasAllBlockAndEpochRewards(lastSummaryUpdate: Date): Promise<boolean> {
+  const nextDay = addDays(lastSummaryUpdate, 1);
+  const nextDaySlot = getSlotNumberFromTimestamp(nextDay.getTime());
+  const nextDaySlotWithDelay = nextDaySlot + env.BEACON_SLOTS_PER_EPOCH;
 
   // check all rewards for the next epoch have been fetched
   const beaconRewardsFetched = await prisma.epoch.findUnique({
     where: {
-      epoch: getEpochFromSlot(nextDaySlot),
+      epoch: getEpochFromSlot(nextDaySlotWithDelay),
       rewardsFetched: true,
     },
   });
@@ -46,10 +47,10 @@ export async function hasAllBlockAndEpochRewards(date: Date): Promise<boolean> {
     return false;
   }
 
-  // check all stats for the slot have been fetched (attestations and attestations, sync committee and block rewards)
+  // check all stats for the slot have been fetched
   const syncCommitteeAndBlockRewardsFetched = await prisma.slot.findFirst({
     where: {
-      slot: nextDaySlot,
+      slot: nextDaySlotWithDelay,
       blockAndSyncRewardsFetched: true,
     },
   });
@@ -57,12 +58,12 @@ export async function hasAllBlockAndEpochRewards(date: Date): Promise<boolean> {
   return syncCommitteeAndBlockRewardsFetched != null;
 }
 
-export async function hasAllExecutionRewards(date: Date): Promise<boolean> {
+export async function hasAllExecutionRewards(lastSummaryUpdate: Date): Promise<boolean> {
   // Same logic - check for hour 0 of next day
   const hasLastHour = await prisma.hourlyExecutionRewards.findFirst({
     where: {
       hour: 0,
-      date: addDays(date, 1),
+      date: addDays(lastSummaryUpdate, 1),
     },
   });
   return hasLastHour != null;
@@ -212,21 +213,31 @@ export async function summarizeAtomicTransaction(
   logger.info('Done.');
 }
 
-export async function summarizeDaily(date: Date, day: number, logger: CustomLogger): Promise<void> {
-  if (!(await hasAllBlockAndEpochRewards(date))) {
-    logger.info(`Missing hourly stats for ${date}, skipping`);
+export async function summarizeDaily(
+  lastSummaryUpdate: Date,
+  lastSummaryUpdateDay: number,
+  logger: CustomLogger,
+): Promise<void> {
+  if (!(await hasAllBlockAndEpochRewards(lastSummaryUpdate))) {
+    logger.info(`Missing rewards stats for ${lastSummaryUpdate}, skipping`);
     return;
   }
 
-  if (!(await hasAllExecutionRewards(date))) {
-    logger.info(`Missing execution rewards for ${date}, skipping`);
+  if (!(await hasAllExecutionRewards(lastSummaryUpdate))) {
+    logger.info(`Missing execution rewards for ${lastSummaryUpdate}, skipping`);
     return;
   }
 
   // Aggregate hourly stats
-  const hourlyStats = await aggregateHourlyStats(date);
-  const executionRewards = await aggregateExecutionRewards(date);
+  const hourlyStats = await aggregateHourlyStats(lastSummaryUpdate);
+  const executionRewards = await aggregateExecutionRewards(lastSummaryUpdate);
 
   // update the daily validator stats
-  await summarizeAtomicTransaction(hourlyStats, executionRewards, day, date, logger);
+  await summarizeAtomicTransaction(
+    hourlyStats,
+    executionRewards,
+    lastSummaryUpdateDay,
+    lastSummaryUpdate,
+    logger,
+  );
 }

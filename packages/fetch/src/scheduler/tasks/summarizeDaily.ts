@@ -1,9 +1,9 @@
-import { addDays, subDays } from 'date-fns';
+import { addDays, isBefore } from 'date-fns';
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
+import { summarizeDaily } from '@/src/beacon/feed/summarizeDaily.js';
 import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { getTimestampFromSlotNumber } from '@/src/beacon/utils/time.js';
-import { summarizeDaily } from '@/src/beacon/feed/summarizeDaily.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
@@ -20,21 +20,20 @@ async function summarizeDailyTask(logger: CustomLogger) {
     const summary = await prisma.lastSummaryUpdate.findFirst();
 
     // If the last summary is not in the db, use the oldest lookback slot
-    const lastSummaryDate = summary?.dailyValidatorStats ?? oldestLookbackSlotDate;
-    const nextSummaryDate = addDays(lastSummaryDate, 1);
-
     const now = new Date();
-    const oneDayBefore = subDays(now, 1);
+    const lastSummaryDate = summary?.dailyValidatorStats ?? oldestLookbackSlotDate;
+    // We need to wait 24 hours after the last summary update before processing the next summary
+    // This ensures we have enough indexed data for accurate daily summaries
+    const nextSummaryUpdateTime = addDays(lastSummaryDate, 1);
 
     logger.info(`
 lastSummaryDate: ${lastSummaryDate}
-nextSummaryDate: ${nextSummaryDate}
-oneDayBefore: ${oneDayBefore}`);
+nextSummaryUpdateTime: ${nextSummaryUpdateTime}
+now: ${now}`);
 
-    // We should only summarize data that is older than 24 hours
-    // to ensure we have all hourly data available
-    if (nextSummaryDate > oneDayBefore) {
-      logger.info('Skipping, data is too recent (less than 24 hours old)');
+    // Check if enough time has passed since the last summary
+    if (isBefore(now, nextSummaryUpdateTime)) {
+      logger.info('Skipping, not enough time has passed since last summary (need 24 hours)');
       return;
     }
 

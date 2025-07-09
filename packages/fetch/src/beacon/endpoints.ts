@@ -239,7 +239,12 @@ export const beacon_getBlockRewards = memoizee(
         const res = await instance.get<BlockRewards>(`${url}/eth/v1/beacon/rewards/blocks/${slot}`);
         return res.data;
       },
-      (error) => (_isSlotMissedError(error) ? 'SLOT MISSED' : undefined),
+      (error) => {
+        if (_isSlotMissedError(error)) {
+          return 'SLOT MISSED';
+        }
+        return undefined;
+      },
       { priority: isIndexerDelayed({ value: slot, type: 'slot' }) ? 'primary' : 'secondary' },
     );
   },
@@ -260,7 +265,12 @@ export const beacon_getSyncCommitteeRewards = memoizee(
         );
         return res.data;
       },
-      (error) => (_isSlotMissedError(error) ? 'SLOT MISSED' : undefined),
+      (error) => {
+        if (_isSlotMissedError(error)) {
+          return 'SLOT MISSED';
+        }
+        return undefined;
+      },
       { priority: isIndexerDelayed({ value: slot, type: 'slot' }) ? 'primary' : 'secondary' },
     );
   },

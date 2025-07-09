@@ -92,7 +92,7 @@ export const fetchBlockAndSyncRewards = async (
     const epoch = getEpochFromSlot(slot);
     const syncCommitteeValidators = await db_getSyncCommitteeValidators(epoch);
     if (!syncCommitteeValidators) {
-      logger.warn(`Sync committee not found for epoch ${epoch}`);
+      logger.error(`Sync committee not found for epoch ${epoch}`, {});
       return;
     }
 

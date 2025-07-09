@@ -60,6 +60,7 @@ export const env = createEnv({
     BLOCKCHAIN_CL_REWARDS_SYMBOL: z.string(),
     BLOCKCHAIN_EL_REWARDS_SYMBOL: z.string(),
     BLOCKCHAIN_FEE_REWARDS_IN_STABLE: z.preprocess((val) => val === 'true', z.boolean()),
+    BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD: z.number().int().positive(),
     BLOCKCHAIN_FEE_REWARDS_SYMBOL: z.string(),
     BLOCKCHAIN_SC_DEPOSIT_ADDRESS: z.string(),
 
@@ -77,6 +78,9 @@ export const env = createEnv({
     BEACON_DELAY_SLOTS_TO_HEAD: Number(_env['BEACON_DELAY_SLOTS_TO_HEAD']),
     BEACON_LOOKBACK_SLOT: Number(_env['BEACON_LOOKBACK_SLOT']),
     BEACON_MAX_ATTESTATION_DELAY: Number(_env['BEACON_MAX_ATTESTATION_DELAY']),
+    BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD: Number(
+      _env['BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD'],
+    ),
     // Beacon-node API
     BEACON_API_REQUEST_PER_SECOND: Number(_env['BEACON_API_REQUEST_PER_SECOND']),
 

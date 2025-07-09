@@ -13,7 +13,7 @@ import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
-import { db_getEpochByNumber, db_getLastProcessedEpoch, db_upsertEpoch } from '@/src/utils/db.js';
+import { db_getEpochByNumber, db_getLastProcessedEpoch } from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 
@@ -30,13 +30,13 @@ async function fetchEpochInfoTask(logger: CustomLogger) {
 
   // We need to wait for the current epoch to finish
   if (epochToFetch >= currentEpoch) {
-    logger.info(`Too soon to fetch`);
+    logger.info(`To soon to fetch`);
     return;
   }
 
   // give 3 slots of the current epoch before fetching the epoch we need to fetch
   if (currentSlot < endSlot + 3) {
-    logger.info(`Too soon to fetch`);
+    logger.info(`To soon to fetch`);
     return;
   }
 
