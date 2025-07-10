@@ -1,6 +1,8 @@
-import { Request, Response } from 'express';
-import { userService } from '@/src/services/prisma/user.js';
 import { Validator } from '@prisma/client';
+import { Request, Response } from 'express';
+
+import { userService } from '@/src/services/prisma/user.js';
+import { validatorService } from '@/src/services/prisma/validators.js';
 
 export const removeValidatorIdsController = async (req: Request, res: Response) => {
   try {
@@ -18,7 +20,7 @@ export const removeValidatorIdsController = async (req: Request, res: Response) 
     }
 
     // Verify all validators exist
-    const validators = await userService.findValidatorsByIds(validatorIds);
+    const validators = await validatorService.findByIds(validatorIds);
     if (validators.length !== validatorIds.length) {
       return res.status(404).json({
         error: 'Some validators were not found',
@@ -27,8 +29,8 @@ export const removeValidatorIdsController = async (req: Request, res: Response) 
       });
     }
 
-    // Disconnect the user from all validators
-    await userService.disconnectValidators(loginId, validatorIds);
+    // Disconnect the user from validators and clean up withdrawal addresses
+    await userService.disconnectValidatorsAndWithdrawalAddresses(loginId, validatorIds);
 
     return res.json({
       message: `Successfully removed ${validators.length} validators from user`,

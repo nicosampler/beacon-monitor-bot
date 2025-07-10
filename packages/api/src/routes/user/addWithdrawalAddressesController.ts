@@ -53,8 +53,8 @@ export const addWithdrawalAddressesController = async (req: Request, res: Respon
       });
     }
 
-    // Connect the user to all found validators
-    await userService.connectValidators(
+    // Connect the user to all found validators and their withdrawal addresses
+    await userService.connectValidatorsAndWithdrawalAddresses(
       loginId,
       validators.map((v: Validator) => v.id),
     );

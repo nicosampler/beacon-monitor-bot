@@ -33,8 +33,8 @@ export const addValidatorIdsController = async (req: Request, res: Response) => 
       });
     }
 
-    // Connect the user to all validators
-    await userService.connectValidators(loginId, validatorIds);
+    // Connect the user to all validators and their withdrawal addresses
+    await userService.connectValidatorsAndWithdrawalAddresses(loginId, validatorIds);
 
     return res.json({
       message: `Successfully associated ${validators.length} validators with user`,

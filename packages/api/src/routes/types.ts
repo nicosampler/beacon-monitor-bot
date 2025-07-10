@@ -136,6 +136,16 @@ export type AddWithdrawalAddressesResponse = {
   count: number;
 };
 
+// Get withdrawal addresses endpoint
+export type GetWithdrawalAddressesResponse = {
+  addresses: string[];
+};
+
+// Get validator IDs endpoint
+export type GetValidatorIdsResponse = {
+  validatorIds: number[];
+};
+
 // User endpoints
 export type UserRequest = {
   loginId: string;

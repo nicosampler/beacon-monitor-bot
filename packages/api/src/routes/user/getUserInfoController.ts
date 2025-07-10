@@ -4,7 +4,7 @@ import { cache } from '@/src/lib/cache.js';
 import { UserValidatorsInfo, ValidatorStatusesByWithdrawal } from '@/src/routes/types.js';
 import { UserParams } from '@/src/routes/user/schema.js';
 import { getMissedAttestations_db } from '@/src/services/prisma/getMissedAttestations.js';
-import { getUserValidators_db } from '@/src/services/prisma/getUserValidators.js';
+import { userService } from '@/src/services/prisma/user.js';
 import { getSlotInfo } from '@/src/utils/getSlotInfo.js';
 import { getValidatorStatuses } from '@/src/utils/getValidatorStatuses.js';
 
@@ -24,7 +24,7 @@ export async function getUserValidatorsInfoController(
   const startTime = Date.now();
 
   try {
-    const user = await getUserValidators_db(req.params.loginId);
+    const user = await userService.getUserValidators(req.params.loginId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
