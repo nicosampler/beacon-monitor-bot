@@ -8,6 +8,7 @@ import { loadFeeRewardAddress } from '@/src/telegram/commands/loadFeeRewardAddre
 //import { myAddresses } from '@/src/telegram/commands/myWithdrawalAddresses.js';
 import { removeAddress } from '@/src/telegram/commands/removeAddress.js';
 import { createLoadValidatorsMenu } from '@/src/telegram/menus/loadValidatorsMenu.js';
+import { createRemoveValidatorsMenu } from '@/src/telegram/menus/removeValidatorsMenu.js';
 import { sendMessage } from '@/src/telegram/utils/messaging.js';
 import { handleError } from '@/src/utils/errors/handleError.js';
 
@@ -18,6 +19,13 @@ export function createValidatorsMenu(bot: BotType) {
   const loadValidatorsSubmenu = createLoadValidatorsMenu(bot);
   validatorsMenu.submenu('loadValidators', loadValidatorsSubmenu, {
     text: 'Load Validators',
+    hide: () => false,
+  });
+
+  // Remove Validators submenu
+  const removeValidatorsSubmenu = createRemoveValidatorsMenu(bot);
+  validatorsMenu.submenu('removeValidators', removeValidatorsSubmenu, {
+    text: 'Remove Validators',
     hide: () => false,
   });
 
