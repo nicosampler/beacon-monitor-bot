@@ -9,11 +9,30 @@ import { loadFeeRewardAddress } from '@/src/telegram/commands/loadFeeRewardAddre
 import { loadValidators } from '@/src/telegram/commands/loadValidators.js';
 import { myAddresses } from '@/src/telegram/commands/myWithdrawalAddresses.js';
 import { removeAddress } from '@/src/telegram/commands/removeAddress.js';
+import { createLoadValidatorsMenu } from '@/src/telegram/menus/loadValidatorsMenu.js';
 import { sendMessage } from '@/src/telegram/utils/messaging.js';
 import { handleError } from '@/src/utils/errors/handleError.js';
 
+// loadValidators
+// > by IDs
+// > by withdrawal address
+
+// removeValidator
+// > by IDs
+// > by withdrawal address
+
+// Update Fee rewards Address (EL)
+
 export function createValidatorsMenu(bot: BotType) {
   const validatorsMenu = new MenuTemplate<MyContext>('🕵🏽‍♂️ Validators management ');
+
+  // Load Validators submenu
+  const loadValidatorsSubmenu = createLoadValidatorsMenu(bot);
+  validatorsMenu.submenu('loadValidators', loadValidatorsSubmenu, {
+    text: 'Load Validators',
+    hide: () => false,
+  });
+
   if (env.NODE_SENTINEL_CHAIN === 'gnosis') {
     validatorsMenu.interact('myAddresses', {
       text: 'My addresses',

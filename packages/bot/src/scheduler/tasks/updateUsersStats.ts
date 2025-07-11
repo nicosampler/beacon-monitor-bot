@@ -7,8 +7,8 @@ import { notifyUserStatsMessage } from '@/src/scheduler/tasks/notifyUserStatsMes
 import { handleError } from '@/src/utils/errors/handleError.js';
 
 export async function updateUsersStatsImp(userId?: number) {
-  const users = await getAllUserIds_db(userId);
-  //const users = (await getAllUserIds_db(userId)).filter((user) => user.username === 'nfd_87');
+  //const users = await getAllUserIds_db(userId);
+  const users = (await getAllUserIds_db(userId)).filter((user) => user.username === 'xxx');
 
   const userChunks = chunk(users, 5);
 
