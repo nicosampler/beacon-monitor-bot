@@ -33,31 +33,9 @@ import { epochsIn1h } from '@/src/utils/beacon.js';
 import { AppError } from '@/src/utils/errors/AppError.js';
 import { getWithdrawableAmountByUserId } from '@/src/utils/getWithdrawableAmountByUserId.js';
 import { formatNumber } from '@/src/utils/misc.js';
+import { escapeMarkdown } from '@/src/utils/telegram.js';
 
 const prisma = getPrisma();
-
-// Function to escape special characters for MarkdownV2
-function escapeMarkdown(text: string): string {
-  // First escape all special characters
-  let escaped = text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
-
-  // Then unescape the parts we want to keep as Markdown
-  // Unescape backticks for code blocks
-  escaped = escaped.replace(/\\`/g, '`');
-  // Unescape brackets for links
-  escaped = escaped.replace(/\\\[/g, '[').replace(/\\\]/g, ']');
-  escaped = escaped.replace(/\\\(/g, '(').replace(/\\\)/g, ')');
-  // Unescape asterisks for bold text
-  escaped = escaped.replace(/\\\*/g, '*');
-  // Unescape emojis and special characters
-  escaped = escaped
-    .replace(/\\📊/g, '📊')
-    .replace(/\\💎/g, '💎')
-    .replace(/\\🕒/g, '🕒')
-    .replace(/\\━/g, '━');
-
-  return escaped;
-}
 
 // 1 token = 1e9 gWei
 const gWei = BigInt(10) ** BigInt(9);
@@ -404,7 +382,7 @@ function formatStatsMessage(
       : [`\`${validatorStatus}\``]),
     '',
     mainStats,
-    `*Extra stats:* [web dashboard](${env.NODE_SENTINEL_URL}/${env.NODE_SENTINEL_CHAIN}/dashboard/${loginId})`,
+    `*Extra stats:* [Validators dashboard](${env.NODE_SENTINEL_URL}/${env.NODE_SENTINEL_CHAIN}/dashboard/${loginId})`,
     rewardsSection,
     '',
     footer,

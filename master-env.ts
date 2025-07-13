@@ -7,6 +7,9 @@ export const env = createEnv({
   clientPrefix: 'FIX_SERVER_ERROR',
   client: {},
   server: {
+    // App
+    ENVIRONMENT: z.enum(['development', 'production']).default('development'),
+
     // Database
     DATABASE_URL: z.string().url(),
 

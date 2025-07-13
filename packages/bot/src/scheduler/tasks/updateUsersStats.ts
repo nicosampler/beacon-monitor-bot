@@ -1,14 +1,16 @@
 import chunk from 'lodash/chunk.js';
 import { AsyncTask } from 'toad-scheduler';
 
+import { env } from '@/src/env.js';
 import createLogger from '@/src/lib/pino.js';
 import { getAllUserIds_db, updateUserMessageId_db } from '@/src/prisma/users.js';
 import { notifyUserStatsMessage } from '@/src/scheduler/tasks/notifyUserStatsMessage.js';
 import { handleError } from '@/src/utils/errors/handleError.js';
 
 export async function updateUsersStatsImp(userId?: number) {
-  const users = await getAllUserIds_db(userId);
-  //const users = (await getAllUserIds_db(userId)).filter((user) => user.username === 'xxx');
+  const users = (await getAllUserIds_db(userId)).filter((user) =>
+    env.ENVIRONMENT === 'production' ? true : user.username === 'nfd_87',
+  );
 
   const userChunks = chunk(users, 5);
 
