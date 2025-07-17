@@ -167,3 +167,39 @@ export type ValidatorResponse = {
   withdrawalAddress: string;
   status: 'active' | 'inactive' | 'slashed' | 'exited';
 };
+
+// Metrics endpoint
+export type MetricsResponse = {
+  users: {
+    total: number;
+  };
+  validators: {
+    total: number;
+  };
+  balance: {
+    total: string; // in tokens
+    usd: string; // in USD
+  };
+  tokenPrice: {
+    usd: number;
+  };
+  coverage: {
+    total_percentage: number;
+  };
+};
+
+export type WithdrawalAddressStatsResponse = {
+  ranges: WithdrawalAddressStats[];
+  withdrawal_address: {
+    total: number;
+    in_node_sentinel: number;
+    percentage: number;
+  };
+};
+
+export type WithdrawalAddressStats = {
+  range: string;
+  total_wa: number;
+  node_sentinel_wa: number;
+  node_sentinel_percentage: number;
+};

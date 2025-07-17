@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { billingRouter } from './billing/index.js';
 import { healthRouter } from './health/index.js';
+import { metricsRouter } from './metrics/index.js';
 import { pricingRouter } from './pricing/index.js';
 import { slotRouter } from './slot/index.js';
 import { statsRouter } from './stats/index.js';
@@ -14,6 +15,7 @@ apiRouter.use('/health', healthRouter);
 apiRouter.use('/user', userRouter);
 apiRouter.use('/token', tokenRouter);
 apiRouter.use('/billing', billingRouter);
+apiRouter.use('/metrics', metricsRouter);
 apiRouter.use('/stats', statsRouter);
 apiRouter.use('/pricing', pricingRouter);
 apiRouter.use('/slot', slotRouter);
