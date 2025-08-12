@@ -203,3 +203,17 @@ export type WithdrawalAddressStats = {
   node_sentinel_wa: number;
   node_sentinel_percentage: number;
 };
+
+// Sync Committee endpoints
+export type CurrentSyncCommitteeResponse = {
+  fromEpoch: number;
+  toEpoch: number;
+  validators: string[];
+  validatorAggregates: string[][];
+  notified: boolean;
+};
+
+export type UpdateSyncCommitteeNotifiedRequest = {
+  fromEpoch: number;
+  toEpoch: number;
+};

@@ -1,14 +1,14 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
+import { fetchAttestation as _fetchAttestations } from '@/src/beacon/feed/fetchAttestations.js';
 import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
-import { fetchAttestation as _fetchAttestations } from '@/src/beacon/feed/fetchAttestations.js';
-import { db_getLastSlotWithAttestations, db_hasEpochCommittees } from '@/src/utils/db.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
+import { db_getLastSlotWithAttestations, db_hasEpochCommittees } from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 
