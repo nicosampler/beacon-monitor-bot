@@ -35,14 +35,14 @@ export function scheduleTasks() {
   scheduleFetchAttestations({
     id: 'FetchAttestations',
     logsEnabled: false,
-    intervalMs: isEthereum ? ms('6s') : ms('2.5s'),
+    intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleFetchExecutionRewards({
     id: 'FetchExecutionRewards',
     logsEnabled: false,
-    intervalMs: isEthereum ? ms('6s') : ms('2.5s'),
+    intervalMs: isEthereum ? ms('1s') : ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
   });
@@ -56,7 +56,7 @@ export function scheduleTasks() {
   scheduleFetchBlockAndSyncRewards({
     id: 'FetchBlockAndSyncRewards',
     logsEnabled: true,
-    intervalMs: isEthereum ? ms('6s') : ms('2.5s'),
+    intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
   });
