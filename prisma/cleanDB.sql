@@ -8,9 +8,7 @@ truncate "ExecutionRewards";
 
 truncate "HourlyValidatorStats";
 truncate "HourlyBlockAndSyncRewards";
-truncate "HourlyExecutionRewards";
 
-truncate "DailyExecutionRewards";
 truncate "DailyValidatorStats";
 
 truncate "LastSummaryUpdate";

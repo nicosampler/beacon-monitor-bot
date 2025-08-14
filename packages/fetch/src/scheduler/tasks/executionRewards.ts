@@ -20,7 +20,9 @@ const _fetchExecutionRewardsTask = async (logger: CustomLogger) => {
   if (latestReward) {
     const now = new Date();
     const secondsSinceLastBlock = Math.abs(differenceInSeconds(now, latestReward.timestamp));
-    if (secondsSinceLastBlock < env.BEACON_SLOT_DURATION_IN_SECONDS) {
+
+    // A block can be missed for a slot, so we allow to fetch only 3 blocks before the current
+    if (secondsSinceLastBlock < env.BEACON_SLOT_DURATION_IN_SECONDS * 3) {
       logger.info(`Skipping, too close to the head.`);
       return;
     }

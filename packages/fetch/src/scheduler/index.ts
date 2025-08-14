@@ -20,7 +20,7 @@ const isEthereum = env.NODE_SENTINEL_CHAIN === 'ethereum';
 export function scheduleTasks() {
   scheduleFetchCommittee({
     id: 'FetchCommittee',
-    logsEnabled: false,
+    logsEnabled: true,
     intervalMs: isEthereum ? ms('2m') : ms('20s'),
     runImmediately: true,
     preventOverrun: true,
@@ -34,14 +34,14 @@ export function scheduleTasks() {
   });
   scheduleFetchAttestations({
     id: 'FetchAttestations',
-    logsEnabled: false,
-    intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
+    logsEnabled: true,
+    intervalMs: isEthereum ? ms('1s') : ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleFetchExecutionRewards({
     id: 'FetchExecutionRewards',
-    logsEnabled: false,
+    logsEnabled: true,
     intervalMs: isEthereum ? ms('1s') : ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
@@ -49,14 +49,14 @@ export function scheduleTasks() {
   scheduleFetchEpochInfo({
     id: 'FetchEpochInfo',
     logsEnabled: true,
-    intervalMs: isEthereum ? ms('2m') : ms('20s'),
+    intervalMs: isEthereum ? ms('1m') : ms('20s'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleFetchBlockAndSyncRewards({
     id: 'FetchBlockAndSyncRewards',
     logsEnabled: true,
-    intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
+    intervalMs: isEthereum ? ms('1s') : ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
   });

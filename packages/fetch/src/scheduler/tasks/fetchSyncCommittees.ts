@@ -15,6 +15,10 @@ import { db_getLastProcessedSyncCommittee } from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 
+/* 
+  This function fetches the sync committees.
+  create an entry in the SyncCommittee table for the epoch from-to.
+ */
 async function fetchSyncCommitteesTask(logger: CustomLogger) {
   const oldestLookbackSlot = getOldestLookbackSlot();
   const oldestLookbackEpoch = getEpochFromSlot(oldestLookbackSlot);

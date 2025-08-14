@@ -81,16 +81,10 @@ export const getDailyExecutionRewardsMemoized = memoizee(
     const query = `
       SELECT 
         COALESCE(SUM(her.amount), 0) as total
-      FROM "HourlyExecutionRewards" her
+      FROM "ExecutionRewards" her
       JOIN "_FeeRewardAddressToUser" fra ON fra."A" ilike her.address
       WHERE fra."B" = $1
-      AND (
-          -- Today's records up to current hour
-          (her.date = CURRENT_DATE AND her.hour <= EXTRACT(HOUR FROM NOW()))
-          OR
-          -- Yesterday's records after current hour
-          (her.date = CURRENT_DATE - INTERVAL '1 day' AND her.hour > EXTRACT(HOUR FROM NOW()))
-      )`;
+      AND her.timestamp >= NOW() - INTERVAL '24 hours'`;
 
     return await prisma.$queryRawUnsafe<
       {

@@ -5,10 +5,10 @@ import ms from 'ms';
 import { beacon_getAttestationRewards } from '@/src/beacon/endpoints.js';
 import { AttestationRewards } from '@/src/beacon/types.js';
 import { getTimestampFromEpochNumber } from '@/src/beacon/utils/time.js';
-import { db_getAttestingValidatorsIds, db_getValidatorsEffectiveBalances } from '@/src/utils/db.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
+import { db_getAttestingValidatorsIds, db_getValidatorsEffectiveBalances } from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 

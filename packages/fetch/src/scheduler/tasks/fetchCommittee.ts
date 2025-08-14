@@ -1,17 +1,21 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
+import { fetchCommittee } from '@/src/beacon/feed/fetchCommittee.js';
 import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
-import { fetchCommittee } from '@/src/beacon/feed/fetchCommittee.js';
+import createLogger, { CustomLogger } from '@/src/lib/pino.js';
+import { scheduler } from '@/src/lib/scheduler.js';
+import { TaskOptions } from '@/src/scheduler/tasks/types.js';
 import {
   db_upsertEpoch,
   db_getLastEpochWithCommittees,
   db_getLastSlotWithAttestations,
 } from '@/src/utils/db.js';
-import createLogger, { CustomLogger } from '@/src/lib/pino.js';
-import { scheduler } from '@/src/lib/scheduler.js';
-import { TaskOptions } from '@/src/scheduler/tasks/types.js';
 
+/* 
+  This function fetches the new committees for the next epoch.
+  Upserts the epoch to the database.
+ */
 async function fetchNewCommittees(logger: CustomLogger): Promise<void> {
   // calculate slot and epoch for head and oldestLookback
   const oldestLookbackSlot = getOldestLookbackSlot();

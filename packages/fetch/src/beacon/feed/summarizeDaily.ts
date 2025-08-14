@@ -9,13 +9,9 @@ import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { updateLastSummaryUpdate } from '@/src/utils/db.js';
 
-export type AggregateHourlyStats = Awaited<ReturnType<typeof aggregateHourlyStats>>[number];
-
-export type AggregateExecutionRewards = Awaited<
-  ReturnType<typeof aggregateExecutionRewards>
->[number];
-
 const prisma = getPrisma();
+
+export type AggregateHourlyStats = Awaited<ReturnType<typeof aggregateHourlyStats>>[number];
 
 interface HourlyStats {
   validatorIndex: number;
@@ -30,43 +26,30 @@ interface HourlyStats {
   };
 }
 
-export async function hasAllBlockAndEpochRewards(lastSummaryUpdate: Date): Promise<boolean> {
+export async function canSummarize(lastSummaryUpdate: Date): Promise<boolean> {
   const nextDay = addDays(lastSummaryUpdate, 1);
   const nextDaySlot = getSlotNumberFromTimestamp(nextDay.getTime());
   const nextDaySlotWithDelay = nextDaySlot + env.BEACON_SLOTS_PER_EPOCH;
 
-  // check all rewards for the next epoch have been fetched
+  // check if all epoch rewards have been fetched
   const beaconRewardsFetched = await prisma.epoch.findUnique({
     where: {
       epoch: getEpochFromSlot(nextDaySlotWithDelay),
       rewardsFetched: true,
     },
   });
-
   if (!beaconRewardsFetched) {
     return false;
   }
 
-  // check all stats for the slot have been fetched
+  // check if all rewards for the slot have been fetched
   const syncCommitteeAndBlockRewardsFetched = await prisma.slot.findFirst({
     where: {
       slot: nextDaySlotWithDelay,
       blockAndSyncRewardsFetched: true,
     },
   });
-
   return syncCommitteeAndBlockRewardsFetched != null;
-}
-
-export async function hasAllExecutionRewards(lastSummaryUpdate: Date): Promise<boolean> {
-  // Same logic - check for hour 0 of next day
-  const hasLastHour = await prisma.hourlyExecutionRewards.findFirst({
-    where: {
-      hour: 0,
-      date: addDays(lastSummaryUpdate, 1),
-    },
-  });
-  return hasLastHour != null;
 }
 
 export async function aggregateHourlyStats(date: Date) {
@@ -117,18 +100,6 @@ export async function aggregateHourlyStats(date: Date) {
   return stats;
 }
 
-export async function aggregateExecutionRewards(date: Date) {
-  return prisma.hourlyExecutionRewards.groupBy({
-    by: ['address'],
-    where: {
-      date,
-    },
-    _sum: {
-      amount: true,
-    },
-  });
-}
-
 export async function removeProcessedHourlyStatsRecords(
   tx: Prisma.TransactionClient,
   date: Date,
@@ -146,21 +117,8 @@ export async function removeProcessedHourlyStatsRecords(
   ]);
 }
 
-export async function removeProcessedExecutionRewards(
-  tx: Prisma.TransactionClient,
-  date: Date,
-  logger: CustomLogger,
-) {
-  logger.info(`Removing processed ExecutionRewards for ${date}`);
-
-  await tx.hourlyExecutionRewards.deleteMany({
-    where: { date },
-  });
-}
-
 export async function summarizeAtomicTransaction(
   hourlyStates: AggregateHourlyStats[],
-  executionRewards: AggregateExecutionRewards[],
   day: number,
   date: Date,
   logger: CustomLogger,
@@ -188,23 +146,9 @@ export async function summarizeAtomicTransaction(
         });
       }
 
-      logger.info(`Creating daily execution rewards`);
-      for (let i = 0; i < executionRewards.length; i += BATCH_SIZE) {
-        const batch = executionRewards.slice(i, i + BATCH_SIZE);
-        await tx.dailyExecutionRewards.createMany({
-          data: batch.map((stat) => ({
-            address: stat.address,
-            amount: stat._sum.amount || 0,
-            date,
-            day,
-          })),
-        });
-      }
-
-      if (hasAllBlockAndEpochRewards.length > 0 || hasAllExecutionRewards.length > 0) {
+      if (canSummarize.length > 0) {
         await updateLastSummaryUpdate('dailyValidatorStats', addDays(date, 1), tx);
         await removeProcessedHourlyStatsRecords(tx, date, logger);
-        await removeProcessedExecutionRewards(tx, date, logger);
       }
     },
     { timeout: ms('5m') },
@@ -218,26 +162,16 @@ export async function summarizeDaily(
   lastSummaryUpdateDay: number,
   logger: CustomLogger,
 ): Promise<void> {
-  if (!(await hasAllBlockAndEpochRewards(lastSummaryUpdate))) {
+  if (!(await canSummarize(lastSummaryUpdate))) {
     logger.info(`Missing rewards stats for ${lastSummaryUpdate}, skipping`);
     return;
   }
 
-  if (!(await hasAllExecutionRewards(lastSummaryUpdate))) {
-    logger.info(`Missing execution rewards for ${lastSummaryUpdate}, skipping`);
-    return;
-  }
-
   // Aggregate hourly stats
+  logger.info(`Aggregating hourly stats`);
   const hourlyStats = await aggregateHourlyStats(lastSummaryUpdate);
-  const executionRewards = await aggregateExecutionRewards(lastSummaryUpdate);
+  logger.info(`Aggregated ${hourlyStats.length} hourly stats`);
 
   // update the daily validator stats
-  await summarizeAtomicTransaction(
-    hourlyStats,
-    executionRewards,
-    lastSummaryUpdateDay,
-    lastSummaryUpdate,
-    logger,
-  );
+  await summarizeAtomicTransaction(hourlyStats, lastSummaryUpdateDay, lastSummaryUpdate, logger);
 }

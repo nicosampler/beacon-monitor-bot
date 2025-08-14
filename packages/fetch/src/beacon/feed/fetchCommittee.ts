@@ -138,7 +138,7 @@ async function saveCommittee(epoch: number, slots: number[], committees: Committ
       });
     },
     {
-      timeout: ms('2m'),
+      timeout: ms('5m'),
     },
   );
 }

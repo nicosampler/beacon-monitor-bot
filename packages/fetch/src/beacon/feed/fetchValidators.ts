@@ -5,9 +5,9 @@ import ms from 'ms';
 
 import { extractError, beacon_getValidators } from '@/src/beacon/endpoints.js';
 import { VALIDATOR_STATUS } from '@/src/constants/index.js';
-import { db_getFinalValidatorIds } from '@/src/utils/db.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
+import { db_getFinalValidatorIds } from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 
@@ -73,7 +73,14 @@ async function saveValidatorsToDatabase(
   }
 }
 
-export async function fetchValidators(logger: CustomLogger, slotToFetch: number) {
+/*
+  This function fetches all validators from the beacon chain at a particular slot.
+  It first gets the final state validators from the database.
+  Then it generates all validator IDs and filters out the final state validators.
+  Then it creates chunks of batchSize and fetches the validators from the beacon chain.
+  Then it saves the validators to the database.
+ */
+export async function fetchValidators(logger: CustomLogger, stateId: number | 'head') {
   const start = Date.now();
   logger.info(`Fetching validators.`);
   try {
@@ -82,7 +89,7 @@ export async function fetchValidators(logger: CustomLogger, slotToFetch: number)
 
     // Get final state validators
     const finalStateValidatorsIds = await db_getFinalValidatorIds();
-    const finalStateValidatorsSet = new Set(finalStateValidatorsIds);
+    const finalStateValidatorsSet = new Set(finalStateValidatorsIds); // why we need this?
 
     // Generate all validator IDs and filter out final state validators
     const allValidatorIds = Array.from({ length: totalValidators }, (_, i) => i).filter(
@@ -95,7 +102,7 @@ export async function fetchValidators(logger: CustomLogger, slotToFetch: number)
     for (const batchIds of batches) {
       try {
         const batchResult = await beacon_getValidators(
-          slotToFetch,
+          stateId,
           batchIds.map((id) => String(id)),
           null,
         );

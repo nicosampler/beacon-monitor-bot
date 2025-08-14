@@ -16,12 +16,13 @@ const oldestLookbackSlotDate = new Date(getTimestampFromSlotNumber(getOldestLook
 
 async function summarizeDailyTask(logger: CustomLogger) {
   try {
-    // Get the last summarized attestations timestamp from Summary table
+    // Get the last daily summarized timestamp
     const summary = await prisma.lastSummaryUpdate.findFirst();
 
     // If the last summary is not in the db, use the oldest lookback slot
     const now = new Date();
     const lastSummaryDate = summary?.dailyValidatorStats ?? oldestLookbackSlotDate;
+
     // We need to wait 24 hours after the last summary update before processing the next summary
     // This ensures we have enough indexed data for accurate daily summaries
     const nextSummaryUpdateTime = addDays(lastSummaryDate, 1);

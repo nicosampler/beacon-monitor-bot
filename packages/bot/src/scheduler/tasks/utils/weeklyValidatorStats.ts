@@ -50,18 +50,12 @@ export const getWeeklyValidatorStatsMemoized = memoizee(
 export const getWeeklyExecutionRewardsMemoized = memoizee(
   async (userId: number) => {
     const query = `
-      WITH last_date AS (
-        SELECT MAX(date) as max_date
-        FROM "DailyExecutionRewards"
-      )
       SELECT 
-        COALESCE(SUM(der.amount), 0) as total
-      FROM "DailyExecutionRewards" der
-      JOIN "_FeeRewardAddressToUser" fra ON fra."A" ilike der.address
-      CROSS JOIN last_date ld
+        COALESCE(SUM(her.amount), 0) as total
+      FROM "ExecutionRewards" her
+      JOIN "_FeeRewardAddressToUser" fra ON fra."A" ilike her.address
       WHERE fra."B" = $1
-        AND der.date <= ld.max_date
-        AND der.date > ld.max_date - INTERVAL '7 days'`;
+        AND her.timestamp >= NOW() - INTERVAL '7 days'`;
 
     return await prisma.$queryRawUnsafe<
       {

@@ -1,9 +1,9 @@
 import { addHours, subHours } from 'date-fns';
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
+import { summarizeHourly } from '@/src/beacon/feed/summarizeHourly.js';
 import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { getTimestampFromSlotNumber } from '@/src/beacon/utils/time.js';
-import { summarizeHourly } from '@/src/beacon/feed/summarizeHourly.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
@@ -13,6 +13,14 @@ const prisma = getPrisma();
 
 const oldestLookbackSlotDate = new Date(getTimestampFromSlotNumber(getOldestLookbackSlot()));
 
+/* 
+  This function summarizes the hourly validator stats.
+  To avoid making grow the DB size, we summarize the data every hour.
+  This process gathers the data from two tables, Committee and HourlyValidatorStats.
+  - In committee we have the missed attestations for each validator.
+  - In HourlyValidatorStats we have the rewards for attestations duties.
+  - In HourlyBlockAndSyncRewards we have the rewards for producing a block and for sync duties.
+*/
 async function summarizeHourlyTask(logger: CustomLogger) {
   const summary = await prisma.lastSummaryUpdate.findFirst();
 

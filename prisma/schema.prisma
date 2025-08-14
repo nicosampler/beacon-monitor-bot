@@ -70,9 +70,11 @@ model ExecutionRewards {
   amount      Decimal  @db.Decimal(78, 0)
   blockNumber Int      @id
 
-  @@index([timestamp])
+  @@index([timestamp, address])
 }
 
+// Note: HourlyValidatorStats and HourlyBlockAndSyncRewards have been separated to avoid deadlocks.
+// both processes that update these tables are running in parallel.
 model HourlyValidatorStats {
   validatorIndex Int
   hour           Int // 0-23
@@ -93,19 +95,6 @@ model HourlyValidatorStats {
   @@index([date, hour])
 }
 
-model EpochRewardsTemp {
-  validatorIndex Int
-  hour           Int // 0-23
-  date           DateTime @db.Date // dd-mm-yyyy
-
-  head       BigInt?
-  target     BigInt?
-  source     BigInt?
-  inactivity BigInt?
-
-  @@id([validatorIndex, date, hour])
-}
-
 model HourlyBlockAndSyncRewards {
   validatorIndex Int
   hour           Int // 0-23
@@ -118,15 +107,17 @@ model HourlyBlockAndSyncRewards {
   @@index([date, hour])
 }
 
-model HourlyExecutionRewards {
-  address String
-  amount  Decimal  @db.Decimal(78, 0)
-  hour    Int // 0-23
-  date    DateTime @db.Date // dd-mm-yyyy
+model EpochRewardsTemp {
+  validatorIndex Int
+  hour           Int // 0-23
+  date           DateTime @db.Date // dd-mm-yyyy
 
-  @@id([address, date, hour])
-  @@index([date, hour])
-  @@index([date])
+  head       BigInt?
+  target     BigInt?
+  source     BigInt?
+  inactivity BigInt?
+
+  @@id([validatorIndex, date, hour])
 }
 
 model DailyValidatorStats {
@@ -143,16 +134,6 @@ model DailyValidatorStats {
   attestationsMissed Int?
 
   @@id([validatorIndex, date])
-  @@index([date])
-}
-
-model DailyExecutionRewards {
-  address String
-  amount  Decimal  @db.Decimal(78, 0)
-  day     Int // 1-31
-  date    DateTime @db.Date
-
-  @@id([address, date])
   @@index([date])
 }
 

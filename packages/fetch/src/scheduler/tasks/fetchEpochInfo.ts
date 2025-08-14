@@ -17,12 +17,22 @@ import { db_getEpochByNumber, db_getLastProcessedEpoch } from '@/src/utils/db.js
 
 const prisma = getPrisma();
 
+/* 
+  This function fetches Epoch information.
+  Purpose:
+  * Get validators info, validators effective balances, and beacon rewards for the epoch. (to calculate missed rewards)
+  * TODO: move all the fetchers related to epoch to this function
+*/
 async function fetchEpochInfoTask(logger: CustomLogger) {
   const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
   const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
 
-  const oldestLookbackEpoch = Math.floor(getOldestLookbackSlot() / env.BEACON_SLOTS_PER_EPOCH);
+  // get the last processed epoch with:
+  // validatorsInfoFetched: true
+  // validatorsBalancesFetched: true
+  // rewardsFetched: true
   const lastProcessedEpoch = await db_getLastProcessedEpoch();
+  const oldestLookbackEpoch = Math.floor(getOldestLookbackSlot() / env.BEACON_SLOTS_PER_EPOCH);
   const epochToFetch = lastProcessedEpoch ? lastProcessedEpoch.epoch + 1 : oldestLookbackEpoch;
   const { startSlot, endSlot } = getEpochSlots(epochToFetch);
 
