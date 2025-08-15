@@ -19,7 +19,9 @@ export const env = createEnv({
       (val) => (typeof val === 'string' ? val.split(',').map(Number) : []),
       z.array(z.number()),
     ),
+    TG_BOT_IS_DEV: z.boolean().optional().default(false),
 
+    // Prisma
     // Logging
     LOG_OUTPUT: z.enum(['file', 'console']).optional(),
     LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).optional(),
@@ -73,6 +75,8 @@ export const env = createEnv({
   },
   runtimeEnv: {
     ..._env,
+
+    TG_BOT_IS_DEV: _env['TG_BOT_IS_DEV'] === 'true',
 
     // Beacon config
     BEACON_GENESIS_TIMESTAMP: Number(_env['BEACON_GENESIS_TIMESTAMP']),
