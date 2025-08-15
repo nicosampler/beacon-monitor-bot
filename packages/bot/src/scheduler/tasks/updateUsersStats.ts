@@ -9,7 +9,7 @@ import { handleError } from '@/src/utils/errors/handleError.js';
 
 export async function updateUsersStatsImp(userId?: number) {
   const users = (await getAllUserIds_db(userId)).filter((user) =>
-    env.ENVIRONMENT === 'production' ? true : user.username === 'nfd_87',
+    env.TG_BOT_IS_DEV ? user.userId.toString() === env.TG_ADMIN_USER_IDS[0].toString() : true,
   );
 
   const userChunks = chunk(users, 5);
