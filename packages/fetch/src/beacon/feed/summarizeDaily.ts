@@ -7,7 +7,12 @@ import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
-import { updateLastSummaryUpdate } from '@/src/utils/db.js';
+import {
+  updateLastSummaryUpdate,
+  db_hasBeaconRewardsFetched,
+  db_hasBlockAndSyncRewardsFetched,
+  db_countRemainingHoursAfterDate,
+} from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 
@@ -26,30 +31,36 @@ interface HourlyStats {
   };
 }
 
-export async function canSummarize(lastSummaryUpdate: Date): Promise<boolean> {
-  const nextDay = addDays(lastSummaryUpdate, 1);
+export async function canSummarize(dayToSummarize: Date): Promise<boolean> {
+  const nextDay = addDays(dayToSummarize, 1);
   const nextDaySlot = getSlotNumberFromTimestamp(nextDay.getTime());
   const nextDaySlotWithDelay = nextDaySlot + env.BEACON_SLOTS_PER_EPOCH;
 
   // check if all epoch rewards have been fetched
-  const beaconRewardsFetched = await prisma.epoch.findUnique({
-    where: {
-      epoch: getEpochFromSlot(nextDaySlotWithDelay),
-      rewardsFetched: true,
-    },
-  });
+  const beaconRewardsFetched = await db_hasBeaconRewardsFetched(
+    getEpochFromSlot(nextDaySlotWithDelay),
+  );
   if (!beaconRewardsFetched) {
     return false;
   }
 
   // check if all rewards for the slot have been fetched
-  const syncCommitteeAndBlockRewardsFetched = await prisma.slot.findFirst({
-    where: {
-      slot: nextDaySlotWithDelay,
-      blockAndSyncRewardsFetched: true,
-    },
-  });
-  return syncCommitteeAndBlockRewardsFetched != null;
+  const syncCommitteeAndBlockRewardsFetched =
+    await db_hasBlockAndSyncRewardsFetched(nextDaySlotWithDelay);
+  if (!syncCommitteeAndBlockRewardsFetched) {
+    return false;
+  }
+
+  // CRITICAL: Ensure that AFTER processing the daily summary and removing hourly data,
+  // we will still maintain at least 24 hours of data in HourlyValidatorStats
+  const remainingHoursCount = await db_countRemainingHoursAfterDate(dayToSummarize);
+
+  // We need at least 24 hours of data remaining after the summary
+  if (remainingHoursCount < 24) {
+    return false;
+  }
+
+  return true;
 }
 
 export async function aggregateHourlyStats(date: Date) {
@@ -119,7 +130,6 @@ export async function removeProcessedHourlyStatsRecords(
 
 export async function summarizeAtomicTransaction(
   hourlyStates: AggregateHourlyStats[],
-  day: number,
   date: Date,
   logger: CustomLogger,
 ) {
@@ -146,10 +156,9 @@ export async function summarizeAtomicTransaction(
         });
       }
 
-      if (canSummarize.length > 0) {
-        await updateLastSummaryUpdate('dailyValidatorStats', addDays(date, 1), tx);
-        await removeProcessedHourlyStatsRecords(tx, date, logger);
-      }
+      // Always update and clean up after successful processing
+      await updateLastSummaryUpdate('dailyValidatorStats', addDays(date, 1), tx);
+      await removeProcessedHourlyStatsRecords(tx, date, logger);
     },
     { timeout: ms('5m') },
   );
@@ -173,5 +182,5 @@ export async function summarizeDaily(
   logger.info(`Aggregated ${hourlyStats.length} hourly stats`);
 
   // update the daily validator stats
-  await summarizeAtomicTransaction(hourlyStats, lastSummaryUpdateDay, lastSummaryUpdate, logger);
+  await summarizeAtomicTransaction(hourlyStats, lastSummaryUpdate, logger);
 }

@@ -4,7 +4,7 @@
   "description": "Collect validators information from a beacon node, process and save it to the db.",
   "type": "module",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles",
+    "test": "vitest",
     "dev": "dotenv -e ../../.env npx tsx src/index.ts",
     "dev:test": "dotenv -e ../../.env.local npx tsx src/test.ts",
     "start": "NODE_OPTIONS='--import tsx' tsx src/index.ts",
@@ -54,6 +54,7 @@
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "tsx": "^4.7.1",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^3.2.4"
   }
 }
