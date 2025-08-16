@@ -39,14 +39,21 @@ export function scheduleTasks() {
   scheduleFetchAttestations({
     id: 'FetchAttestations',
     logsEnabled: true,
-    intervalMs: isEthereum ? ms('1s') : ms('2.5s'),
+    intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleFetchExecutionRewards({
     id: 'FetchExecutionRewards',
     logsEnabled: true,
-    intervalMs: isEthereum ? ms('1s') : ms('2.5s'),
+    intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
+  scheduleFetchBlockAndSyncRewards({
+    id: 'FetchBlockAndSyncRewards',
+    logsEnabled: true,
+    intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
   });
@@ -54,13 +61,6 @@ export function scheduleTasks() {
     id: 'FetchEpochInfo',
     logsEnabled: true,
     intervalMs: isEthereum ? ms('1m') : ms('20s'),
-    runImmediately: true,
-    preventOverrun: true,
-  });
-  scheduleFetchBlockAndSyncRewards({
-    id: 'FetchBlockAndSyncRewards',
-    logsEnabled: true,
-    intervalMs: isEthereum ? ms('1s') : ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
   });

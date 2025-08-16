@@ -16,23 +16,33 @@ async function updateDailyRewardsTask(logger: CustomLogger) {
       WITH 
       
       -------------------------------------
+      -- Get only validators that users are monitoring
+      -------------------------------------
+      
+      user_validators AS (
+        SELECT DISTINCT "B" as validator_id
+        FROM "_UserToValidator"
+      ),
+      
+      -------------------------------------
       -- Calculate daily CL rewards from HourlyValidatorStats (attestation rewards only)
       -------------------------------------
 
       cl_attestation_rewards AS (
         SELECT 
-          "validatorIndex",
-          COALESCE(SUM(CAST(head AS BIGINT)), 0) + 
-          COALESCE(SUM(CAST(target AS BIGINT)), 0) + 
-          COALESCE(SUM(CAST(source AS BIGINT)), 0) + 
-          COALESCE(SUM(CAST(inactivity AS BIGINT)), 0) as daily_cl_rewards
-        FROM "HourlyValidatorStats"
+          hvs."validatorIndex",
+          COALESCE(SUM(CAST(hvs.head AS BIGINT)), 0) + 
+          COALESCE(SUM(CAST(hvs.target AS BIGINT)), 0) + 
+          COALESCE(SUM(CAST(hvs.source AS BIGINT)), 0) + 
+          COALESCE(SUM(CAST(hvs.inactivity AS BIGINT)), 0) as daily_cl_rewards
+        FROM user_validators uv
+        INNER JOIN "HourlyValidatorStats" hvs ON hvs."validatorIndex" = uv.validator_id
         WHERE (
-          (date = CURRENT_DATE AND hour <= EXTRACT(HOUR FROM NOW()))
+          (hvs.date = CURRENT_DATE AND hvs.hour <= EXTRACT(HOUR FROM NOW()))
           OR
-          (date = CURRENT_DATE - INTERVAL '1 day' AND hour > EXTRACT(HOUR FROM NOW()))
+          (hvs.date = CURRENT_DATE - INTERVAL '1 day' AND hvs.hour > EXTRACT(HOUR FROM NOW()))
         )
-        GROUP BY "validatorIndex"
+        GROUP BY hvs."validatorIndex"
       ),
 
       -------------------------------------
@@ -41,16 +51,17 @@ async function updateDailyRewardsTask(logger: CustomLogger) {
 
       cl_block_and_sync_rewards AS (
         SELECT 
-          "validatorIndex",
-          COALESCE(SUM(CAST("syncCommittee" AS BIGINT)), 0) +
-          COALESCE(SUM(CAST("blockReward" AS BIGINT)), 0) as daily_cl_rewards
-        FROM "HourlyBlockAndSyncRewards"
+          hbsr."validatorIndex",
+          COALESCE(SUM(CAST(hbsr."syncCommittee" AS BIGINT)), 0) +
+          COALESCE(SUM(CAST(hbsr."blockReward" AS BIGINT)), 0) as daily_cl_rewards
+        FROM user_validators uv
+        INNER JOIN "HourlyBlockAndSyncRewards" hbsr ON hbsr."validatorIndex" = uv.validator_id
         WHERE (
-          (date = CURRENT_DATE AND hour <= EXTRACT(HOUR FROM NOW()))
+          (hbsr.date = CURRENT_DATE AND hbsr.hour <= EXTRACT(HOUR FROM NOW()))
           OR
-          (date = CURRENT_DATE - INTERVAL '1 day' AND hour > EXTRACT(HOUR FROM NOW()))
+          (hbsr.date = CURRENT_DATE - INTERVAL '1 day' AND hbsr.hour > EXTRACT(HOUR FROM NOW()))
         )
-        GROUP BY "validatorIndex"
+        GROUP BY hbsr."validatorIndex"
       ),
 
       -------------------------------------
@@ -66,7 +77,7 @@ async function updateDailyRewardsTask(logger: CustomLogger) {
       ),
 
       -------------------------------------
-      -- Calculate daily EL rewards
+      -- Calculate daily EL rewards only for monitored validators
       -------------------------------------
 
       el_rewards AS (

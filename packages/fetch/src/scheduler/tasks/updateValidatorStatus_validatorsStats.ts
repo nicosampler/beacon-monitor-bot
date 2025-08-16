@@ -36,7 +36,7 @@ async function updateValidatorStatusTask(logger: CustomLogger) {
       ),
       
       -------------------------------------
-      -- Get all distinct validators from users
+      -- Get only validators that users are monitoring
       -------------------------------------
       
       user_validators AS (
@@ -46,21 +46,18 @@ async function updateValidatorStatusTask(logger: CustomLogger) {
       ),
       
       -------------------------------------
-      -- Calculate attestations data
+      -- Calculate attestations data for monitored validators
       -------------------------------------
 
       missed_attestations AS (
         SELECT 
           c."validatorIndex",
           c.slot
-        FROM "Committee" c
-        WHERE c."validatorIndex" IN (SELECT validator_id FROM user_validators)
-        AND c.slot BETWEEN (SELECT min_slot FROM constants) AND (SELECT max_slot FROM constants)
+        FROM user_validators uv
+        INNER JOIN "Committee" c ON c."validatorIndex" = uv.validator_id
+        WHERE c.slot BETWEEN (SELECT min_slot FROM constants) AND (SELECT max_slot FROM constants)
         AND (c."attestationDelay" IS NULL OR c."attestationDelay" > (SELECT max_attestation_delay FROM constants))
-        AND c."validatorIndex" IN (
-          SELECT validator_id FROM user_validators 
-          WHERE validator_status IN (2,3) -- active_ongoing, active_exiting
-        )
+        AND uv.validator_status IN (2,3) -- active_ongoing, active_exiting
       ),
       
       validator_performance AS (
@@ -73,7 +70,7 @@ async function updateValidatorStatusTask(logger: CustomLogger) {
       )
 
       -------------------------------------
-      -- Insert or update ValidatorsStats table  
+      -- Insert or update ValidatorsStats table for ALL monitored validators
       -------------------------------------
       
       INSERT INTO "ValidatorsStats" (
@@ -84,7 +81,7 @@ async function updateValidatorStatusTask(logger: CustomLogger) {
         "timestamp"
       )
       SELECT 
-        COALESCE(vp.validator_id, uv.validator_id) as validator_id,
+        uv.validator_id,
         COALESCE(uv.validator_status, 0) as validator_status,
         COALESCE(vp.one_hour_missed, 0) as one_hour_missed,
         COALESCE(
@@ -107,7 +104,7 @@ async function updateValidatorStatusTask(logger: CustomLogger) {
         "timestamp" = EXCLUDED."timestamp"
     `;
 
-    logger.info('Validator status and attestation data updated successfully');
+    logger.info('Done!');
   } catch (error) {
     logger.error('Error updating validator status:', error);
     throw error;
