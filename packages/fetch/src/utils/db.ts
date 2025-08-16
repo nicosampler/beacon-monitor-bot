@@ -321,3 +321,100 @@ export async function db_getSyncCommitteeValidators(epoch: number): Promise<stri
   // Combine and remove duplicates
   return [...new Set([...validators, ...aggregateValidators])];
 }
+
+/**
+ * Checks if beacon rewards have been fetched for a specific epoch
+ */
+export async function db_hasBeaconRewardsFetched(epoch: number): Promise<boolean> {
+  const beaconRewards = await prisma.epoch.findUnique({
+    where: {
+      epoch,
+      rewardsFetched: true,
+    },
+  });
+  return beaconRewards !== null;
+}
+
+/**
+ * Checks if block and sync rewards have been fetched for a specific slot
+ */
+export async function db_hasBlockAndSyncRewardsFetched(slot: number): Promise<boolean> {
+  const slotData = await prisma.slot.findFirst({
+    where: {
+      slot,
+      blockAndSyncRewardsFetched: true,
+    },
+  });
+  return slotData !== null;
+}
+
+/**
+ * Counts the number of unique hours available in HourlyValidatorStats after a specific date
+ */
+export async function db_countRemainingHoursAfterDate(date: Date): Promise<number> {
+  const remainingHours = await prisma.hourlyValidatorStats.groupBy({
+    by: ['date', 'hour'],
+    where: {
+      date: {
+        gt: date,
+      },
+    },
+  });
+  return remainingHours.length;
+}
+
+export async function db_getValidatorsWithNodeSentinel(): Promise<number[]> {
+  // Get all distinct validator IDs from users with active status using optimized join
+  // First get distinct validators, then join with validator table for status filtering
+  const result = await prisma.$queryRaw<{ B: number }[]>`
+    SELECT v.id as "B"
+    FROM (
+      SELECT DISTINCT "B" as validator_id
+      FROM "_UserToValidator"
+    ) uv
+    INNER JOIN "Validator" v ON v.id = uv.validator_id
+    WHERE v.status IN (${VALIDATOR_STATUS.active_ongoing}, ${VALIDATOR_STATUS.active_exiting})
+  `;
+
+  return result.map((row) => row.B);
+}
+
+/**
+ * @deprecated This function is now replaced by separate schedulers for better performance and maintainability.
+ *
+ * The new architecture uses:
+ * - updateValidatorStatus: runs every 30s to update validator status and attestation data
+ * - updateDailyRewards: runs every 15m to update daily CL and EL rewards
+ * - updateWeeklyRewards: runs every 1h to update weekly CL and EL rewards
+ * - updateMonthlyRewards: runs every 3h to update monthly CL and EL rewards
+ *
+ * This function is kept for backward compatibility but should not be used in new code.
+ */
+export async function processValidatorsPerformance(maxSlotToQuery: number): Promise<void> {
+  // This function is now deprecated and replaced by separate schedulers
+  // It's kept for backward compatibility but should not be used
+  console.warn('processValidatorsPerformance is deprecated. Use the new schedulers instead.');
+
+  // Initialize ValidatorsStats table with basic validator information
+  await prisma.$executeRaw`
+    INSERT INTO "ValidatorsStats" (
+      "validatorId", 
+      "validatorStatus", 
+      "oneHourMissed", 
+      "lastMissed",
+      "timestamp"
+    )
+    SELECT 
+      uv."B" as validator_id,
+      v.status as validator_status,
+      0 as one_hour_missed,
+      ARRAY[]::integer[] as last_missed,
+      NOW() as timestamp
+    FROM "_UserToValidator" uv
+    JOIN "Validator" v ON v.id = uv."B"
+    WHERE uv."B" NOT IN (
+      SELECT "validatorId" FROM "ValidatorsStats"
+    )
+    ON CONFLICT ("validatorId") DO NOTHING
+  `;
+}

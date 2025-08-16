@@ -176,3 +176,23 @@ model FeeRewardAddress {
   address String @id
   users   User[] @relation("FeeRewardAddressToUser")
 }
+
+model ValidatorsStats {
+  validatorId     Int
+  validatorStatus Int?
+  oneHourMissed   Int?
+  lastMissed      Int[] // Array of last missed slots: [1020, 1021, .., 1040]
+
+  dailyCLRewards BigInt?
+  dailyELRewards BigInt?
+
+  weeklyCLRewards BigInt?
+  weeklyELRewards BigInt?
+
+  monthlyCLRewards BigInt?
+  monthlyELRewards BigInt?
+
+  timestamp DateTime
+
+  @@id([validatorId])
+}
