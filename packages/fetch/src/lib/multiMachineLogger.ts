@@ -63,7 +63,7 @@ export class MultiMachineLogger {
 
     // Header - ALWAYS show this first
     lines.push(chalk.bold.cyan('╔══════════════════════════════════════════════════════════════'));
-    lines.push(chalk.bold.cyan('║                    NodeSentinel - Machines Dashboard'));
+    lines.push(chalk.bold.cyan('                    - Node Sentinel -'));
     lines.push(chalk.bold.cyan('╚══════════════════════════════════════════════════════════════'));
 
     // Always add a small gap after header
