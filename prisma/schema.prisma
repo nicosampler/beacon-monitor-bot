@@ -13,12 +13,14 @@ model Epoch {
   validatorsBalancesFetched Boolean? @default(false) // Whether the validators balances for this epoch have been fetched
   rewardsFetched            Boolean? @default(false) // Whether the rewards for this epoch have been fetched
   committeesFetched         Boolean? @default(false) // Whether the committees for this epoch have been fetched
+  slotsFetched              Boolean? @default(false) // Whether the slots for this epoch have been fetched
 }
 
 model Slot {
   slot      Int         @id
   committee Committee[]
 
+  blockFetched               Boolean @default(false) // Whether the block for this slot have been fetched
   attestationsFetched        Boolean @default(false) // Whether the attestations for this slot have been fetched
   blockAndSyncRewardsFetched Boolean @default(false) // Whether the sync rewards for this slot have been fetched 
   committeeValidatorCounts   Json? // Stores the number of validators per committee index as an array: [350, 340, ...]

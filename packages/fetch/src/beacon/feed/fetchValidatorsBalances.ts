@@ -7,12 +7,14 @@ import { beacon_getValidatorsBalances } from '@/src/beacon/endpoints.js';
 import { db_getFinalValidatorIds, db_getMaxValidatorId } from '@/src/utils/db.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
+import { getEpochFromSlot } from '@/src/beacon/utils/misc.js';
 
 const prisma = getPrisma();
 
 // Function to save validator balances to database
 async function saveValidatorBalancesToDatabase(
   validatorBalances: Array<{ index: string; balance: string }>,
+  slot: number,
   logger: CustomLogger,
 ) {
   logger.info('Saving result to db.');
@@ -43,12 +45,18 @@ async function saveValidatorBalancesToDatabase(
 
         // Merge data from temporary table to main table
         await tx.$executeRaw`
-        INSERT INTO "Validator" (id, balance)
-        SELECT id, balance
-        FROM "TempValidator"
-        ON CONFLICT (id) DO UPDATE SET
-          "balance" = EXCLUDED.balance
-      `;
+          INSERT INTO "Validator" (id, balance)
+          SELECT id, balance
+          FROM "TempValidator"
+          ON CONFLICT (id) DO UPDATE SET
+            "balance" = EXCLUDED.balance
+        `;
+
+        // Update the epoch to mark balances as fetched
+        await tx.epoch.update({
+          where: { epoch: getEpochFromSlot(slot) },
+          data: { validatorsBalancesFetched: true },
+        });
       },
       {
         timeout: ms('1m'),
@@ -109,7 +117,7 @@ export async function fetchValidatorsBalances(logger: CustomLogger, slot: number
     );
 
     // Save all collected data to database
-    await saveValidatorBalancesToDatabase(allValidatorBalances, logger);
+    await saveValidatorBalancesToDatabase(allValidatorBalances, slot, logger);
   } catch (error) {
     logger.error(`Error fetching validator balances info`, error);
   }

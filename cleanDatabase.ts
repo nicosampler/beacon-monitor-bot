@@ -39,9 +39,7 @@ async function cleanDatabase() {
 
       await tx.$executeRaw`truncate "HourlyValidatorStats"`;
       await tx.$executeRaw`truncate "HourlyBlockAndSyncRewards"`;
-      await tx.$executeRaw`truncate "HourlyExecutionRewards"`;
 
-      await tx.$executeRaw`truncate "DailyExecutionRewards"`;
       await tx.$executeRaw`truncate "DailyValidatorStats"`;
 
       await tx.$executeRaw`truncate "LastSummaryUpdate"`;

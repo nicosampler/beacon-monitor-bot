@@ -81,6 +81,10 @@ async function saveValidatorsToDatabase(
   Then it saves the validators to the database.
  */
 export async function fetchValidators(logger: CustomLogger, stateId: number | 'head') {
+  // TODO:
+  // tiene sentido hacer fetch de todos los validadores?
+  // podemos observar los nuevos/slasheados en otro proceso y aca siempre pedir del max validator id en adelante.
+
   const start = Date.now();
   logger.info(`Fetching validators.`);
   try {
