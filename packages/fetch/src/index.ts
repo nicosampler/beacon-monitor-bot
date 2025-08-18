@@ -1,9 +1,11 @@
 //import createMissingSlots from "@/src/feed/createMissingSlots.js";
 //import { fetchValidatorsBalances } from '@/src/feed/fetchValidatorsBalances.js';
+
 import createLogger from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 // import { scheduleTasks } from '@/src/scheduler/index.js';
-import { createEpochActor, createEpochOrchestratorActor } from '@/src/xstate/epoch/index.js';
+import { initValidators } from '@/src/utils/initValidators.js';
+import { getCreateEpochActor, getProcessEpochActor } from '@/src/xstate/epoch/index.js';
 
 const prisma = getPrisma();
 const logger = createLogger('index file');
@@ -11,17 +13,16 @@ const logger = createLogger('index file');
 async function main() {
   await prisma.$connect();
 
-  // if (!(await prisma.validator.findFirst())) {
-  //   await fetchValidatorsBalances(logger);
-  // }
+  // Initialize validators if table is empty
+  await initValidators();
 
   // scheduleTasks();
 
-  const epochActor = createEpochActor();
-  epochActor.start();
+  const createEpochsActor = getCreateEpochActor();
+  createEpochsActor.start();
 
-  const epochOrchestratorActor = createEpochOrchestratorActor();
-  epochOrchestratorActor.start();
+  const processEpochs = getProcessEpochActor();
+  processEpochs.start();
 }
 
 main()

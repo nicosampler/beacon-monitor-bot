@@ -1,22 +1,23 @@
-import { getPrisma } from '@/src/lib/prisma.js';
 import { fromPromise } from 'xstate';
+
+import { beacon_getSyncCommittees } from '@/src/beacon/endpoints.js';
+import { fetchCommittee } from '@/src/beacon/feed/fetchCommittee.js';
+import { fetchValidators as fetchValidatorsFromBeacon } from '@/src/beacon/feed/fetchValidators.js';
+import { fetchValidatorsBalances as fetchValidatorsBalancesFromBeacon } from '@/src/beacon/feed/fetchValidatorsBalances.js';
+import { getEpochFromSlot, getEpochSlots, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import {
   getEpochNumberFromTimestamp,
   getSlotNumberFromTimestamp,
 } from '@/src/beacon/utils/time.js';
-import { getEpochFromSlot, getEpochSlots, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
+import { getSyncCommitteePeriodStartEpoch } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
+import createLogger from '@/src/lib/pino.js';
+import { getPrisma } from '@/src/lib/prisma.js';
 import {
   PickNextEpochOutput,
   PickNextEpochResult,
-  EpochOrchestratorContext,
-} from '@/src/xstate/epoch/orchestrator.types.js';
-import { fetchValidators as fetchValidatorsFromBeacon } from '@/src/beacon/feed/fetchValidators.js';
-import { fetchValidatorsBalances as fetchValidatorsBalancesFromBeacon } from '@/src/beacon/feed/fetchValidatorsBalances.js';
-import { fetchCommittee } from '@/src/beacon/feed/fetchCommittee.js';
-import { beacon_getSyncCommittees } from '@/src/beacon/endpoints.js';
-import { getSyncCommitteePeriodStartEpoch } from '@/src/beacon/utils/time.js';
-import createLogger from '@/src/lib/pino.js';
+  ProcessEpochContext,
+} from '@/src/xstate/epoch/processEpoch.types.js';
 
 const prisma = getPrisma();
 
@@ -89,7 +90,7 @@ export const hasNextEpoch = ({ event }: { event: any }): boolean => {
  * Guard function to check if we can start processing an epoch
  * Based on the logic from fetchEpochInfo.ts
  */
-export const canProcessEpoch = ({ context }: { context: EpochOrchestratorContext }): boolean => {
+export const canProcessEpoch = ({ context }: { context: ProcessEpochContext }): boolean => {
   const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
 
   // We need to wait for the epoch to start
@@ -104,11 +105,7 @@ export const canProcessEpoch = ({ context }: { context: EpochOrchestratorContext
  * Guard function to check if the epoch has already started (timing condition only)
  * We need to wait for the current slot to be greater than the first slot of the epoch
  */
-export const hasEpochAlreadyStarted = ({
-  context,
-}: {
-  context: EpochOrchestratorContext;
-}): boolean => {
+export const hasEpochAlreadyStarted = ({ context }: { context: ProcessEpochContext }): boolean => {
   const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
 
   // We need to wait for the current slot to be greater than the first slot of the epoch
@@ -119,7 +116,7 @@ export const hasEpochAlreadyStarted = ({
  * Actor to check if we can fetch validators (timing + database conditions)
  */
 export const checkIfCanGetValidators = fromPromise(
-  async ({ input }: { input: EpochOrchestratorContext }) => {
+  async ({ input }: { input: ProcessEpochContext }) => {
     try {
       const context = input;
       const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
@@ -157,22 +154,14 @@ export const checkIfCanGetValidators = fromPromise(
 /**
  * Guard function to check if validators have not been fetched yet
  */
-export const validatorsNotFetched = ({
-  context,
-}: {
-  context: EpochOrchestratorContext;
-}): boolean => {
+export const validatorsNotFetched = ({ context }: { context: ProcessEpochContext }): boolean => {
   return !context.validatorsInfoFetched;
 };
 
 /**
  * Guard function to check if committees have not been fetched yet
  */
-export const committeesNotFetched = ({
-  context,
-}: {
-  context: EpochOrchestratorContext;
-}): boolean => {
+export const committeesNotFetched = ({ context }: { context: ProcessEpochContext }): boolean => {
   return !context.committeesFetched;
 };
 
@@ -180,7 +169,7 @@ export const committeesNotFetched = ({
  * Guard function to check if we can fetch committees
  * Based on logic from fetchCommittee.ts
  */
-export const canFetchCommittees = ({ context }: { context: EpochOrchestratorContext }): boolean => {
+export const canFetchCommittees = ({ context }: { context: ProcessEpochContext }): boolean => {
   const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
 
   // We can fetch up to 1 epoch in advance
@@ -198,7 +187,7 @@ export const canFetchCommittees = ({ context }: { context: EpochOrchestratorCont
 export const syncCommitteesNotFetched = ({
   context,
 }: {
-  context: EpochOrchestratorContext;
+  context: ProcessEpochContext;
 }): boolean => {
   return !context.syncCommitteesFetched;
 };
@@ -207,11 +196,7 @@ export const syncCommitteesNotFetched = ({
  * Guard function to check if we can fetch sync committees
  * Based on logic from fetchSyncCommittees.ts
  */
-export const canFetchSyncCommittees = ({
-  context,
-}: {
-  context: EpochOrchestratorContext;
-}): boolean => {
+export const canFetchSyncCommittees = ({ context }: { context: ProcessEpochContext }): boolean => {
   const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
 
   // We can fetch up to 1 epoch in advance

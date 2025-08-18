@@ -32,7 +32,7 @@ async function cleanDatabase() {
       await tx.$executeRaw`truncate "Epoch"`;
       await tx.$executeRaw`truncate "Slot" cascade`;
       await tx.$executeRaw`truncate "Committee" cascade`;
-      await tx.$executeRaw`truncate "Validator" cascade`;
+      //      await tx.$executeRaw`truncate "Validator" cascade`;
       await tx.$executeRaw`truncate "SyncCommittee" cascade`;
 
       await tx.$executeRaw`truncate "ExecutionRewards"`;

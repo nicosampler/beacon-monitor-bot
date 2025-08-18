@@ -1,7 +1,7 @@
 import { EventObject } from 'xstate';
 
 // Context types
-export interface EpochOrchestratorContext {
+export interface ProcessEpochContext {
   epoch: number;
   startSlot: number;
   endSlot: number;
@@ -21,10 +21,10 @@ export interface MarkEpochDoneEvent extends EventObject {
   type: 'MARK_EPOCH_DONE';
 }
 
-export type EpochOrchestratorEvents = MarkEpochRunningEvent | MarkEpochDoneEvent;
+export type ProcessEpochEvents = MarkEpochRunningEvent | MarkEpochDoneEvent;
 
 // Actor output types
-export interface PickNextEpochOutput extends EpochOrchestratorContext {
+export interface PickNextEpochOutput extends ProcessEpochContext {
   epoch: number;
   startSlot: number;
   endSlot: number;
@@ -37,7 +37,7 @@ export interface HasNextEpochParams {
 }
 
 // Machine setup types
-export interface EpochOrchestratorSetup {
-  context: EpochOrchestratorContext;
-  events: EpochOrchestratorEvents;
+export interface ProcessEpochSetup {
+  context: ProcessEpochContext;
+  events: ProcessEpochEvents;
 }

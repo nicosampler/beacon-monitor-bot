@@ -1,10 +1,11 @@
 import ms from 'ms';
 import { setup, assign } from 'xstate';
+
+import { env } from '@/src/env.js';
 import {
   pickNextEpoch,
   canProcessEpoch,
   hasNextEpoch,
-  hasEpochAlreadyStarted,
   validatorsNotFetched,
   committeesNotFetched,
   syncCommitteesNotFetched,
@@ -14,15 +15,11 @@ import {
   fetchCommittees,
   fetchSyncCommittees,
   checkIfCanGetValidators,
-} from '@/src/xstate/epoch/orchestrator.actors.js';
-import {
-  EpochOrchestratorContext,
-  EpochOrchestratorSetup,
-} from '@/src/xstate/epoch/orchestrator.types.js';
-import { env } from '@/src/env.js';
+} from '@/src/xstate/epoch/processEpoch.actors.js';
+import { ProcessEpochContext, ProcessEpochSetup } from '@/src/xstate/epoch/processEpoch.types.js';
 
-export const EpochOrchestratorMachine = setup({
-  types: {} as EpochOrchestratorSetup,
+export const processEpochMachine = setup({
+  types: {} as ProcessEpochSetup,
   actors: {
     pickNextEpoch,
     fetchValidators,
@@ -51,7 +48,7 @@ export const EpochOrchestratorMachine = setup({
     committeesFetched: false,
     slotsFetched: false,
     syncCommitteesFetched: false,
-  } satisfies EpochOrchestratorContext,
+  } satisfies ProcessEpochContext,
   states: {
     /**
      * Detect next epoch to process

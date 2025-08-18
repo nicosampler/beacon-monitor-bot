@@ -1,25 +1,26 @@
-import { epochCreationMachine } from '@/src/xstate/epoch/creation.machine.js';
-import { EpochOrchestratorMachine } from '@/src/xstate/epoch/orchestartor.machine.js';
 import { createActor } from 'xstate';
+
+import { epochCreationMachine } from '@/src/xstate/epoch/createEpoch.machine.js';
+import { processEpochMachine } from '@/src/xstate/epoch/processEpoch.machine.js';
 
 export const Epoch = epochCreationMachine;
 
-export const createEpochActor = () => {
-  const createEpochActor = createActor(Epoch);
+export const getCreateEpochActor = () => {
+  const actor = createActor(Epoch);
 
-  createEpochActor.subscribe((snapshot) => {
+  actor.subscribe((snapshot) => {
     console.log('Epoch State:', snapshot.value);
   });
 
-  return createEpochActor;
+  return actor;
 };
 
-export const createEpochOrchestratorActor = () => {
-  const createEpochOrchestratorActor = createActor(EpochOrchestratorMachine);
+export const getProcessEpochActor = () => {
+  const actor = createActor(processEpochMachine);
 
-  createEpochOrchestratorActor.subscribe((snapshot) => {
+  actor.subscribe((snapshot) => {
     console.log('Epoch Orchestrator State:', snapshot.value);
   });
 
-  return createEpochOrchestratorActor;
+  return actor;
 };

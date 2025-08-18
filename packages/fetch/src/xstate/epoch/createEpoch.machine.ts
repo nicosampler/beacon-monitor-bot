@@ -1,11 +1,12 @@
 import ms from 'ms';
 import { setup, assign } from 'xstate';
+
+import { env } from '@/src/env.js';
 import {
   getLastCreatedEpochOrNull,
   computeNextEpochBatch,
   enqueueEpochs,
-} from '@/src/xstate/epoch/creation.actors.js';
-import { env } from '@/src/env.js';
+} from '@/src/xstate/epoch/createEpoch.actors.js';
 
 export const epochCreationMachine = setup({
   types: {
@@ -15,9 +16,9 @@ export const epochCreationMachine = setup({
     },
   },
   actors: {
-    'db.getLastCreatedEpochOrNull': getLastCreatedEpochOrNull,
-    computeNextEpochBatch: computeNextEpochBatch,
-    'db.enqueueEpochs': enqueueEpochs,
+    getLastCreatedEpochOrNull,
+    computeNextEpochBatch,
+    enqueueEpochs,
   },
 }).createMachine({
   id: 'EpochCreation',
@@ -30,7 +31,7 @@ export const epochCreationMachine = setup({
     poll: { always: 'readLastCreated' },
     readLastCreated: {
       invoke: {
-        src: 'db.getLastCreatedEpochOrNull',
+        src: 'getLastCreatedEpochOrNull',
         onDone: {
           target: 'getEpochsToCreate',
           actions: assign({ lastEpoch: ({ event }) => event.output }),
@@ -51,7 +52,7 @@ export const epochCreationMachine = setup({
     },
     createEpochs: {
       invoke: {
-        src: 'db.enqueueEpochs',
+        src: enqueueEpochs,
         input: ({ context }) => ({ epochsToCreate: context.epochsToCreate }),
         onDone: 'sleep',
         onError: 'sleep',

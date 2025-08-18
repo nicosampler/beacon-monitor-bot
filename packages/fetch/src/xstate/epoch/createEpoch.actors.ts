@@ -1,6 +1,7 @@
-import { getPrisma } from '@/src/lib/prisma.js';
-import { getOldestLookbackSlot, getEpochFromSlot } from '@/src/beacon/utils/misc.js';
 import { fromPromise } from 'xstate';
+
+import { getOldestLookbackSlot, getEpochFromSlot } from '@/src/beacon/utils/misc.js';
+import { getPrisma } from '@/src/lib/prisma.js';
 
 const prisma = getPrisma();
 
