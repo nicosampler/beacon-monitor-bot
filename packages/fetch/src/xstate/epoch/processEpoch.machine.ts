@@ -230,7 +230,9 @@ export const processEpochMachine = setup({
               },
             },
             waitingForTimeAndDependencies: {
-              after: { [ms('1s')]: 'checkTimingAndDependencies' },
+              after: {
+                [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS}s`)]: 'checkTimingAndDependencies',
+              },
             },
             fetchValidators: {
               invoke: {

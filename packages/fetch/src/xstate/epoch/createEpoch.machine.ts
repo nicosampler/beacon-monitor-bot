@@ -28,7 +28,15 @@ export const epochCreationMachine = setup({
     epochsToCreate: [],
   },
   states: {
-    poll: { always: 'readLastCreated' },
+    poll: { always: 'initialize' },
+    initialize: {
+      // Ensure context is properly initialized with default values
+      entry: assign({
+        lastEpoch: 0,
+        epochsToCreate: [],
+      }),
+      always: 'readLastCreated',
+    },
     readLastCreated: {
       invoke: {
         src: 'getLastCreatedEpochOrNull',
