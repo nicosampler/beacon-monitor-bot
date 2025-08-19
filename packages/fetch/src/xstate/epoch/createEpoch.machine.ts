@@ -68,7 +68,7 @@ export const epochCreationMachine = setup({
     },
     sleep: {
       after: {
-        [ms(`${env.BEACON_SLOTS_PER_EPOCH * env.BEACON_SLOT_DURATION_IN_SECONDS}s`)]: 'poll',
+        [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS}s`)]: 'poll',
       },
     },
   },

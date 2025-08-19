@@ -20,17 +20,56 @@ export const getLastCreatedEpochOrNull = fromPromise(async () => {
 
 export const computeNextEpochBatch = fromPromise(
   async ({ input }: { input: { lastEpoch: number | null } }) => {
+    const MAX_EPOCHS_IN_ADVANCE = 5;
+
     try {
-      const lastEpoch = input.lastEpoch;
-      const lookbackEpoch = getEpochFromSlot(getOldestLookbackSlot());
+      // Get all unprocessed epochs ordered by epoch
+      const unprocessedEpochs = await prisma.epoch.findMany({
+        where: {
+          OR: [
+            { validatorsInfoFetched: false },
+            { rewardsFetched: false },
+            { committeesFetched: false },
+            { slotsFetched: false },
+          ],
+        },
 
-      // For the base case, start from lookbackEpoch, otherwise from lastEpoch + 1
-      const startEpoch = lastEpoch ? lastEpoch + 1 : lookbackEpoch;
+        orderBy: { epoch: 'asc' },
+        select: { epoch: true },
+      });
 
-      // Calculate 10 epochs forward from the start
+      if (unprocessedEpochs.length === 0) {
+        // If no unprocessed epochs found, use the lookback epoch as starting point
+        const lookbackEpoch = getEpochFromSlot(getOldestLookbackSlot());
+        const lastEpoch = input.lastEpoch;
+        const startEpoch = lastEpoch ? lastEpoch + 1 : lookbackEpoch;
+
+        // Create MAX_EPOCHS_IN_ADVANCE epochs from the start
+        const epochsToCreate = [];
+        for (let i = 0; i < MAX_EPOCHS_IN_ADVANCE; i++) {
+          epochsToCreate.push(startEpoch + i);
+        }
+        return epochsToCreate;
+      }
+
+      const firstUnprocessedEpoch = unprocessedEpochs[0].epoch;
+      const lastUnprocessedEpoch = unprocessedEpochs[unprocessedEpochs.length - 1].epoch;
+
+      // Count how many epochs exist from the first unprocessed epoch onwards
+      const existingEpochsCount = lastUnprocessedEpoch - firstUnprocessedEpoch + 1;
+
+      // Calculate how many epochs we need to create to have exactly 10 in advance
       const epochsToCreate = [];
-      for (let i = 0; i < 10; i++) {
-        epochsToCreate.push(startEpoch + i);
+      const epochsNeeded = MAX_EPOCHS_IN_ADVANCE - existingEpochsCount;
+
+      if (epochsNeeded > 0) {
+        // Create the missing epochs starting from the next epoch after the last unprocessed
+        const nextEpochToCreate = lastUnprocessedEpoch + 1;
+
+        // Create the missing epochs
+        for (let i = 0; i < epochsNeeded; i++) {
+          epochsToCreate.push(nextEpochToCreate + i);
+        }
       }
 
       return epochsToCreate;
