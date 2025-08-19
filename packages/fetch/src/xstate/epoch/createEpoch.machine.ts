@@ -11,7 +11,7 @@ import {
 export const epochCreationMachine = setup({
   types: {
     context: {} as {
-      lastEpoch: number;
+      lastEpoch: number | null;
       epochsToCreate: number[];
     },
   },

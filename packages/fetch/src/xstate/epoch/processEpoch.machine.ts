@@ -15,6 +15,7 @@ import {
   fetchCommittees,
   fetchSyncCommittees,
   checkIfCanGetValidators,
+  rewardsNotFetched,
 } from '@/src/xstate/epoch/processEpoch.actors.js';
 import { ProcessEpochContext, ProcessEpochSetup } from '@/src/xstate/epoch/processEpoch.types.js';
 
@@ -35,9 +36,10 @@ export const processEpochMachine = setup({
     syncCommitteesNotFetched,
     canFetchCommittees,
     canFetchSyncCommittees,
+    rewardsNotFetched,
   },
 }).createMachine({
-  id: 'EpochOrchestrator',
+  id: 'ProcessEpoch',
   initial: 'pickNextEpoch',
   context: {
     epoch: 0,
@@ -72,6 +74,7 @@ export const processEpochMachine = setup({
               syncCommitteesFetched: ({ event }) => event.output!.syncCommitteesFetched,
             }),
           },
+
           {
             target: 'idle',
           },
@@ -81,7 +84,7 @@ export const processEpochMachine = setup({
     },
 
     idle: {
-      after: { [ms('1s')]: 'pickNextEpoch' },
+      after: { [ms('10s')]: 'pickNextEpoch' },
     },
 
     /**
@@ -247,6 +250,33 @@ export const processEpochMachine = setup({
                   },
                 ],
                 onError: 'complete',
+              },
+            },
+            complete: { type: 'final' },
+          },
+        },
+
+        /**
+         * Temporary track for rewards (hack until proper implementation)
+         * This track never completes to prevent the epoch from being marked as complete
+         */
+        track_FetchRewards: {
+          initial: 'checkIfRewardsAlreadyFetched',
+          states: {
+            checkIfRewardsAlreadyFetched: {
+              always: [
+                {
+                  guard: 'rewardsNotFetched',
+                  target: 'waitingForRewards',
+                },
+                {
+                  target: 'complete',
+                },
+              ],
+            },
+            waitingForRewards: {
+              after: {
+                [ms('10s')]: 'waitingForRewards',
               },
             },
             complete: { type: 'final' },

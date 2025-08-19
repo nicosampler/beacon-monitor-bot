@@ -193,6 +193,13 @@ export const syncCommitteesNotFetched = ({
 };
 
 /**
+ * Guard function to check if rewards have not been fetched yet
+ */
+export const rewardsNotFetched = ({ context }: { context: ProcessEpochContext }): boolean => {
+  return !context.rewardsFetched;
+};
+
+/**
  * Guard function to check if we can fetch sync committees
  * Based on logic from fetchSyncCommittees.ts
  */

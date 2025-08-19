@@ -1,5 +1,6 @@
-import chalk from 'chalk';
-import logUpdate from 'log-update';
+// logger.ts
+import fs from 'fs';
+import path from 'path';
 
 interface MachineLogEntry {
   timestamp: string;
@@ -15,15 +16,19 @@ interface MachineLogger {
 export class MultiMachineLogger {
   private machines: Map<string, MachineLogger> = new Map();
   private updateInterval: NodeJS.Timeout | null = null;
+  private logFilePath: string;
 
   constructor() {
+    // Create logs directory if it doesn't exist
+    const logsDir = path.join(process.cwd(), 'logs');
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir, { recursive: true });
+    }
+
+    this.logFilePath = path.join(logsDir, 'machines-status.log');
+
     // Start the display update loop
     this.startDisplayLoop();
-
-    // Force initial display
-    setTimeout(() => {
-      this.updateDisplay();
-    }, 50);
   }
 
   /**
@@ -61,73 +66,76 @@ export class MultiMachineLogger {
   private updateDisplay() {
     const lines: string[] = [];
 
-    // Header - ALWAYS show this first
-    lines.push(chalk.bold.cyan('╔══════════════════════════════════════════════════════════════'));
-    lines.push(chalk.bold.cyan('                    - Node Sentinel -'));
-    lines.push(chalk.bold.cyan('╚══════════════════════════════════════════════════════════════'));
-
-    // Always add a small gap after header
+    // Header
+    lines.push('\x1b[1;36m╔══════════════════════════════════════════════════════════════\x1b[0m');
+    lines.push('\x1b[1;36m║                    NodeSentinel - Machines Dashboard\x1b[0m');
+    lines.push('\x1b[1;36m╚══════════════════════════════════════════════════════════════\x1b[0m');
     lines.push('');
 
     if (this.machines.size === 0) {
-      lines.push(chalk.dim('No machines registered yet...'));
+      lines.push('\x1b[2mNo machines registered yet...\x1b[0m');
       lines.push('');
-      lines.push(chalk.dim.gray('Press Ctrl+C to stop • ' + new Date().toLocaleString()));
-      logUpdate(lines.join('\n'));
-      return;
-    }
+      lines.push('\x1b[2;90mPress Ctrl+C to stop • ' + new Date().toLocaleString() + '\x1b[0m');
+    } else {
+      for (const [machineId, machine] of this.machines) {
+        // Machine header
+        lines.push(
+          '\x1b[1;33m┌─ ' + machineId + ' ' + '─'.repeat(60 - machineId.length) + '\x1b[0m',
+        );
 
-    for (const [machineId, machine] of this.machines) {
-      // Machine header
-      lines.push(chalk.bold.yellow(`┌─ ${machineId} ${'─'.repeat(60 - machineId.length)}`));
+        if (!machine.currentLog) {
+          lines.push('\x1b[2m│  Waiting for first log...\x1b[0m');
+          lines.push('\x1b[1;33m└' + '─'.repeat(62) + '\x1b[0m');
+          lines.push('');
+          continue;
+        }
 
-      if (!machine.currentLog) {
-        lines.push(chalk.dim('│  Waiting for first log...'));
-        lines.push(chalk.bold.yellow('└' + '─'.repeat(62)));
-        lines.push(''); // Add gap between machines
-        continue;
-      }
+        const log = machine.currentLog;
 
-      const log = machine.currentLog;
+        // Timestamp
+        lines.push('\x1b[1;34m│  State reached at: \x1b[37m' + log.timestamp + '\x1b[0m');
 
-      // Timestamp
-      lines.push(chalk.bold.blue(`│  State reached at: ${chalk.white(log.timestamp)}`));
+        // State
+        try {
+          const stateObj = JSON.parse(log.state.replace('State: ', ''));
+          lines.push('\x1b[1;32m│  Current State:\x1b[0m');
 
-      // State
-      try {
-        const stateObj = JSON.parse(log.state.replace('State: ', ''));
-        lines.push(chalk.bold.green(`│  Current State:`));
+          const stateStr = JSON.stringify(stateObj, null, 2);
+          const stateLines = stateStr.split('\n');
+          stateLines.forEach((line) => {
+            lines.push('\x1b[32m│    ' + line + '\x1b[0m');
+          });
+        } catch {
+          const stateLine = log.state.length > 50 ? log.state.substring(0, 47) + '...' : log.state;
+          lines.push('\x1b[32m│  State: ' + stateLine + '\x1b[0m');
+        }
 
-        const stateStr = JSON.stringify(stateObj, null, 2);
-        const stateLines = stateStr.split('\n');
-        stateLines.forEach((line, index) => {
-          lines.push(chalk.green(`│    ${line}`));
-        });
-      } catch {
-        const stateLine = log.state.length > 50 ? log.state.substring(0, 47) + '...' : log.state;
-        lines.push(chalk.green(`│  State: ${stateLine}`));
-      }
+        // Context
+        if (log.context && Object.keys(log.context).length > 0) {
+          lines.push('\x1b[1;35m│  Context:\x1b[0m');
 
-      // Context
-      if (log.context && Object.keys(log.context).length > 0) {
-        lines.push(chalk.bold.magenta(`│  Context:`));
+          const contextStr = JSON.stringify(log.context, null, 2);
+          const contextLines = contextStr.split('\n');
+          contextLines.forEach((line) => {
+            lines.push('\x1b[35m│    ' + line + '\x1b[0m');
+          });
+        }
 
-        const contextStr = JSON.stringify(log.context, null, 2);
-        const contextLines = contextStr.split('\n');
-        contextLines.forEach((line) => {
-          lines.push(chalk.magenta(`│    ${line}`));
-        });
+        // Footer
+        lines.push('\x1b[1;33m└' + '─'.repeat(62) + '\x1b[0m');
+        lines.push('');
       }
 
       // Footer
-      lines.push(chalk.bold.yellow('└' + '─'.repeat(62)));
-      lines.push(''); // Add gap between machines
+      lines.push('\x1b[2;90mPress Ctrl+C to stop • ' + new Date().toLocaleString() + '\x1b[0m');
     }
 
-    // Footer
-    lines.push(chalk.dim.gray('Press Ctrl+C to stop • ' + new Date().toLocaleString()));
-
-    logUpdate(lines.join('\n'));
+    // Write to file - completely overwrite each time
+    try {
+      fs.writeFileSync(this.logFilePath, lines.join('\n') + '\n');
+    } catch (error) {
+      console.error('Error writing to log file:', error);
+    }
   }
 
   /**
@@ -139,7 +147,7 @@ export class MultiMachineLogger {
 
     this.updateInterval = setInterval(() => {
       this.updateDisplay();
-    }, 100); // Update every 100ms for smooth display
+    }, 1000); // Update every 1 second
   }
 
   /**
@@ -151,8 +159,20 @@ export class MultiMachineLogger {
       this.updateInterval = null;
     }
 
-    logUpdate.done();
-    console.log(chalk.green('\n✅ Multi-machine logger stopped'));
+    // Write final message to file
+    const finalMessage = '\n✅ Multi-machine logger stopped\n';
+    try {
+      fs.appendFileSync(this.logFilePath, finalMessage);
+    } catch (error) {
+      console.error('Error writing final message:', error);
+    }
+  }
+
+  /**
+   * Get the log file path for external monitoring
+   */
+  getLogFilePath(): string {
+    return this.logFilePath;
   }
 }
 

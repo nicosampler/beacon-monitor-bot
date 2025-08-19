@@ -11,7 +11,7 @@ export const getLastCreatedEpochOrNull = fromPromise(async () => {
       orderBy: { epoch: 'desc' },
       select: { epoch: true },
     });
-    return lastEpoch?.epoch || 0;
+    return lastEpoch?.epoch ?? null;
   } catch (error) {
     console.error('Error fetching last created epoch:', error);
     throw error;
@@ -19,16 +19,18 @@ export const getLastCreatedEpochOrNull = fromPromise(async () => {
 });
 
 export const computeNextEpochBatch = fromPromise(
-  async ({ input }: { input: { lastEpoch: number } }) => {
+  async ({ input }: { input: { lastEpoch: number | null } }) => {
     try {
-      const lastEpoch = input.lastEpoch || 0;
-      const lookbackSlot = getOldestLookbackSlot();
-      const baseEpoch = Math.max(lastEpoch, getEpochFromSlot(lookbackSlot));
+      const lastEpoch = input.lastEpoch;
+      const lookbackEpoch = getEpochFromSlot(getOldestLookbackSlot());
 
-      // Calculate 10 epochs forward from the base
+      // For the base case, start from lookbackEpoch, otherwise from lastEpoch + 1
+      const startEpoch = lastEpoch ? lastEpoch + 1 : lookbackEpoch;
+
+      // Calculate 10 epochs forward from the start
       const epochsToCreate = [];
       for (let i = 0; i < 10; i++) {
-        epochsToCreate.push(baseEpoch + i + 1);
+        epochsToCreate.push(startEpoch + i);
       }
 
       return epochsToCreate;

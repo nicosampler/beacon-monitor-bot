@@ -7,6 +7,7 @@
     "start": "pnpm -r run start",
     "dev:bot": "pnpm --filter bot run dev",
     "dev:fetch": "pnpm --filter fetch run dev",
+    "xstate-logs": "pnpm --filter fetch run xstate-logs",
     "dev:api": "pnpm --filter api run dev",
     "lint": "pnpm -r run lint",
     "lint:fix": "pnpm -r run lint:fix",

@@ -10,7 +10,7 @@ export const getCreateEpochActor = () => {
   const actor = createActor(Epoch);
 
   actor.subscribe((snapshot) => {
-    addMachineLog('EpochCreation', `State: ${JSON.stringify(snapshot.value)}`, {
+    addMachineLog('EpochCreator', `State: ${JSON.stringify(snapshot.value)}`, {
       context: snapshot.context,
     });
   });
@@ -22,7 +22,7 @@ export const getProcessEpochActor = () => {
   const actor = createActor(processEpochMachine);
 
   actor.subscribe((snapshot) => {
-    addMachineLog('EpochOrchestrator', `State: ${JSON.stringify(snapshot.value)}`, {
+    addMachineLog('EpochProcessor', `State: ${JSON.stringify(snapshot.value)}`, {
       context: snapshot.context,
     });
   });
