@@ -1,11 +1,9 @@
 import ms from 'ms';
-import { setup, assign } from 'xstate';
+import { setup, assign, sendParent } from 'xstate';
 
 import { env } from '@/src/env.js';
 import {
-  pickNextEpoch,
   canProcessEpoch,
-  hasNextEpoch,
   validatorsNotFetched,
   committeesNotFetched,
   syncCommitteesNotFetched,
@@ -22,14 +20,12 @@ import { ProcessEpochContext, ProcessEpochSetup } from '@/src/xstate/epoch/proce
 export const processEpochMachine = setup({
   types: {} as ProcessEpochSetup,
   actors: {
-    pickNextEpoch,
     fetchValidators,
     fetchCommittees,
     fetchSyncCommittees,
     checkIfCanGetValidators,
   },
   guards: {
-    hasNextEpoch,
     canProcessEpoch,
     validatorsNotFetched,
     committeesNotFetched,
@@ -40,7 +36,7 @@ export const processEpochMachine = setup({
   },
 }).createMachine({
   id: 'ProcessEpoch',
-  initial: 'pickNextEpoch',
+  initial: 'checkingEpoch',
   context: {
     epoch: 0,
     startSlot: 0,
@@ -53,44 +49,29 @@ export const processEpochMachine = setup({
   } satisfies ProcessEpochContext,
   states: {
     /**
-     * Detect next epoch to process
+     * Check if we can start processing the epoch
      */
-
-    pickNextEpoch: {
-      invoke: {
-        src: 'pickNextEpoch',
-        onDone: [
-          {
-            guard: 'hasNextEpoch',
-            target: 'processEpoch',
-            actions: assign({
-              epoch: ({ event }) => event.output!.epoch,
-              startSlot: ({ event }) => event.output!.startSlot,
-              endSlot: ({ event }) => event.output!.endSlot,
-              validatorsInfoFetched: ({ event }) => event.output!.validatorsInfoFetched,
-              rewardsFetched: ({ event }) => event.output!.rewardsFetched,
-              committeesFetched: ({ event }) => event.output!.committeesFetched,
-              slotsFetched: ({ event }) => event.output!.slotsFetched,
-              syncCommitteesFetched: ({ event }) => event.output!.syncCommitteesFetched,
-            }),
-          },
-
-          {
-            target: 'idle',
-          },
-        ],
-        onError: 'idle',
-      },
+    checkingEpoch: {
+      always: [
+        {
+          guard: 'canProcessEpoch',
+          target: 'processEpoch',
+        },
+        {
+          target: 'waitingForEpoch',
+        },
+      ],
     },
 
-    idle: {
-      after: { [ms('10s')]: 'pickNextEpoch' },
+    waitingForEpoch: {
+      after: {
+        [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS}s`)]: 'checkingEpoch',
+      },
     },
 
     /**
      * Start processing the epoch
      */
-
     processEpoch: {
       type: 'parallel',
       states: {
@@ -282,67 +263,21 @@ export const processEpochMachine = setup({
             complete: { type: 'final' },
           },
         },
-
-        // trackB_committeesSlotsAttRewards: {
-        //   initial: 'fetchCommittees',
-        //   states: {
-        //     fetchCommittees: {
-        //       invoke: {
-        //         src: 'epoch.fetchCommitteesAndCreateSlots', // (3) crea los slots del epoch en DB
-        //         onDone: 'processSlots',
-        //         onError: 'processSlots',
-        //       },
-        //     },
-
-        //     /** (5) Slot processing: una mini-orquesta que crea y espera SlotMachines */
-        //     processSlots: {
-        //       initial: 'spawnPool',
-        //       states: {
-        //         spawnPool: {
-        //           invoke: {
-        //             src: 'epoch.loadSlotsForEpoch', // -> { slots: number[] }
-        //             onDone: {
-        //           target: 'awaiting',
-        //           action: assign({
-        //             // Guardamos los slots y counters en contexto (pseudocódigo)
-        //             slots: ({ event }) => event.output.slots,
-        //             total: ({ event }) => event.output.slots.length,
-        //             done: 0,
-        //           }),
-        //         },
-        //         onError: 'awaiting', // si falla el load, igual seguimos (no ideal, pero visual)
-        //       },
-        //     },
-        //     awaiting: {
-        //       entry: 'spawnSlotChildrenIfAny', // spawnea SlotMachine por cada slot pendiente
-        //       on: {
-        //         SLOT_DONE: {
-        //         actions: 'accumulateSlotDone',
-        //         guard: ({ event }) => event.output < context.total,
-        //         guard: ({ event }) => event.output < context.total,
-        //         target: 'fetchAttRewards',
-        //         },
-        //       },
-        //     },
-        //     fetchAttRewards: {
-        //         src: 'epoch.fetchAttestationRewards', // (4) corre cuando el último slot terminó
-        //         onDone: 'complete',
-        //         onError: 'complete',
-        //       },
-        //     },
-        //     complete: { type: 'final' },
-        //     complete: { type: 'final' },
-        //   },
-        // },
-
-        // trackC_attestationRewards: {
       },
       onDone: 'completeEpoch',
     },
 
     completeEpoch: {
-      entry: assign({}),
-      always: 'pickNextEpoch',
+      entry: [
+        ({ context }) => {
+          console.log(`Epoch ${context.epoch} completed processing`);
+        },
+        sendParent(({ context }) => ({
+          type: 'EPOCH_COMPLETED',
+          machineId: `processEpoch:${context.epoch}`,
+        })),
+      ],
+      type: 'final',
     },
   },
 });
