@@ -10,7 +10,6 @@ export interface EpochToProcess {
   rewardsFetched: boolean;
   committeesFetched: boolean;
   slotsFetched: boolean;
-  syncCommitteesFetched: boolean;
 }
 
 /**
@@ -28,7 +27,6 @@ export const getEpochsToProcess = fromPromise(
             { rewardsFetched: false },
             { committeesFetched: false },
             { slotsFetched: false },
-            { syncCommitteesFetched: false },
           ],
         },
         orderBy: { epoch: 'asc' },
@@ -39,7 +37,6 @@ export const getEpochsToProcess = fromPromise(
           rewardsFetched: true,
           committeesFetched: true,
           slotsFetched: true,
-          syncCommitteesFetched: true,
         },
       });
 

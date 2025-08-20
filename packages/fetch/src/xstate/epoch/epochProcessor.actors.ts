@@ -17,7 +17,7 @@ import {
   PickNextEpochOutput,
   PickNextEpochResult,
   ProcessEpochContext,
-} from '@/src/xstate/epoch/processEpoch.types.js';
+} from '@/src/xstate/epoch/epochProcessor.types.js';
 
 const prisma = getPrisma();
 

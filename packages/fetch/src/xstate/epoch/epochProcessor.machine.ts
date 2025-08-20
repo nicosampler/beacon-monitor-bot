@@ -14,10 +14,10 @@ import {
   fetchSyncCommittees,
   checkIfCanGetValidators,
   rewardsNotFetched,
-} from '@/src/xstate/epoch/processEpoch.actors.js';
-import { ProcessEpochContext, ProcessEpochSetup } from '@/src/xstate/epoch/processEpoch.types.js';
+} from '@/src/xstate/epoch/epochProcessor.actors.js';
+import { ProcessEpochContext, ProcessEpochSetup } from '@/src/xstate/epoch/epochProcessor.types.js';
 
-export const processEpochMachine = setup({
+export const epochProcessorMachine = setup({
   types: {} as ProcessEpochSetup,
   actors: {
     fetchValidators,
@@ -35,7 +35,7 @@ export const processEpochMachine = setup({
     rewardsNotFetched,
   },
 }).createMachine({
-  id: 'ProcessEpoch',
+  id: 'EpochProcessor',
   initial: 'checkingEpoch',
   context: {
     epoch: 0,
@@ -274,7 +274,7 @@ export const processEpochMachine = setup({
         },
         sendParent(({ context }) => ({
           type: 'EPOCH_COMPLETED',
-          machineId: `processEpoch:${context.epoch}`,
+          machineId: `epochProcessor:${context.epoch}`,
         })),
       ],
       type: 'final',

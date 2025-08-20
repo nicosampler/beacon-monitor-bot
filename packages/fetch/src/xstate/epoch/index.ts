@@ -1,31 +1,19 @@
 import { createActor } from 'xstate';
 
-import { addMachineLog } from '@/src/lib/multiMachineLogger.js';
-import { epochCreationMachine } from '@/src/xstate/epoch/createEpoch.machine.js';
+import { logMachine } from '@/src/lib/multiMachineLogger.js';
+import { epochCreationMachine } from '@/src/xstate/epoch/epochCreator.machine.js';
 import { epochOrchestratorMachine } from '@/src/xstate/epoch/epochOrchestrator.machine.js';
-import { processEpochMachine } from '@/src/xstate/epoch/processEpoch.machine.js';
+import { epochProcessorMachine } from '@/src/xstate/epoch/epochProcessor.machine.js';
 
 export const Epoch = epochCreationMachine;
-export const ProcessEpoch = processEpochMachine;
+export const ProcessEpoch = epochProcessorMachine;
 export const EpochOrchestrator = epochOrchestratorMachine;
 
 export const getCreateEpochActor = () => {
   const actor = createActor(Epoch);
 
   actor.subscribe((snapshot) => {
-    addMachineLog('EpochCreator', `State: ${JSON.stringify(snapshot.value)}`, {
-      context: snapshot.context,
-    });
-  });
-
-  return actor;
-};
-
-export const getProcessEpochActor = () => {
-  const actor = createActor(ProcessEpoch);
-
-  actor.subscribe((snapshot) => {
-    addMachineLog('EpochProcessor', `State: ${JSON.stringify(snapshot.value)}`, {
+    logMachine('EpochCreator', `State: ${JSON.stringify(snapshot.value)}`, {
       context: snapshot.context,
     });
   });
@@ -41,20 +29,36 @@ export const getEpochOrchestratorActor = () => {
       context: { maxConcurrentEpochs, epochs },
     } = snapshot;
 
-    const activeEpochs = Array.from(epochs.values()).filter((instance) => instance !== undefined);
-    const queuedEpochs = Array.from(epochs.entries())
-      .filter(([_, instance]) => instance === undefined)
-      .map(([epochNumber, _]) => epochNumber);
+    // Filter active epochs (those with actorRef)
+    const activeEpochs = Array.from(epochs.entries())
+      .filter(([_, epochEntry]) => epochEntry.actorRef !== undefined)
+      .map(([epochNumber, epochEntry]) => ({
+        epochNumber,
+        data: epochEntry.data,
+        actorId: epochEntry.actorRef?.id || 'unknown',
+        actorState: epochEntry.actorRef?.getSnapshot().value || 'unknown',
+      }));
 
-    addMachineLog('EpochOrchestrator', `State: ${JSON.stringify(snapshot.value)}`, {
+    // Filter queued epochs (those without actorRef)
+    const queuedEpochs = Array.from(epochs.entries())
+      .filter(([_, epochEntry]) => epochEntry.actorRef === undefined)
+      .map(([epochNumber, epochEntry]) => ({
+        epochNumber,
+        data: epochEntry.data,
+      }));
+
+    logMachine('EpochOrchestrator', `State: ${JSON.stringify(snapshot.value)}`, {
       maxConcurrentEpochs,
       totalEpochs: epochs.size,
       activeEpochs: activeEpochs.length,
       queuedEpochs: queuedEpochs.length,
-      activeEpochNumbers: Array.from(epochs.entries())
-        .filter(([_, instance]) => instance !== undefined)
-        .map(([epochNumber, _]) => epochNumber),
-      queuedEpochNumbers: queuedEpochs,
+      // Active spawns with detailed information
+      activeSpawns: activeEpochs,
+      // Queued epochs waiting for spawn
+      queuedSpawns: queuedEpochs,
+      // Simple arrays for backward compatibility
+      activeEpochNumbers: activeEpochs.map((e) => e.epochNumber),
+      queuedEpochNumbers: queuedEpochs.map((e) => e.epochNumber),
     });
   });
 

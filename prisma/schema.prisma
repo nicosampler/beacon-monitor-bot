@@ -8,12 +8,12 @@ datasource db {
 }
 
 model Epoch {
-  epoch                     Int      @id
-  validatorsInfoFetched     Boolean? @default(false) // Whether the validators for this epoch have been fetched
-  validatorsBalancesFetched Boolean? @default(false) // Whether the validators balances for this epoch have been fetched
-  rewardsFetched            Boolean? @default(false) // Whether the rewards for this epoch have been fetched
-  committeesFetched         Boolean? @default(false) // Whether the committees for this epoch have been fetched
-  slotsFetched              Boolean? @default(false) // Whether the slots for this epoch have been fetched
+  epoch                     Int     @id
+  validatorsInfoFetched     Boolean @default(false) // Whether the validators for this epoch have been fetched
+  validatorsBalancesFetched Boolean @default(false) // Whether the validators balances for this epoch have been fetched
+  rewardsFetched            Boolean @default(false) // Whether the rewards for this epoch have been fetched
+  committeesFetched         Boolean @default(false) // Whether the committees for this epoch have been fetched
+  slotsFetched              Boolean @default(false) // Whether the slots for this epoch have been fetched
 }
 
 model Slot {

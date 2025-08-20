@@ -5,7 +5,7 @@ import path from 'path';
 interface MachineLogEntry {
   timestamp: string;
   state: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 interface MachineLogger {
@@ -45,9 +45,10 @@ export class MultiMachineLogger {
   }
 
   /**
-   * Add a log entry for a specific machine
+   * Add or update a machine log entry
+   * This function handles both machine registration and state updates
    */
-  addLog(machineId: string, state: string, context?: Record<string, any>) {
+  addLog(machineId: string, state: string, context?: Record<string, unknown>) {
     const machine = this.getOrCreateMachine(machineId);
     const timestamp = new Date().toLocaleTimeString();
 
@@ -58,6 +59,25 @@ export class MultiMachineLogger {
     };
 
     machine.currentLog = logEntry;
+  }
+
+  /**
+   * Remove a machine from tracking with a final log
+   */
+  removeMachine(machineId: string) {
+    if (this.machines.has(machineId)) {
+      // Log final state before removal
+      const machine = this.machines.get(machineId)!;
+      machine.currentLog = {
+        timestamp: new Date().toLocaleTimeString(),
+        state: 'Machine removed',
+        context: machine.currentLog?.context,
+      };
+      // Remove after a short delay to show the final state
+      setTimeout(() => {
+        this.machines.delete(machineId);
+      }, 2000);
+    }
   }
 
   /**
@@ -190,9 +210,24 @@ export const getMultiMachineLogger = (): MultiMachineLogger => {
 };
 
 /**
- * Convenience function to add a log entry
+ * Unified function to log machine state (handles both registration and updates)
+ * Use this for all machine logging - it will automatically handle machine registration
  */
-export const addMachineLog = (machineId: string, state: string, context?: Record<string, any>) => {
+export const logMachine = (machineId: string, state: string, context?: Record<string, unknown>) => {
   const logger = getMultiMachineLogger();
   logger.addLog(machineId, state, context);
 };
+
+/**
+ * Remove a machine from tracking
+ */
+export const removeMachine = (machineId: string) => {
+  const logger = getMultiMachineLogger();
+  logger.removeMachine(machineId);
+};
+
+// Backward compatibility aliases
+/**
+ * @deprecated Use logMachine instead
+ */
+export const addMachineLog = logMachine;

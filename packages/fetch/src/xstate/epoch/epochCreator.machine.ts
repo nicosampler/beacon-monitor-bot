@@ -6,7 +6,7 @@ import {
   getLastCreatedEpochOrNull,
   computeNextEpochBatch,
   enqueueEpochs,
-} from '@/src/xstate/epoch/createEpoch.actors.js';
+} from '@/src/xstate/epoch/epochCreator.actors.js';
 
 export const epochCreationMachine = setup({
   types: {
@@ -21,7 +21,7 @@ export const epochCreationMachine = setup({
     enqueueEpochs,
   },
 }).createMachine({
-  id: 'EpochCreation',
+  id: 'EpochCreator',
   initial: 'poll',
   context: {
     lastEpoch: 0,

@@ -2,14 +2,13 @@ import ms from 'ms';
 import { setup, assign, stopChild, ActorRefFrom } from 'xstate';
 
 import { getEpochsToProcess, type EpochToProcess } from './epochOrchestrator.actors.js';
-import { processEpochMachine } from './processEpoch.machine.js';
+import { epochProcessorMachine } from './epochProcessor.machine.js';
 
 import { getEpochSlots } from '@/src/beacon/utils/misc.js';
-import { env } from '@/src/env.js';
 
 export interface EpochEntry {
   data: EpochToProcess;
-  actorRef: ActorRefFrom<typeof processEpochMachine> | undefined;
+  actorRef: ActorRefFrom<typeof epochProcessorMachine> | undefined;
 }
 
 export interface EpochOrchestratorContext {
@@ -19,8 +18,22 @@ export interface EpochOrchestratorContext {
 
 export type EpochOrchestratorEvents =
   | { type: 'NEW_EPOCHS_IN_QUEUE' }
-  | { type: 'EPOCH_PROCESSED' }
-  | { type: 'EPOCH_COMPLETED'; machineId: string };
+  | { type: 'EPOCH_COMPLETED'; machineId: string }
+  | { type: 'EPOCH_QUEUE_SLOT_RELEASED' };
+
+/**
+ * @fileoverview The epoch orchestrator is a state machine that is responsible for orchestrating the processing of epochs.
+ *
+ * It is responsible for:
+ * - Fetching epochs to process
+ * - Spawning the epoch machines
+ * - Monitoring the epoch machines
+ *
+ * We need to allow multiple parallel processing of epochs for two main reasons:
+ * - It's possible to fetch committees for future epochs
+ * - It's possible to fetch sync committees for future epochs (which allow us to notify the operator)
+ * - If we are away from the head, it will help to catch up faster
+ */
 
 export const epochOrchestratorMachine = setup({
   types: {} as {
@@ -29,7 +42,7 @@ export const epochOrchestratorMachine = setup({
   },
   actors: {
     getEpochsToProcess,
-    processEpoch: processEpochMachine,
+    epochProcessor: epochProcessorMachine,
   },
 }).createMachine({
   id: 'EpochOrchestrator',
@@ -42,7 +55,7 @@ export const epochOrchestratorMachine = setup({
     orchestrating: {
       type: 'parallel',
       states: {
-        epochQueue: {
+        epochFeeder: {
           initial: 'loadingEpochs',
           states: {
             loadingEpochs: {
@@ -53,7 +66,8 @@ export const epochOrchestratorMachine = setup({
                 }),
                 onDone: [
                   {
-                    guard: ({ event }) => event.output.length > 0,
+                    guard: ({ event, context }) =>
+                      event.output.length > 0 && context.epochs.size < context.maxConcurrentEpochs,
                     target: 'awaitingCompletion',
                     actions: [
                       assign({
@@ -84,21 +98,23 @@ export const epochOrchestratorMachine = setup({
                 ],
                 onError: 'retryPending',
               },
+              on: {
+                EPOCH_QUEUE_SLOT_RELEASED: {
+                  target: 'loadingEpochs',
+                  reenter: true,
+                },
+              },
             },
             awaitingCompletion: {
               on: {
-                EPOCH_PROCESSED: 'loadingEpochs',
-              },
-              // if while loading epochs, EPOCH_PROCESSED where triggered and missed, we force a transition to loadingEpochs
-              // This should never happen, because slots are processed in order.
-              after: {
-                [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS * 5}s`)]: 'loadingEpochs',
+                EPOCH_QUEUE_SLOT_RELEASED: 'loadingEpochs',
               },
             },
             retryPending: {
               after: {
-                [ms('1s')]: 'loadingEpochs',
+                [ms('5s')]: 'loadingEpochs',
               },
+              on: { EPOCH_QUEUE_SLOT_RELEASED: 'loadingEpochs' },
             },
           },
         },
@@ -117,12 +133,12 @@ export const epochOrchestratorMachine = setup({
                         // Spawn all epochs that have undefined actorRef
                         for (const [epochNumber, epochEntry] of newEpochs.entries()) {
                           if (epochEntry.actorRef === undefined) {
-                            const epochId = `processEpoch:${epochNumber}`;
+                            const epochId = `epochProcessor:${epochNumber}`;
                             const { startSlot, endSlot } = getEpochSlots(epochNumber);
                             const epochData = epochEntry.data;
 
                             // Spawn the epoch machine with real state from DB
-                            const epochActorRef = spawn('processEpoch', {
+                            const epochActorRef = spawn('epochProcessor', {
                               id: epochId,
                               input: {
                                 epoch: epochNumber,
@@ -132,7 +148,6 @@ export const epochOrchestratorMachine = setup({
                                 rewardsFetched: epochData.rewardsFetched,
                                 committeesFetched: epochData.committeesFetched,
                                 slotsFetched: epochData.slotsFetched,
-                                syncCommitteesFetched: epochData.syncCommitteesFetched,
                               },
                             });
 
@@ -166,7 +181,7 @@ export const epochOrchestratorMachine = setup({
                       epochs: ({ context, event }) => {
                         const newEpochs = new Map(context.epochs);
 
-                        // Extract epoch number from machineId (format: "processEpoch:123456")
+                        // Extract epoch number from machineId (format: "epochProcessor:123456")
                         const epochNumber = parseInt(event.machineId.split(':')[1]);
 
                         // Remove the epoch completely from the map
@@ -175,7 +190,7 @@ export const epochOrchestratorMachine = setup({
                         return newEpochs;
                       },
                     }),
-                    ({ self }) => self.send({ type: 'EPOCH_PROCESSED' }),
+                    ({ self }) => self.send({ type: 'EPOCH_QUEUE_SLOT_RELEASED' }),
                   ],
                 },
               },
