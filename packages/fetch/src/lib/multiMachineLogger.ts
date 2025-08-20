@@ -25,7 +25,7 @@ export class MultiMachineLogger {
       fs.mkdirSync(logsDir, { recursive: true });
     }
 
-    this.logFilePath = path.join(logsDir, 'machines-status.log');
+    this.logFilePath = path.join(logsDir, 'machines-status.json');
 
     // Start the display update loop
     this.startDisplayLoop();
@@ -81,78 +81,41 @@ export class MultiMachineLogger {
   }
 
   /**
-   * Update the display with all machine logs
+   * Update the display with all machine logs in JSON format
    */
   private updateDisplay() {
-    const lines: string[] = [];
+    const statusData = {
+      timestamp: new Date().toISOString(),
+      summary: {
+        totalMachines: this.machines.size,
+        activeMachines: Array.from(this.machines.values()).filter((m) => m.currentLog).length,
+        lastUpdate: new Date().toLocaleString(),
+      },
+      machines: {} as Record<string, any>,
+    };
 
-    // Header
-    lines.push('\x1b[1;36m╔══════════════════════════════════════════════════════════════\x1b[0m');
-    lines.push('\x1b[1;36m║                    NodeSentinel - Machines Dashboard\x1b[0m');
-    lines.push('\x1b[1;36m╚══════════════════════════════════════════════════════════════\x1b[0m');
-    lines.push('');
-
-    if (this.machines.size === 0) {
-      lines.push('\x1b[2mNo machines registered yet...\x1b[0m');
-      lines.push('');
-      lines.push('\x1b[2;90mPress Ctrl+C to stop • ' + new Date().toLocaleString() + '\x1b[0m');
-    } else {
-      for (const [machineId, machine] of this.machines) {
-        // Machine header
-        lines.push(
-          '\x1b[1;33m┌─ ' + machineId + ' ' + '─'.repeat(60 - machineId.length) + '\x1b[0m',
-        );
-
-        if (!machine.currentLog) {
-          lines.push('\x1b[2m│  Waiting for first log...\x1b[0m');
-          lines.push('\x1b[1;33m└' + '─'.repeat(62) + '\x1b[0m');
-          lines.push('');
-          continue;
-        }
-
-        const log = machine.currentLog;
-
-        // Timestamp
-        lines.push('\x1b[1;34m│  State reached at: \x1b[37m' + log.timestamp + '\x1b[0m');
-
-        // State
-        try {
-          const stateObj = JSON.parse(log.state.replace('State: ', ''));
-          lines.push('\x1b[1;32m│  Current State:\x1b[0m');
-
-          const stateStr = JSON.stringify(stateObj, null, 2);
-          const stateLines = stateStr.split('\n');
-          stateLines.forEach((line) => {
-            lines.push('\x1b[32m│    ' + line + '\x1b[0m');
-          });
-        } catch {
-          const stateLine = log.state.length > 50 ? log.state.substring(0, 47) + '...' : log.state;
-          lines.push('\x1b[32m│  State: ' + stateLine + '\x1b[0m');
-        }
-
-        // Context
-        if (log.context && Object.keys(log.context).length > 0) {
-          lines.push('\x1b[1;35m│  Context:\x1b[0m');
-
-          const contextStr = JSON.stringify(log.context, null, 2);
-          const contextLines = contextStr.split('\n');
-          contextLines.forEach((line) => {
-            lines.push('\x1b[35m│    ' + line + '\x1b[0m');
-          });
-        }
-
-        // Footer
-        lines.push('\x1b[1;33m└' + '─'.repeat(62) + '\x1b[0m');
-        lines.push('');
+    // Add machine data
+    for (const [machineId, machine] of this.machines) {
+      if (machine.currentLog) {
+        statusData.machines[machineId] = {
+          status: 'active',
+          lastUpdate: machine.currentLog.timestamp,
+          state: this.parseState(machine.currentLog.state),
+          context: machine.currentLog.context || null,
+        };
+      } else {
+        statusData.machines[machineId] = {
+          status: 'waiting',
+          lastUpdate: null,
+          state: null,
+          context: null,
+        };
       }
-
-      // Footer
-      lines.push('\x1b[2;90mPress Ctrl+C to stop • ' + new Date().toLocaleString() + '\x1b[0m');
     }
 
-    // Write to file - completely overwrite each time
+    // Write JSON to file
     try {
-      fs.writeFileSync(this.logFilePath, lines.join('\n') + '\n');
+      fs.writeFileSync(this.logFilePath, JSON.stringify(statusData, null, 2) + '\n');
     } catch (error) {
       console.error('Error writing to log file:', error);
     }
@@ -179,12 +142,43 @@ export class MultiMachineLogger {
       this.updateInterval = null;
     }
 
-    // Write final message to file
-    const finalMessage = '\n✅ Multi-machine logger stopped\n';
+    // Write final status with machines state
+    const finalStatus = {
+      timestamp: new Date().toISOString(),
+      summary: {
+        totalMachines: this.machines.size,
+        activeMachines: Array.from(this.machines.values()).filter((m) => m.currentLog).length,
+        lastUpdate: new Date().toLocaleString(),
+        status: 'stopped',
+        message: 'Multi-machine logger stopped',
+      },
+      machines: {} as Record<string, any>,
+    };
+
+    // Add final machine states
+    for (const [machineId, machine] of this.machines) {
+      if (machine.currentLog) {
+        finalStatus.machines[machineId] = {
+          status: 'stopped',
+          lastUpdate: machine.currentLog.timestamp,
+          state: this.parseState(machine.currentLog.state),
+          context: machine.currentLog.context || null,
+        };
+      } else {
+        finalStatus.machines[machineId] = {
+          status: 'stopped',
+          lastUpdate: null,
+          state: null,
+          context: null,
+        };
+      }
+    }
+
+    // Write final status to file (overwrite completely)
     try {
-      fs.appendFileSync(this.logFilePath, finalMessage);
+      fs.writeFileSync(this.logFilePath, JSON.stringify(finalStatus, null, 2) + '\n');
     } catch (error) {
-      console.error('Error writing final message:', error);
+      console.error('Error writing final status:', error);
     }
   }
 
@@ -193,6 +187,21 @@ export class MultiMachineLogger {
    */
   getLogFilePath(): string {
     return this.logFilePath;
+  }
+
+  /**
+   * Parse and clean state data - handles JSON parsing and removes prefixes
+   */
+  private parseState(state: string): any {
+    // Remove "State: " prefix if present
+    const cleanState = state.replace(/^State:\s*/, '');
+
+    try {
+      return JSON.parse(cleanState);
+    } catch (e) {
+      // If not valid JSON, return as string
+      return cleanState;
+    }
   }
 }
 
