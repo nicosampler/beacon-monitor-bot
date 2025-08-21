@@ -16,7 +16,7 @@ import {
 } from '@/src/beacon/types.js';
 import { instance } from '@/src/beacon/utils/instance.js';
 import { getEpochSlots } from '@/src/beacon/utils/misc.js';
-import { getSlotNumberFromTimestamp, getTimestampFromSlotNumber } from '@/src/beacon/utils/time.js';
+import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 
 // Helper function to check for missed slot errors

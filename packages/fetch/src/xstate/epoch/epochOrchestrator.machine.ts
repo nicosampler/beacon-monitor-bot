@@ -48,7 +48,7 @@ export const epochOrchestratorMachine = setup({
   id: 'EpochOrchestrator',
   initial: 'orchestrating',
   context: {
-    maxConcurrentEpochs: 5,
+    maxConcurrentEpochs: 1,
     epochs: new Map<number, EpochEntry>(),
   },
   states: {
@@ -148,6 +148,7 @@ export const epochOrchestratorMachine = setup({
                                 rewardsFetched: epochData.rewardsFetched,
                                 committeesFetched: epochData.committeesFetched,
                                 slotsFetched: epochData.slotsFetched,
+                                syncCommitteesFetched: epochData.syncCommitteesFetched,
                               },
                             });
 

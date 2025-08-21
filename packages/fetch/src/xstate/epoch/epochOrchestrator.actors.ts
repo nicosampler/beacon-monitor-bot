@@ -10,6 +10,7 @@ export interface EpochToProcess {
   rewardsFetched: boolean;
   committeesFetched: boolean;
   slotsFetched: boolean;
+  syncCommitteesFetched: boolean;
 }
 
 /**
@@ -40,7 +41,36 @@ export const getEpochsToProcess = fromPromise(
         },
       });
 
-      return nextEpochs;
+      // Get the min fromEpoch and max toEpoch from the SyncCommittee table using a single Prisma query
+      const syncCommitteeRange = await prisma.syncCommittee.aggregate({
+        _min: { fromEpoch: true },
+        _max: { toEpoch: true },
+      });
+
+      const syncCommitteeInfo = {
+        minFromEpoch: syncCommitteeRange._min.fromEpoch,
+        maxToEpoch: syncCommitteeRange._max.toEpoch,
+      };
+
+      // Map epochs and determine sync committee status
+      // An epoch has sync committees fetched if it's within the range of epochs that have sync committees
+      // (minFromEpoch <= epoch <= maxToEpoch)
+      const epochsWithSyncCommitteeStatus = nextEpochs.map((epoch: (typeof nextEpochs)[0]) => {
+        let syncCommitteesFetched = false;
+
+        if (syncCommitteeInfo.minFromEpoch !== null && syncCommitteeInfo.maxToEpoch !== null) {
+          syncCommitteesFetched =
+            epoch.epoch >= syncCommitteeInfo.minFromEpoch &&
+            epoch.epoch <= syncCommitteeInfo.maxToEpoch;
+        }
+
+        return {
+          ...epoch,
+          syncCommitteesFetched,
+        };
+      });
+
+      return epochsWithSyncCommitteeStatus;
     } catch (error) {
       console.error('Error getting epochs to process:', error);
       throw error;

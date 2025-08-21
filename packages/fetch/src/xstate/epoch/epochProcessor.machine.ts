@@ -1,19 +1,21 @@
 import ms from 'ms';
-import { setup, assign, sendParent } from 'xstate';
+import { setup, assign, sendParent, fromPromise } from 'xstate';
 
 import { env } from '@/src/env.js';
 import {
   canProcessEpoch,
   validatorsNotFetched,
   committeesNotFetched,
-  syncCommitteesNotFetched,
   canFetchCommittees,
   canFetchSyncCommittees,
+  rewardsNotFetched,
+  isFirstEpochOfSyncCommitteePeriod,
+  isLookbackEpoch,
   fetchValidators,
   fetchCommittees,
   fetchSyncCommittees,
   checkIfCanGetValidators,
-  rewardsNotFetched,
+  checkSyncCommitteeStatus,
 } from '@/src/xstate/epoch/epochProcessor.actors.js';
 import { ProcessEpochContext, ProcessEpochSetup } from '@/src/xstate/epoch/epochProcessor.types.js';
 
@@ -24,32 +26,36 @@ export const epochProcessorMachine = setup({
     fetchCommittees,
     fetchSyncCommittees,
     checkIfCanGetValidators,
+    checkSyncCommitteeStatus,
   },
   guards: {
     canProcessEpoch,
     validatorsNotFetched,
     committeesNotFetched,
-    syncCommitteesNotFetched,
     canFetchCommittees,
     canFetchSyncCommittees,
     rewardsNotFetched,
+    isFirstEpochOfSyncCommitteePeriod,
+    isLookbackEpoch,
   },
 }).createMachine({
   id: 'EpochProcessor',
   initial: 'checkingEpoch',
-  context: {
-    epoch: 0,
-    startSlot: 0,
-    endSlot: 0,
-    validatorsInfoFetched: false,
-    rewardsFetched: false,
-    committeesFetched: false,
-    slotsFetched: false,
-    syncCommitteesFetched: false,
-  } satisfies ProcessEpochContext,
+  context: ({ input }) =>
+    ({
+      epoch: input.epoch,
+      startSlot: input.startSlot,
+      endSlot: input.endSlot,
+      validatorsInfoFetched: input.validatorsInfoFetched,
+      rewardsFetched: input.rewardsFetched,
+      committeesFetched: input.committeesFetched,
+      slotsFetched: input.slotsFetched,
+      syncCommitteesFetched: input.syncCommitteesFetched ?? false,
+    }) satisfies ProcessEpochContext,
   states: {
     /**
      * Check if we can start processing the epoch
+     * We can process up to current epoch + 1.
      */
     checkingEpoch: {
       always: [
@@ -62,10 +68,9 @@ export const epochProcessorMachine = setup({
         },
       ],
     },
-
     waitingForEpoch: {
       after: {
-        [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS}s`)]: 'checkingEpoch',
+        [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'checkingEpoch',
       },
     },
 
@@ -136,28 +141,48 @@ export const epochProcessorMachine = setup({
             checkIfSyncCommitteesAlreadyFetched: {
               always: [
                 {
-                  guard: 'syncCommitteesNotFetched',
-                  target: 'checkCanFetchSyncCommittees',
+                  guard: ({ context }) => !context.syncCommitteesFetched,
+                  target: 'checkEpochType',
                 },
                 {
                   target: 'complete',
                 },
               ],
             },
-            checkCanFetchSyncCommittees: {
+            checkEpochType: {
               always: [
                 {
-                  guard: 'canFetchSyncCommittees',
+                  guard: 'isFirstEpochOfSyncCommitteePeriod',
                   target: 'fetchSyncCommittees',
                 },
                 {
-                  target: 'waitingForSyncCommittees',
+                  guard: 'isLookbackEpoch',
+                  target: 'fetchSyncCommittees',
+                },
+                {
+                  target: 'waitForSyncCommitteeFetch',
                 },
               ],
             },
-            waitingForSyncCommittees: {
+            waitForSyncCommitteeFetch: {
               after: {
-                [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS}s`)]: 'checkCanFetchSyncCommittees',
+                [ms('5s')]: 'checkIfSyncCommitteeFetched',
+              },
+            },
+            checkIfSyncCommitteeFetched: {
+              invoke: {
+                src: 'checkSyncCommitteeStatus',
+                input: ({ context }) => ({ epoch: context.epoch }),
+                onDone: [
+                  {
+                    guard: ({ event }) => event.output.isFetched,
+                    target: 'complete',
+                  },
+                  {
+                    target: 'waitForSyncCommitteeFetch',
+                  },
+                ],
+                onError: 'waitForSyncCommitteeFetch',
               },
             },
             fetchSyncCommittees: {

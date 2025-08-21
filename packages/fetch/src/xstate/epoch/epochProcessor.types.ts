@@ -40,4 +40,14 @@ export interface HasNextEpochParams {
 export interface ProcessEpochSetup {
   context: ProcessEpochContext;
   events: ProcessEpochEvents;
+  input: {
+    epoch: number;
+    startSlot: number;
+    endSlot: number;
+    validatorsInfoFetched: boolean;
+    rewardsFetched: boolean;
+    committeesFetched: boolean;
+    slotsFetched: boolean;
+    syncCommitteesFetched?: boolean;
+  };
 }

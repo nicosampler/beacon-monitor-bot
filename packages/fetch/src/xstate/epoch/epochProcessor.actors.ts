@@ -80,6 +80,25 @@ export const pickNextEpoch = fromPromise(async (): Promise<PickNextEpochResult> 
 });
 
 /**
+ * Guard function to check if the epoch is the first epoch of a sync committee period
+ */
+export const isFirstEpochOfSyncCommitteePeriod = ({
+  context,
+}: {
+  context: ProcessEpochContext;
+}): boolean => {
+  return context.epoch === getSyncCommitteePeriodStartEpoch(context.epoch);
+};
+
+/**
+ * Guard function to check if the epoch is the lookback epoch (derived from BEACON_LOOKBACK_SLOT)
+ */
+export const isLookbackEpoch = ({ context }: { context: ProcessEpochContext }): boolean => {
+  const lookbackEpoch = getEpochFromSlot(env.BEACON_LOOKBACK_SLOT);
+  return context.epoch === lookbackEpoch;
+};
+
+/**
  * Guard function to check if we have a next epoch to process
  */
 export const hasNextEpoch = ({ event }: { event: any }): boolean => {
@@ -94,7 +113,7 @@ export const canProcessEpoch = ({ context }: { context: ProcessEpochContext }): 
   const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
 
   // We need to wait for the epoch to start
-  if (context.epoch > currentEpoch) {
+  if (context.epoch > currentEpoch + 1) {
     return false;
   }
 
@@ -181,18 +200,6 @@ export const canFetchCommittees = ({ context }: { context: ProcessEpochContext }
 };
 
 /**
- * Guard function to check if sync committees have not been fetched yet
- * Sync committees are valid for a period of epochs from-to.
- */
-export const syncCommitteesNotFetched = ({
-  context,
-}: {
-  context: ProcessEpochContext;
-}): boolean => {
-  return !context.syncCommitteesFetched;
-};
-
-/**
  * Guard function to check if rewards have not been fetched yet
  */
 export const rewardsNotFetched = ({ context }: { context: ProcessEpochContext }): boolean => {
@@ -251,7 +258,6 @@ export const fetchCommittees = fromPromise(async ({ input }: { input: { epoch: n
     await fetchCommittee(logger, input.epoch);
 
     logger.info('Committees fetched successfully');
-    return { success: true };
   } catch (error) {
     console.error('Error fetching committees:', error);
     throw error;
@@ -273,13 +279,20 @@ export const fetchSyncCommittees = fromPromise(async ({ input }: { input: { epoc
     const syncCommitteeData = await beacon_getSyncCommittees(periodStartEpoch);
 
     // Store the sync committee data in the database
-    await prisma.syncCommittee.create({
-      data: {
+    await prisma.syncCommittee.upsert({
+      where: {
+        fromEpoch_toEpoch: {
+          fromEpoch: periodStartEpoch,
+          toEpoch: periodStartEpoch + env.BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD - 1,
+        },
+      },
+      create: {
         fromEpoch: periodStartEpoch,
         toEpoch: periodStartEpoch + env.BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD - 1,
         validators: syncCommitteeData.validators,
         validatorAggregates: syncCommitteeData.validator_aggregates,
       },
+      update: {},
     });
 
     logger.info(
@@ -291,3 +304,25 @@ export const fetchSyncCommittees = fromPromise(async ({ input }: { input: { epoc
     throw error;
   }
 });
+
+/**
+ * Actor to check if sync committee for a specific epoch is already fetched
+ */
+export const checkSyncCommitteeStatus = fromPromise(
+  async ({ input }: { input: { epoch: number } }) => {
+    try {
+      // Check if sync committee for this epoch is already fetched
+      const syncCommittee = await prisma.syncCommittee.findFirst({
+        where: {
+          fromEpoch: { lte: input.epoch },
+          toEpoch: { gte: input.epoch },
+        },
+      });
+
+      return { isFetched: !!syncCommittee };
+    } catch (error) {
+      console.error('Error checking sync committee status:', error);
+      throw error;
+    }
+  },
+);

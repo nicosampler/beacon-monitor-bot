@@ -35,6 +35,8 @@ model SyncCommittee {
   validatorAggregates Json // Array of arrays of validator indices as strings: [["1", "2"], ["3", "4"], ...]
 
   @@id([fromEpoch, toEpoch])
+  @@index([fromEpoch])
+  @@index([toEpoch])
 }
 
 // Committee is a list of validators that were assigned to a slot.
