@@ -3,8 +3,7 @@ import { fromPromise } from 'xstate';
 import { beacon_getSyncCommittees } from '@/src/beacon/endpoints.js';
 import { fetchCommittee } from '@/src/beacon/feed/fetchCommittee.js';
 import { fetchValidators as fetchValidatorsFromBeacon } from '@/src/beacon/feed/fetchValidators.js';
-import { fetchValidatorsBalances as fetchValidatorsBalancesFromBeacon } from '@/src/beacon/feed/fetchValidatorsBalances.js';
-import { getEpochFromSlot, getEpochSlots, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
+import { getEpochFromSlot, getEpochSlots } from '@/src/beacon/utils/misc.js';
 import {
   getEpochNumberFromTimestamp,
   getSlotNumberFromTimestamp,
@@ -134,54 +133,24 @@ export const hasEpochAlreadyStarted = ({ context }: { context: ProcessEpochConte
 /**
  * Actor to check if we can fetch validators (timing + database conditions)
  */
-export const checkIfCanGetValidators = fromPromise(
-  async ({ input }: { input: ProcessEpochContext }) => {
-    try {
-      const context = input;
-      const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+export const checkIfCanGetValidators = fromPromise(async ({ input }: { input: number }) => {
+  try {
+    const startSlot = input;
+    const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
 
-      // First check if the epoch has already started
-      if (currentSlot <= context.startSlot) {
-        return { canProceed: false };
-      }
-
-      // Check if we're in the base epoch (the epoch containing BEACON_LOOKBACK_SLOT)
-      const baseEpoch = getEpochFromSlot(env.BEACON_LOOKBACK_SLOT);
-      if (context.epoch === baseEpoch) {
-        // For the base epoch, we don't need to check the previous epoch
-        return { canProceed: true };
-      }
-
-      // For other epochs, check if the last slot of the previous epoch has blockFetched = true
-      const previousEpoch = context.epoch - 1;
-      const previousEpochEndSlot = getEpochSlots(previousEpoch).endSlot;
-
-      const previousSlot = await prisma.slot.findUnique({
-        where: { slot: previousEpochEndSlot },
-        select: { blockFetched: true },
-      });
-
-      // If the previous slot doesn't exist or blockFetched is false, we can't proceed
-      return { canProceed: previousSlot?.blockFetched === true };
-    } catch (error) {
-      console.error('Error checking if can get validators:', error);
-      return { canProceed: false };
-    }
-  },
-);
+    // First check if the epoch has already started
+    return { canProceed: currentSlot >= startSlot };
+  } catch (error) {
+    console.error('Error checking if can get validators:', error);
+    return { canProceed: false };
+  }
+});
 
 /**
  * Guard function to check if validators have not been fetched yet
  */
 export const validatorsNotFetched = ({ context }: { context: ProcessEpochContext }): boolean => {
   return !context.validatorsInfoFetched;
-};
-
-/**
- * Guard function to check if committees have not been fetched yet
- */
-export const committeesNotFetched = ({ context }: { context: ProcessEpochContext }): boolean => {
-  return !context.committeesFetched;
 };
 
 /**
@@ -204,6 +173,23 @@ export const canFetchCommittees = ({ context }: { context: ProcessEpochContext }
  */
 export const rewardsNotFetched = ({ context }: { context: ProcessEpochContext }): boolean => {
   return !context.rewardsFetched;
+};
+
+/**
+ * Guard function to check if rewards can be processed
+ * Rewards can only be processed when:
+ * 1. Validators have been fetched for the current epoch
+ * 2. Current slot is greater than the epoch's end slot
+ */
+export const canProcessRewards = ({ context }: { context: ProcessEpochContext }): boolean => {
+  // First condition: validators must have been fetched for the current epoch
+  if (!context.validatorsInfoFetched) {
+    return false;
+  }
+
+  // Second condition: current slot must be greater than the epoch's end slot
+  const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+  return currentSlot > context.endSlot;
 };
 
 /**

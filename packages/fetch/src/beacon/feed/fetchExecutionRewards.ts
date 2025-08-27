@@ -9,7 +9,7 @@ const prisma = getPrisma();
 
 export async function fetchExecutionRewards(logger: CustomLogger, blockToQuery: number) {
   try {
-    const blockInfo = await getBlock(blockToQuery, logger);
+    const blockInfo = await getBlock(blockToQuery);
     if (!blockInfo) {
       logger.warn('No block provided');
       return;

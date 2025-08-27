@@ -15,7 +15,7 @@ const _fetchExecutionRewardsTask = async (logger: CustomLogger) => {
     orderBy: { blockNumber: 'desc' },
   });
 
-  let blockToQuery: number;
+  let blockToQuery: number = -1;
 
   if (latestReward) {
     const now = new Date();
@@ -27,8 +27,6 @@ const _fetchExecutionRewardsTask = async (logger: CustomLogger) => {
       return;
     }
     blockToQuery = latestReward.blockNumber + 1;
-  } else {
-    blockToQuery = env.EXECUTION_BLOCK_LOOKBACK;
   }
 
   logger.addContext(`for block ${blockToQuery}`);

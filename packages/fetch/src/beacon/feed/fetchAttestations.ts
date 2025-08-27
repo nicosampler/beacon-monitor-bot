@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
-import { beacon_getAttestations } from '@/src/beacon/endpoints.js';
+import { Attestation } from '@/src/beacon/types.js';
 import {
   convertBitsToString,
   convertBitsToStringForCommitteeBits,
@@ -15,16 +15,21 @@ import { db_getSlotCommitteesValidatorsAmount } from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 
-export const fetchAttestation = async (slotNumber: number, logger: CustomLogger) => {
+export const fetchAttestation = async (
+  slotNumber: number,
+  allAttestations: Attestation[],
+  logger: CustomLogger,
+) => {
   try {
     logger.info(`start.`);
 
     // Fetch the slot's attestations
-    let fetchedAttestations = await getAttestation(slotNumber, logger);
-    if (!fetchedAttestations) return;
+    //let fetchedAttestations = await getAttestation(slotNumber, logger);
+    //if (!fetchedAttestations) return;
+
     // Filter out attestations that are older than the oldest lookback slot
     // This is important to handle the base case for which we won't have epoch, committee, etc.
-    fetchedAttestations = fetchedAttestations.filter(
+    const filteredAttestations = allAttestations.filter(
       (attestation) => +attestation.data.slot >= getOldestLookbackSlot(),
     );
 
@@ -34,7 +39,7 @@ export const fetchAttestation = async (slotNumber: number, logger: CustomLogger)
     // The beacon request brings attestations for different slots.
     // we need to process each of them and calculate the delay for each attestation.
     const attestations: CommitteeUpdate[] = [];
-    for (const attestation of fetchedAttestations) {
+    for (const attestation of filteredAttestations) {
       const updates = await processAttestation(
         slotNumber,
         attestation,
@@ -65,21 +70,21 @@ export const fetchAttestation = async (slotNumber: number, logger: CustomLogger)
   }
 };
 
-async function getAttestation(slot: number, logger: CustomLogger) {
-  const fetchedAttestations = await beacon_getAttestations(slot + 1);
+// async function getAttestation(slot: number, logger: CustomLogger) {
+//   const fetchedAttestations = await beacon_getAttestations(slot + 1);
 
-  if (fetchedAttestations === 'SLOT MISSED') {
-    await prisma.slot.update({
-      where: { slot: slot },
-      data: { attestationsFetched: true },
-    });
-    logger.info(`slot missed.`);
-    return null;
-  }
+//   if (fetchedAttestations === 'SLOT MISSED') {
+//     await prisma.slot.update({
+//       where: { slot: slot },
+//       data: { attestationsFetched: true },
+//     });
+//     logger.info(`slot missed.`);
+//     return null;
+//   }
 
-  return fetchedAttestations;
-}
-type Attestation = NonNullable<Awaited<ReturnType<typeof getAttestation>>>[number];
+//   return fetchedAttestations;
+// }
+// type Attestation = NonNullable<Awaited<ReturnType<typeof getAttestation>>>[number];
 
 interface CommitteeUpdate {
   slot: number;

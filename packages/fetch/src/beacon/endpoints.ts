@@ -1,4 +1,4 @@
-import { AxiosError } from 'axios';
+import axios, { AxiosError } from 'axios';
 import memoizee from 'memoizee';
 import ms from 'ms';
 import pRetry from 'p-retry';
@@ -13,6 +13,7 @@ import {
   SyncCommitteeRewards,
   EndpointOptions,
   GetSyncCommittees,
+  Block,
 } from '@/src/beacon/types.js';
 import { instance } from '@/src/beacon/utils/instance.js';
 import { getEpochSlots } from '@/src/beacon/utils/misc.js';
@@ -63,7 +64,7 @@ export function extractError(error: unknown) {
  */
 async function makeBeaconRequest<T>(
   callEndpoint: (url: string) => Promise<T>,
-  errorHandler?: (error: unknown) => T | undefined,
+  errorHandler?: (error: AxiosError<{ message: string }>) => T | undefined,
   options: EndpointOptions = {},
 ): Promise<T> {
   const { priority = 'primary', retries = 0 } = options;
@@ -99,7 +100,7 @@ async function makeBeaconRequest<T>(
 
   // Handle special error cases if handler provided
   if (errorHandler) {
-    const handled = errorHandler(lastError);
+    const handled = errorHandler(lastError as AxiosError<{ message: string }>);
     if (handled !== undefined) {
       return handled;
     }
@@ -150,6 +151,22 @@ export async function beacon_getSyncCommittees(epoch: number): Promise<GetSyncCo
       return res.data.data;
     },
     undefined,
+    { priority: 'secondary' },
+  );
+}
+
+export async function beacon_blocks(slot: number): Promise<Block | 'SLOT MISSED'> {
+  return makeBeaconRequest<Block | 'SLOT MISSED'>(
+    async (url) => {
+      const res = await instance.get<Block>(`${url}/eth/v2/beacon/blocks/${slot}`);
+      return res.data;
+    },
+    (error: Error | AxiosError) => {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return 'SLOT MISSED';
+      }
+      throw error;
+    },
     { priority: 'secondary' },
   );
 }

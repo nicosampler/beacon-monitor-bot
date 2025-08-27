@@ -5,7 +5,6 @@ import ms from 'ms';
 import { env } from '@/src/env.js';
 import { Blockscout_Blocks, Etherscan_BlockReward } from '@/src/execution/types.js';
 import { instance } from '@/src/execution/utils/instance.js';
-import { CustomLogger } from '@/src/lib/pino.js';
 
 export type BlockResponse = {
   address: string;
@@ -14,14 +13,13 @@ export type BlockResponse = {
   blockNumber: number;
 };
 
-export async function getBlock(
-  blockNumber: number,
-  _logger: CustomLogger,
-): Promise<BlockResponse | null> {
+export async function getBlock(blockNumber: number): Promise<BlockResponse | null> {
   let lastError: unknown;
 
   // First endpoint is blockscout, second is etherscan
   const endpoints = [
+    // Blockscout
+    //https://eth.blockscout.com/api/v2/blocks
     {
       url: `${env.EXECUTION_API_URL}/api/v2/blocks/${blockNumber}`,
       process: (response: AxiosResponse<Blockscout_Blocks>) => {
@@ -31,14 +29,9 @@ export async function getBlock(
         if (
           !blockInfo.miner ||
           !blockInfo.miner.hash ||
-          blockInfo.miner.hash == '' ||
           !minerReward ||
-          // It's quite weird that a blocks comes with 0, specially on mainnet
-          // if this happens we check the second endpoint
           new Decimal(minerReward.reward).eq(0)
         ) {
-          // logger.warn('Unexpected block response', blockInfo);
-          // return null;
           throw new Error(`Unexpected block response: ${JSON.stringify(blockInfo)}`);
         }
 
@@ -51,8 +44,10 @@ export async function getBlock(
         return result;
       },
     },
+    // Etherscan
+    // https://api.etherscan.io/api?module=block&action=getblockreward&blockno=2165403&apikey=YourApiKeyToken
     {
-      url: `${env.EXECUTION_API_BKP_URL}/api?chainid=${env.NODE_SENTINEL_CHAIN == 'ethereum' ? '1' : '100'}&module=block&action=getblockreward&blockno=${blockNumber}&apikey=${env.EXECUTION_API_BKP_KEY}`,
+      url: `${env.EXECUTION_API_BKP_URL}/api?chainid=${env.BLOCKCHAIN_CHAIN_ID}&module=block&action=getblockreward&blockno=${blockNumber}&apikey=${env.EXECUTION_API_BKP_KEY}`,
       process: (response: AxiosResponse<Etherscan_BlockReward>) => {
         const blockInfo = response.data;
         const result: BlockResponse = {

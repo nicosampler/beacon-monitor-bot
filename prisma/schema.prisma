@@ -17,15 +17,19 @@ model Epoch {
 }
 
 model Slot {
-  slot      Int         @id
-  committee Committee[]
+  slot                     Int         @id
+  processed                Boolean     @default(false) // Whether the slot has been processed
+  committee                Committee[]
+  committeeValidatorCounts Json? // Stores the number of validators per committee index as an array: [350, 340, ...]
 
-  blockFetched               Boolean @default(false) // Whether the block for this slot have been fetched
-  attestationsFetched        Boolean @default(false) // Whether the attestations for this slot have been fetched
-  blockAndSyncRewardsFetched Boolean @default(false) // Whether the sync rewards for this slot have been fetched 
-  committeeValidatorCounts   Json? // Stores the number of validators per committee index as an array: [350, 340, ...]
+  //blockFetched                Boolean @default(false) // Whether the block for this slot have been fetched
+  attestationsProcessed        Boolean @default(false) // Whether the attestations for this slot have been fetched
+  blockAndSyncRewardsProcessed Boolean @default(false) // Whether the sync rewards for this slot have been fetched
+  executionRewardsProcessed    Boolean @default(false) // Whether the execution rewards for this slot have been fetched
+  validatorsStatusesProcessed  Boolean @default(false) // Whether the validators statuses for this slot have been processed
+  withdrawalsProcessed         Boolean @default(false) // Whether the withdrawals for this slot have been processed
 
-  @@index([attestationsFetched, slot])
+  @@index([processed, slot])
 }
 
 model SyncCommittee {

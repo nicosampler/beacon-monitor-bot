@@ -1,4 +1,5 @@
 import { EventObject } from 'xstate';
+import { ActorRef } from 'xstate';
 
 // Context types
 export interface ProcessEpochContext {
@@ -10,6 +11,8 @@ export interface ProcessEpochContext {
   committeesFetched: boolean;
   slotsFetched: boolean;
   syncCommitteesFetched: boolean;
+  slotActor?: ActorRef<any, any> | null;
+  currentSlot?: number; // Add currentSlot to track current slot number
 }
 
 // Event types
@@ -21,7 +24,21 @@ export interface MarkEpochDoneEvent extends EventObject {
   type: 'MARK_EPOCH_DONE';
 }
 
-export type ProcessEpochEvents = MarkEpochRunningEvent | MarkEpochDoneEvent;
+export interface CommitteesReadyEvent extends EventObject {
+  type: 'COMMITTEES_READY';
+}
+
+export interface SlotCompletedEvent extends EventObject {
+  type: 'SLOT_COMPLETED';
+  slot: number;
+  epoch: number;
+}
+
+export type ProcessEpochEvents =
+  | MarkEpochRunningEvent
+  | MarkEpochDoneEvent
+  | CommitteesReadyEvent
+  | SlotCompletedEvent;
 
 // Actor output types
 export interface PickNextEpochOutput extends ProcessEpochContext {
@@ -42,12 +59,11 @@ export interface ProcessEpochSetup {
   events: ProcessEpochEvents;
   input: {
     epoch: number;
-    startSlot: number;
-    endSlot: number;
     validatorsInfoFetched: boolean;
     rewardsFetched: boolean;
     committeesFetched: boolean;
     slotsFetched: boolean;
     syncCommitteesFetched?: boolean;
+    currentSlot?: number; // Add currentSlot to input type
   };
 }

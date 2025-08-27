@@ -49,8 +49,6 @@ export const env = createEnv({
     BEACON_API_BKP_URL: z.string().url(),
     BEACON_API_REQUEST_PER_SECOND: z.number().int().positive(),
 
-    // Execution
-    EXECUTION_BLOCK_LOOKBACK: z.number().int().positive(),
     // Execution API
     EXECUTION_EXPLORER_URL: z.string().url(),
     EXECUTION_API_URL: z.string().url(),
@@ -61,6 +59,7 @@ export const env = createEnv({
     EXECUTION_RPC_URL: z.string().url(),
 
     // Blockchain
+    BLOCKCHAIN_CHAIN_ID: z.number().int().positive(),
     BLOCKCHAIN_TOKEN_SYMBOL: z.string(),
     BLOCKCHAIN_CL_REWARDS_SYMBOL: z.string(),
     BLOCKCHAIN_EL_REWARDS_SYMBOL: z.string(),
@@ -91,8 +90,6 @@ export const env = createEnv({
     // Beacon-node API
     BEACON_API_REQUEST_PER_SECOND: Number(_env['BEACON_API_REQUEST_PER_SECOND']),
 
-    // Execution config
-    EXECUTION_BLOCK_LOOKBACK: Number(_env['EXECUTION_BLOCK_LOOKBACK']),
     // Execution API
     EXECUTION_API_REQUEST_PER_SECOND: Number(_env['EXECUTION_API_REQUEST_PER_SECOND']),
   },
