@@ -14,7 +14,7 @@ export const db_getLastSlot = async () =>
 
 export const db_getLastSlotWithAttestations = async () =>
   await prisma.slot.findFirst({
-    where: { attestationsFetched: true },
+    where: { attestationsProcessed: true },
     orderBy: { slot: 'desc' },
     select: { slot: true },
   });
@@ -33,7 +33,7 @@ export const db_getSlotsByRange = async (start: number, end: number) => {
 export const db_getSlotByNumber = async (slot: number) =>
   prisma.slot.findFirst({
     where: { slot },
-    select: { slot: true, attestationsFetched: true, committee: true },
+    select: { slot: true, attestationsProcessed: true, committee: true },
   });
 
 export const db_existCommitteeForSlot = async (slot: number) => {
@@ -52,7 +52,7 @@ export const db_hasEpochCommittees = async (epoch: number) => {
 
 export const db_getLastSlotWithSyncRewards = async () =>
   await prisma.slot.findFirst({
-    where: { blockAndSyncRewardsFetched: true },
+    where: { blockAndSyncRewardsProcessed: true },
     orderBy: { slot: 'desc' },
     select: { slot: true },
   });
@@ -71,7 +71,7 @@ export const db_getSlotByNumbers = async (slots: number[]) => {
 
 export const db_getLastUnfetchedSlot = async () => {
   const res = await prisma.slot.findMany({
-    where: { attestationsFetched: false },
+    where: { attestationsProcessed: false },
     distinct: ['slot'],
     orderBy: { slot: 'asc' },
   });
@@ -122,7 +122,7 @@ export const db_getUnprocessedSlots = async ({
 }) =>
   prisma.slot.findMany({
     select: { slot: true },
-    where: { attestationsFetched: false, slot: { gte: minSlot, lte: maxSlot } },
+    where: { attestationsProcessed: false, slot: { gte: minSlot, lte: maxSlot } },
     orderBy,
     take,
   });
@@ -342,7 +342,7 @@ export async function db_hasBlockAndSyncRewardsFetched(slot: number): Promise<bo
   const slotData = await prisma.slot.findFirst({
     where: {
       slot,
-      blockAndSyncRewardsFetched: true,
+      blockAndSyncRewardsProcessed: true,
     },
   });
   return slotData !== null;

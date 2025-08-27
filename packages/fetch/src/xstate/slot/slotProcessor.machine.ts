@@ -8,6 +8,7 @@ import {
   fetchBeaconBlock,
   fetchELRewards,
   fetchBlockAndSyncRewards,
+  checkSyncCommittee,
   processAttestations,
   processSyncCommitteeAttestations,
   updateValidatorStatuses,
@@ -24,6 +25,7 @@ export interface SlotProcessorContext {
   slot: number;
   slotDb: Slot | null;
   beaconBlockData?: Block | 'SLOT MISSED';
+  syncCommittee: string[] | null;
 }
 
 export type SlotProcessorEvents = { type: 'SLOT_COMPLETED' };
@@ -64,6 +66,7 @@ export const slotProcessorMachine = setup({
     fetchBeaconBlock,
     fetchELRewards,
     fetchBlockAndSyncRewards,
+    checkSyncCommittee,
     processAttestations,
     processSyncCommitteeAttestations,
     updateValidatorStatuses,
@@ -77,6 +80,7 @@ export const slotProcessorMachine = setup({
     epoch: input.epoch,
     slot: getEpochSlots(input.epoch).startSlot,
     slotDb: null,
+    syncCommittee: null,
   }),
   states: {
     /*
@@ -245,27 +249,52 @@ export const slotProcessorMachine = setup({
                   target: 'blockAndSyncRewardsComplete',
                 },
                 {
-                  target: 'blockAndSyncRewardsProcessing',
+                  target: 'syncCommitteeCheck',
                 },
               ],
             },
+
+            syncCommitteeCheck: {
+              invoke: {
+                src: 'checkSyncCommittee',
+                input: ({ context }) => ({ epoch: context.epoch }),
+                onDone: [
+                  {
+                    guard: ({ event }) => event.output.syncCommittee !== null,
+                    actions: assign({
+                      syncCommittee: ({ event }) => event.output.syncCommittee,
+                    }),
+                    target: 'blockAndSyncRewardsProcessing',
+                  },
+                  {
+                    target: 'syncCommitteeRetry',
+                  },
+                ],
+                onError: {
+                  target: 'syncCommitteeRetry',
+                },
+              },
+            },
+
+            syncCommitteeRetry: {
+              after: {
+                [ms('1s')]: 'syncCommitteeCheck',
+              },
+            },
+
             blockAndSyncRewardsProcessing: {
               invoke: {
                 src: 'fetchBlockAndSyncRewards',
-                input: ({ context }) => ({
-                  slot: context.slot,
-                  epoch: context.epoch,
-                  beaconBlockData: context.beaconBlockData
-                    ? {
-                        slot: parseInt(context.beaconBlockData.data.message.slot),
-                        epoch: context.epoch,
-                        blockHash: context.beaconBlockData.data.message.body.eth1_data.block_hash,
-                        proposerIndex: parseInt(
-                          context.beaconBlockData.data.message.proposer_index,
-                        ),
-                      }
-                    : undefined,
-                }),
+                input: ({ context }) => {
+                  const _beaconBlockData = context.beaconBlockData as Block;
+                  return {
+                    slot: context.slot,
+                    timestamp: Number(
+                      _beaconBlockData.data.message.body.execution_payload.timestamp,
+                    ),
+                    syncCommitteeValidators: context.syncCommittee ?? [],
+                  };
+                },
                 onDone: {
                   target: 'blockAndSyncRewardsComplete',
                   actions: assign({}),
@@ -275,6 +304,9 @@ export const slotProcessorMachine = setup({
                 },
               },
             },
+
+            // TODO:prefetchBlockAndSyncRewards if the head is behind
+
             blockAndSyncRewardsComplete: { type: 'final' },
           },
         },
@@ -325,6 +357,7 @@ export const slotProcessorMachine = setup({
 
         validatorStatuses: {
           initial: 'validatorStatusesCheck',
+          // context para pasar los validadores y hacer fetch de sus estados.
           states: {
             validatorStatusesCheck: {
               always: [
@@ -363,6 +396,7 @@ export const slotProcessorMachine = setup({
                 },
               },
             },
+
             validatorStatusesComplete: { type: 'final' },
           },
         },

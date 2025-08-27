@@ -13,6 +13,14 @@ import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { db_getSlotCommitteesValidatorsAmount } from '@/src/utils/db.js';
 
+interface CommitteeUpdate {
+  slot: number;
+  index: number;
+  //validatorIndex: number;
+  aggregationBitsIndex: number;
+  attestationDelay: number;
+}
+
 const prisma = getPrisma();
 
 export const fetchAttestation = async (
@@ -70,31 +78,7 @@ export const fetchAttestation = async (
   }
 };
 
-// async function getAttestation(slot: number, logger: CustomLogger) {
-//   const fetchedAttestations = await beacon_getAttestations(slot + 1);
-
-//   if (fetchedAttestations === 'SLOT MISSED') {
-//     await prisma.slot.update({
-//       where: { slot: slot },
-//       data: { attestationsFetched: true },
-//     });
-//     logger.info(`slot missed.`);
-//     return null;
-//   }
-
-//   return fetchedAttestations;
-// }
-// type Attestation = NonNullable<Awaited<ReturnType<typeof getAttestation>>>[number];
-
-interface CommitteeUpdate {
-  slot: number;
-  index: number;
-  //validatorIndex: number;
-  aggregationBitsIndex: number;
-  attestationDelay: number;
-}
-
-async function processAttestation(
+export async function processAttestation(
   slotNumber: number,
   attestation: Attestation,
   slotCommitteesValidatorsAmounts: Record<number, number[]>,
@@ -158,12 +142,6 @@ async function processAttestation(
   return updates;
 }
 
-/**
- * After processing the attestations for a slot, update the validators within the Committee table.
- * we are not using primsa.transaction because this process is quite big and consumes a lot of Postgres resources.
- * There is not harm if some updates or deletes are applied partially because the next time the same slot is processed,
- * the missing updates or deletes will be applied.
- */
 async function persistToDB(
   attestations: CommitteeUpdate[],
   slotNumber: number,
@@ -205,7 +183,7 @@ async function persistToDB(
       // Update slot
       await tx.slot.update({
         where: { slot: slotNumber },
-        data: { attestationsFetched: true },
+        data: { attestationsProcessed: true },
       });
     },
     { timeout: ms('1m') },

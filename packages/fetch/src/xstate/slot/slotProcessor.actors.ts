@@ -1,11 +1,12 @@
 import { fromPromise } from 'xstate';
 
 import { beacon_blocks } from '@/src/beacon/endpoints.js';
-import { Block } from '@/src/beacon/types.js';
+import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/beacon/feed/fetchBlockAndSyncRewards.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 import { getBlock } from '@/src/execution/endpoints.js';
 import { getPrisma } from '@/src/lib/prisma.js';
+import { db_getSyncCommitteeValidators } from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 
@@ -17,6 +18,10 @@ export interface ProcessSlotInput {
 
 export interface CheckSlotProcessedInput {
   slot: number;
+}
+
+export interface CheckSyncCommitteeOutput {
+  syncCommitteeExists: boolean;
 }
 
 export interface BeaconBlockData {
@@ -140,26 +145,34 @@ export const fetchELRewards = fromPromise(
 );
 
 /**
+ * Actor to check if sync committee data exists for a given epoch
+ */
+export const checkSyncCommittee = fromPromise(
+  async ({
+    input,
+  }: {
+    input: {
+      epoch: number;
+    };
+  }) => {
+    const syncCommittee = await db_getSyncCommitteeValidators(input.epoch);
+    return {
+      syncCommittee,
+    };
+  },
+);
+
+/**
  * Actor to fetch block and sync rewards
  */
 export const fetchBlockAndSyncRewards = fromPromise(
-  async ({ input }: { input: ProcessSlotInput }): Promise<BlockAndSyncRewardsData> => {
-    try {
-      // Dummy block and sync rewards fetching logic
-      console.log(`Fetching block and sync rewards for slot ${input.slot}`);
-
-      // Simulate some processing time
-      await new Promise((resolve) => setTimeout(resolve, 180));
-
-      return {
-        slot: input.slot,
-        blockRewards: Math.random() * 500,
-        syncRewards: Math.random() * 300,
-      };
-    } catch (error) {
-      console.error('Error fetching block and sync rewards:', error);
-      throw error;
-    }
+  async ({
+    input,
+  }: {
+    input: { slot: number; timestamp: number; syncCommitteeValidators: string[] };
+  }) => {
+    const { slot, timestamp, syncCommitteeValidators } = input;
+    return _fetchBlockAndSyncRewards(slot, timestamp, syncCommitteeValidators);
   },
 );
 
