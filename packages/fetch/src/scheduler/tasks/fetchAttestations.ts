@@ -1,6 +1,6 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { fetchAttestation as _fetchAttestations } from '@/src/beacon/feed/fetchAttestations.js';
+import { processAttestations as _fetchAttestations } from '@/src/beacon/feed/processAttestations.js';
 import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';

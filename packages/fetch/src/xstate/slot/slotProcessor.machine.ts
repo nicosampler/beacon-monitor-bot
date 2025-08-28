@@ -14,6 +14,8 @@ import {
   updateValidatorStatuses,
   processWithdrawals,
   updateSlotProcessed,
+  checkAndGetCommitteeValidatorsAmounts,
+  cleanupOldCommittees,
 } from './slotProcessor.actors.js';
 
 import { Block } from '@/src/beacon/types.js';
@@ -26,6 +28,7 @@ export interface SlotProcessorContext {
   slotDb: Slot | null;
   beaconBlockData?: Block | 'SLOT MISSED';
   syncCommittee: string[] | null;
+  committeeValidatorCounts?: Record<number, number[]>;
 }
 
 export type SlotProcessorEvents = { type: 'SLOT_COMPLETED' };
@@ -72,6 +75,8 @@ export const slotProcessorMachine = setup({
     updateValidatorStatuses,
     processWithdrawals,
     updateSlotProcessed,
+    checkAndGetCommitteeValidatorsAmounts,
+    cleanupOldCommittees,
   },
 }).createMachine({
   id: 'SlotProcessor',
@@ -321,33 +326,74 @@ export const slotProcessorMachine = setup({
                   target: 'attestationsComplete',
                 },
                 {
-                  target: 'attestationsProcessing',
+                  target: 'checkAndGetCommitteeValidatorsAmounts',
                 },
               ],
+            },
+            checkAndGetCommitteeValidatorsAmounts: {
+              invoke: {
+                src: 'checkAndGetCommitteeValidatorsAmounts',
+                input: ({ context }) => ({
+                  slot: context.slot,
+                  beaconBlockData: context.beaconBlockData as Block,
+                }),
+                onDone: [
+                  {
+                    guard: ({ event }) => event.output.allSlotsHaveCounts === true,
+                    target: 'attestationsProcessing',
+                    actions: assign({
+                      // slot -> validator indexes
+                      committeeValidatorCounts: ({ event }) =>
+                        event.output.committeeValidatorCounts,
+                    }),
+                  },
+                  {
+                    target: 'committeeValidatorsRetry',
+                  },
+                ],
+                onError: {
+                  target: 'committeeValidatorsRetry',
+                },
+              },
+            },
+            committeeValidatorsRetry: {
+              after: {
+                [ms('1s')]: 'checkAndGetCommitteeValidatorsAmounts',
+              },
             },
             attestationsProcessing: {
               invoke: {
                 src: 'processAttestations',
+                input: ({ context }) => {
+                  const _beaconBlockData = context.beaconBlockData as Block;
+
+                  return {
+                    slotNumber: context.slot,
+                    attestations: _beaconBlockData.data.message.body.attestations ?? [],
+                    slotCommitteesValidatorsAmounts: context.committeeValidatorCounts ?? {},
+                  };
+                },
+                onDone: {
+                  target: 'committeeCleanup',
+                  actions: assign({}),
+                },
+                onError: {
+                  target: 'attestationsProcessing',
+                },
+              },
+            },
+            committeeCleanup: {
+              invoke: {
+                src: 'cleanupOldCommittees',
                 input: ({ context }) => ({
                   slot: context.slot,
-                  epoch: context.epoch,
-                  beaconBlockData: context.beaconBlockData
-                    ? {
-                        slot: parseInt(context.beaconBlockData.data.message.slot),
-                        epoch: context.epoch,
-                        blockHash: context.beaconBlockData.data.message.body.eth1_data.block_hash,
-                        proposerIndex: parseInt(
-                          context.beaconBlockData.data.message.proposer_index,
-                        ),
-                      }
-                    : undefined,
                 }),
                 onDone: {
                   target: 'attestationsComplete',
                   actions: assign({}),
                 },
                 onError: {
-                  target: 'attestationsProcessing',
+                  target: 'committeeCleanup',
                 },
               },
             },
@@ -376,16 +422,17 @@ export const slotProcessorMachine = setup({
                 input: ({ context }) => ({
                   slot: context.slot,
                   epoch: context.epoch,
-                  beaconBlockData: context.beaconBlockData
-                    ? {
-                        slot: parseInt(context.beaconBlockData.data.message.slot),
-                        epoch: context.epoch,
-                        blockHash: context.beaconBlockData.data.message.body.eth1_data.block_hash,
-                        proposerIndex: parseInt(
-                          context.beaconBlockData.data.message.proposer_index,
-                        ),
-                      }
-                    : undefined,
+                  beaconBlockData:
+                    context.beaconBlockData && context.beaconBlockData !== 'SLOT MISSED'
+                      ? {
+                          slot: parseInt(context.beaconBlockData.data.message.slot),
+                          epoch: context.epoch,
+                          blockHash: context.beaconBlockData.data.message.body.eth1_data.block_hash,
+                          proposerIndex: parseInt(
+                            context.beaconBlockData.data.message.proposer_index,
+                          ),
+                        }
+                      : undefined,
                 }),
                 onDone: {
                   target: 'validatorStatusesComplete',
@@ -400,6 +447,8 @@ export const slotProcessorMachine = setup({
             validatorStatusesComplete: { type: 'final' },
           },
         },
+
+        //withdrawal_credentials.slice(-40)
 
         withdrawals: {
           initial: 'withdrawalsCheck',
@@ -421,16 +470,17 @@ export const slotProcessorMachine = setup({
                 input: ({ context }) => ({
                   slot: context.slot,
                   epoch: context.epoch,
-                  beaconBlockData: context.beaconBlockData
-                    ? {
-                        slot: parseInt(context.beaconBlockData.data.message.slot),
-                        epoch: context.epoch,
-                        blockHash: context.beaconBlockData.data.message.body.eth1_data.block_hash,
-                        proposerIndex: parseInt(
-                          context.beaconBlockData.data.message.proposer_index,
-                        ),
-                      }
-                    : undefined,
+                  beaconBlockData:
+                    context.beaconBlockData && context.beaconBlockData !== 'SLOT MISSED'
+                      ? {
+                          slot: parseInt(context.beaconBlockData.data.message.slot),
+                          epoch: context.epoch,
+                          blockHash: context.beaconBlockData.data.message.body.eth1_data.block_hash,
+                          proposerIndex: parseInt(
+                            context.beaconBlockData.data.message.proposer_index,
+                          ),
+                        }
+                      : undefined,
                 }),
                 onDone: {
                   target: 'withdrawalsComplete',

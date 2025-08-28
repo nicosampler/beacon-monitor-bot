@@ -163,6 +163,7 @@ model User {
   messageId     BigInt?
   lastClaimed   DateTime?
   hasBlockedBot Boolean   @default(false)
+  createdAt     DateTime  @default(now())
 
   performanceNotif     DateTime?
   performanceThreshold Int       @default(90)

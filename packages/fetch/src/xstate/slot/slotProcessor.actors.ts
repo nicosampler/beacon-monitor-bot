@@ -2,12 +2,16 @@ import { fromPromise } from 'xstate';
 
 import { beacon_blocks } from '@/src/beacon/endpoints.js';
 import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/beacon/feed/fetchBlockAndSyncRewards.js';
+import { processAttestations as _processAttestations } from '@/src/beacon/feed/processAttestations.js';
+import { Attestation, Block } from '@/src/beacon/types.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 import { getBlock } from '@/src/execution/endpoints.js';
 import { getPrisma } from '@/src/lib/prisma.js';
-import { db_getSyncCommitteeValidators } from '@/src/utils/db.js';
-
+import {
+  db_getSyncCommitteeValidators,
+  db_getSlotCommitteesValidatorsAmountsForSlots,
+} from '@/src/utils/db.js';
 const prisma = getPrisma();
 
 export interface ProcessSlotInput {
@@ -180,29 +184,43 @@ export const fetchBlockAndSyncRewards = fromPromise(
  * Actor to process attestations
  */
 export const processAttestations = fromPromise(
-  async ({ input }: { input: ProcessSlotInput }): Promise<AttestationsData> => {
-    try {
-      // Dummy attestation processing logic
-      console.log(`Processing attestations for slot ${input.slot}`);
-
-      // Simulate some processing time
-      await new Promise((resolve) => setTimeout(resolve, 120));
-
-      return {
-        slot: input.slot,
-        attestations: [
-          {
-            validatorIndex: Math.floor(Math.random() * 1000),
-            committeeIndex: Math.floor(Math.random() * 64),
-          },
-        ],
-      };
-    } catch (error) {
-      console.error('Error processing attestations:', error);
-      throw error;
-    }
+  async ({
+    input,
+  }: {
+    input: {
+      slotNumber: number;
+      attestations: Attestation[];
+      slotCommitteesValidatorsAmounts: Record<number, number[]>;
+    };
+  }) => {
+    _processAttestations(
+      input.slotNumber,
+      input.attestations,
+      input.slotCommitteesValidatorsAmounts,
+    );
   },
 );
+
+/**
+ * Actor to cleanup old committee data
+ */
+export const cleanupOldCommittees = fromPromise(async ({ input }: { input: { slot: number } }) => {
+  await prisma.committee.deleteMany({
+    where: {
+      slot: {
+        lt: input.slot - env.BEACON_SLOTS_PER_EPOCH * 3, // some buffer just in case
+      },
+      attestationDelay: {
+        lte: env.BEACON_MAX_ATTESTATION_DELAY,
+      },
+    },
+  });
+
+  return {
+    slot: input.slot,
+    cleanupCompleted: true,
+  };
+});
 
 /**
  * Actor to process sync committee attestations
@@ -282,6 +300,43 @@ export const processWithdrawals = fromPromise(
       };
     } catch (error) {
       console.error('Error processing withdrawals:', error);
+      throw error;
+    }
+  },
+);
+
+/**
+ * Actor to check and get committee validator amounts for attestations
+ */
+export const checkAndGetCommitteeValidatorsAmounts = fromPromise(
+  async ({ input }: { input: { slot: number; beaconBlockData: Block } }) => {
+    try {
+      // Get unique slots from attestations in beacon block data
+      const attestations = input.beaconBlockData.data.message.body.attestations || [];
+      const uniqueSlots = [...new Set(attestations.map((att) => parseInt(att.data.slot)))];
+
+      if (uniqueSlots.length === 0) {
+        throw new Error('No attestations found');
+      }
+
+      // Get committee validator counts for all slots
+      const committeeValidatorCounts = await db_getSlotCommitteesValidatorsAmountsForSlots(
+        uniqueSlots as number[],
+      );
+
+      // Check if all slots have validator counts
+      const allSlotsHaveCounts = uniqueSlots.every((slot) => {
+        const counts = committeeValidatorCounts[slot as number];
+        return counts && counts.length > 0;
+      });
+
+      return {
+        committeeValidatorCounts,
+        allSlotsHaveCounts,
+        uniqueSlots,
+      };
+    } catch (error) {
+      console.error('Error checking committee validator amounts:', error);
       throw error;
     }
   },

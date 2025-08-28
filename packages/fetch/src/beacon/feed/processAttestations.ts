@@ -9,9 +9,7 @@ import {
   convertHexStringToByteArray,
 } from '@/src/beacon/utils/bitlist.js';
 import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
-import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
-import { db_getSlotCommitteesValidatorsAmount } from '@/src/utils/db.js';
 
 interface CommitteeUpdate {
   slot: number;
@@ -23,62 +21,46 @@ interface CommitteeUpdate {
 
 const prisma = getPrisma();
 
-export const fetchAttestation = async (
+export const processAttestations = async (
   slotNumber: number,
   allAttestations: Attestation[],
-  logger: CustomLogger,
+  slotCommitteesValidatorsAmounts: Record<number, number[]>,
 ) => {
-  try {
-    logger.info(`start.`);
+  // Filter out attestations that are older than the oldest lookback slot
+  // This is important to handle the base case for which we won't have epoch, committee, etc.
+  const filteredAttestations = allAttestations.filter(
+    (attestation) => +attestation.data.slot >= getOldestLookbackSlot(),
+  );
 
-    // Fetch the slot's attestations
-    //let fetchedAttestations = await getAttestation(slotNumber, logger);
-    //if (!fetchedAttestations) return;
-
-    // Filter out attestations that are older than the oldest lookback slot
-    // This is important to handle the base case for which we won't have epoch, committee, etc.
-    const filteredAttestations = allAttestations.filter(
-      (attestation) => +attestation.data.slot >= getOldestLookbackSlot(),
+  // The beacon request brings attestations for different slots.
+  // we need to process each of them and calculate the delay for each attestation.
+  const attestations: CommitteeUpdate[] = [];
+  for (const attestation of filteredAttestations) {
+    const updates = await processAttestation(
+      slotNumber,
+      attestation,
+      slotCommitteesValidatorsAmounts,
     );
-
-    // Get amount of validators per committee
-    const slotCommitteesValidatorsAmounts = await db_getSlotCommitteesValidatorsAmount(slotNumber);
-
-    // The beacon request brings attestations for different slots.
-    // we need to process each of them and calculate the delay for each attestation.
-    const attestations: CommitteeUpdate[] = [];
-    for (const attestation of filteredAttestations) {
-      const updates = await processAttestation(
-        slotNumber,
-        attestation,
-        slotCommitteesValidatorsAmounts,
-      );
-      attestations.push(...updates);
-    }
-
-    // remove duplicates
-    const uniqueAttestations = new Map<string, CommitteeUpdate>();
-    for (const attestation of attestations) {
-      const key = `${attestation.slot}-${attestation.index}-${attestation.aggregationBitsIndex}`;
-      const existing = uniqueAttestations.get(key);
-
-      if (!existing || attestation.attestationDelay < existing.attestationDelay) {
-        uniqueAttestations.set(key, attestation);
-      }
-    }
-    const deduplicatedAttestations = Array.from(uniqueAttestations.values());
-
-    // Update committee table
-    await persistToDB(deduplicatedAttestations, slotNumber, logger);
-
-    logger.info(`Done for slot ${slotNumber}.`);
-  } catch (error) {
-    logger.error('There was an error.', error);
-    throw error;
+    attestations.push(...updates);
   }
+
+  // remove duplicates
+  const uniqueAttestations = new Map<string, CommitteeUpdate>();
+  for (const attestation of attestations) {
+    const key = `${attestation.slot}-${attestation.index}-${attestation.aggregationBitsIndex}`;
+    const existing = uniqueAttestations.get(key);
+
+    if (!existing || attestation.attestationDelay < existing.attestationDelay) {
+      uniqueAttestations.set(key, attestation);
+    }
+  }
+  const deduplicatedAttestations = Array.from(uniqueAttestations.values());
+
+  // Update committee table
+  await persistToDB(deduplicatedAttestations, slotNumber);
 };
 
-export async function processAttestation(
+async function processAttestation(
   slotNumber: number,
   attestation: Attestation,
   slotCommitteesValidatorsAmounts: Record<number, number[]>,
@@ -142,13 +124,7 @@ export async function processAttestation(
   return updates;
 }
 
-async function persistToDB(
-  attestations: CommitteeUpdate[],
-  slotNumber: number,
-  logger: CustomLogger,
-): Promise<void> {
-  logger.info(`Processing ${attestations.length} updates.`);
-
+async function persistToDB(attestations: CommitteeUpdate[], slotNumber: number): Promise<void> {
   await prisma.$transaction(
     async (tx) => {
       const queries: Prisma.Sql[] = [];

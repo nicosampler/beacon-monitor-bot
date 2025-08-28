@@ -158,6 +158,40 @@ export async function db_getSlotCommitteesValidatorsAmount(slotNumber: number) {
   );
 }
 
+/**
+ * Gets the committee validator counts for multiple slots
+ * @param slotNumbers Array of slot numbers to check
+ * @returns An object where keys are slot numbers and values are committee validator counts
+ */
+export async function db_getSlotCommitteesValidatorsAmountsForSlots(slotNumbers: number[]) {
+  if (slotNumbers.length === 0) {
+    return {};
+  }
+
+  const slots = await prisma.slot.findMany({
+    where: {
+      slot: {
+        in: slotNumbers,
+      },
+    },
+    select: {
+      slot: true,
+      committeeValidatorCounts: true,
+    },
+    orderBy: {
+      slot: 'desc',
+    },
+  });
+
+  return slots.reduce(
+    (acc, slot) => {
+      acc[slot.slot] = slot.committeeValidatorCounts as number[];
+      return acc;
+    },
+    {} as Record<number, number[]>,
+  );
+}
+
 export async function updateLastSummaryUpdate<K extends keyof LastSummaryUpdate>(
   key: K,
   value: LastSummaryUpdate[K],
