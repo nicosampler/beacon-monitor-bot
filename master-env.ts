@@ -31,10 +31,11 @@ export const env = createEnv({
     NODE_SENTINEL_CHAIN: z.enum(['gnosis', 'ethereum']),
     NODE_SENTINEL_PRIVATE_KEY: z.string().optional(),
     NODE_SENTINEL_API_URL: z.string().url(),
-    NODE_SENTINEL_API_PORT: z.preprocess(
-      (val) => Number(val),
-      z.number().int().positive().default(3005),
-    ),
+    NODE_SENTINEL_API_PORT: z.preprocess((val) => {
+      if (val === undefined || val === '') return undefined;
+      const num = Number(val);
+      return isNaN(num) ? undefined : num;
+    }, z.number().int().positive().default(3005)),
     NODE_SENTINEL_API_SECRET_KEY: z.string(),
 
     // Beacon

@@ -1,6 +1,7 @@
 import { getMultiMachineLogger } from '@/src/lib/multiMachineLogger.js';
 import createLogger from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
+import { initValidators } from '@/src/utils/initValidators.js';
 import { getCreateEpochActor, getEpochOrchestratorActor } from '@/src/xstate/epoch/index.js';
 
 const prisma = getPrisma();
@@ -10,7 +11,7 @@ async function main() {
   await prisma.$connect();
 
   // Initialize validators if table is empty
-  // await initValidators();
+  await initValidators();
 
   const createEpochsActor = getCreateEpochActor();
   createEpochsActor.start();

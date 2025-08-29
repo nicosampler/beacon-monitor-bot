@@ -1,12 +1,14 @@
 import ms from 'ms';
 import { setup, assign, sendParent, stopChild } from 'xstate';
 
+import { slotOrchestratorMachine } from '../slot/slotOrchestrator.machine.js';
+
 import { getEpochSlots } from '@/src/beacon/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 import {
   canProcessEpoch,
-  validatorsNotFetched,
+  //validatorsNotFetched,
   canFetchCommittees,
   canFetchSyncCommittees,
   rewardsNotFetched,
@@ -20,7 +22,6 @@ import {
   checkSyncCommitteeStatus,
 } from '@/src/xstate/epoch/epochProcessor.actors.js';
 import { ProcessEpochContext, ProcessEpochSetup } from '@/src/xstate/epoch/epochProcessor.types.js';
-import { slotProcessorMachine } from '@/src/xstate/slot/slotProcessor.machine.js';
 
 export const epochProcessorMachine = setup({
   types: {} as ProcessEpochSetup,
@@ -30,11 +31,11 @@ export const epochProcessorMachine = setup({
     fetchSyncCommittees,
     checkIfCanGetValidators,
     checkSyncCommitteeStatus,
-    slotProcessor: slotProcessorMachine,
+    slotOrchestratorMachine,
   },
   guards: {
     canProcessEpoch,
-    validatorsNotFetched,
+    //validatorsNotFetched,
     canFetchCommittees,
     canFetchSyncCommittees,
     rewardsNotFetched,
@@ -44,19 +45,22 @@ export const epochProcessorMachine = setup({
   },
 }).createMachine({
   id: 'EpochProcessor',
-  initial: 'epochValidation',
+  initial: 'checkingCanProcess',
   context: ({ input }) => {
     const { startSlot, endSlot } = getEpochSlots(input.epoch);
     return {
       epoch: input.epoch,
       startSlot: startSlot,
       endSlot: endSlot,
-      validatorsInfoFetched: input.validatorsInfoFetched,
-      rewardsFetched: input.rewardsFetched,
-      committeesFetched: input.committeesFetched,
-      slotsFetched: input.slotsFetched,
-      syncCommitteesFetched: input.syncCommitteesFetched ?? false,
-      slotActor: null,
+      // read-only statuses
+      epochDBStatus: {
+        validatorsInfoFetched: input.validatorsInfoFetched,
+        rewardsFetched: input.rewardsFetched,
+        committeesFetched: input.committeesFetched,
+        slotsFetched: input.slotsFetched,
+        syncCommitteesFetched: input.syncCommitteesFetched,
+      },
+      slotOrchestratorActor: null,
       currentSlot: getSlotNumberFromTimestamp(Date.now()),
     } satisfies ProcessEpochContext;
   },
@@ -65,65 +69,61 @@ export const epochProcessorMachine = setup({
      * Check if we can start processing the epoch
      * We can process some data up to current epoch + 1.
      */
-    epochValidation: {
+    checkingCanProcess: {
       always: [
         {
           guard: 'canProcessEpoch',
-          target: 'mainProcessing',
+          target: 'epochProcessing',
         },
         {
-          target: 'epochWaiting',
+          target: 'waiting',
         },
       ],
     },
-    epochWaiting: {
+    waiting: {
       after: {
-        [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'epochValidation',
+        [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'checkingCanProcess',
       },
     },
 
-    mainProcessing: {
+    epochProcessing: {
       type: 'parallel',
       states: {
-        epochProcessing: {
+        fetching: {
           type: 'parallel',
           states: {
             /**
              * Get epoch committees
              */
             committees: {
-              initial: 'committeeFetchCheck',
+              initial: 'checkingEpochStatus',
               states: {
-                committeeStatusCheck: {
+                checkingEpochStatus: {
                   always: [
                     {
-                      guard: ({ context }) => !context.committeesFetched,
-                      target: 'committeeFetching',
+                      guard: ({ context }) => !context.epochDBStatus.committeesFetched,
+                      target: 'fetching',
                     },
                     {
-                      target: 'committeeComplete',
-                      actions: [sendParent({ type: 'COMMITTEES_READY' })],
+                      target: 'complete',
                     },
                   ],
                 },
-                committeeFetching: {
+                fetching: {
                   invoke: {
                     src: 'fetchCommittees',
                     input: ({ context }) => ({ epoch: context.epoch }),
                     onDone: [
                       {
-                        actions: assign({
-                          committeesFetched: true,
-                        }),
-                        target: 'committeeComplete',
+                        target: 'complete',
                       },
                     ],
-                    onError: 'committeeFetching',
+                    onError: 'fetching',
                   },
                 },
-                committeeComplete: {
+                complete: {
                   type: 'final',
-                  entry: [sendParent({ type: 'COMMITTEES_READY' })],
+                  entry: [sendParent({ type: 'COMMITTEES_FETCHED' })],
                 },
               },
             },
@@ -133,50 +133,48 @@ export const epochProcessorMachine = setup({
              * Sync committees persist across multiple epochs, we fetch them only for the first epoch of the sync committee period
              */
             syncCommittees: {
-              initial: 'syncCommitteeFetchCheck',
+              initial: 'checkingEpochStatus',
               states: {
-                syncCommitteeStatusCheck: {
+                checkingEpochStatus: {
                   always: [
                     {
-                      guard: ({ context }) => !context.syncCommitteesFetched,
-                      target: 'syncCommitteeTypeCheck',
+                      guard: ({ context }) => context.epochDBStatus.syncCommitteesFetched,
+                      target: 'complete',
                     },
                     {
-                      target: 'syncCommitteeComplete',
+                      target: 'checkingInDBTable',
                     },
                   ],
                 },
-                syncCommitteeTypeCheck: {
-                  always: [
-                    {
-                      guard: 'isFirstEpochOfSyncCommitteePeriod',
-                      target: 'syncCommitteeFetching',
-                    },
-                    {
-                      guard: 'isLookbackEpoch',
-                      target: 'syncCommitteeFetching',
-                    },
-                    {
-                      target: 'syncCommitteeComplete',
-                    },
-                  ],
+                checkingInDBTable: {
+                  invoke: {
+                    src: 'checkSyncCommitteeStatus',
+                    input: ({ context }) => ({ epoch: context.epoch }),
+                    onDone: [
+                      {
+                        guard: ({ event }) => event.output.isFetched,
+                        target: 'complete',
+                      },
+                      {
+                        target: 'fetching',
+                      },
+                    ],
+                    onError: 'checkingInDBTable',
+                  },
                 },
-                syncCommitteeFetching: {
+                fetching: {
                   invoke: {
                     src: 'fetchSyncCommittees',
                     input: ({ context }) => ({ epoch: context.epoch }),
                     onDone: [
                       {
-                        actions: assign({
-                          syncCommitteesFetched: true,
-                        }),
-                        target: 'syncCommitteeComplete',
+                        target: 'complete',
                       },
                     ],
-                    onError: 'syncCommitteeFetching',
+                    onError: 'fetching',
                   },
                 },
-                syncCommitteeComplete: { type: 'final' },
+                complete: { type: 'final' },
               },
             },
 
@@ -184,59 +182,59 @@ export const epochProcessorMachine = setup({
              * Get all active beacon validators
              * We need to know the validators to calculate missed rewards
              */
-            validators: {
-              initial: 'validatorStatusCheck',
-              states: {
-                validatorStatusCheck: {
-                  always: [
-                    {
-                      guard: 'validatorsNotFetched',
-                      target: 'validatorTimingCheck',
-                    },
-                    {
-                      target: 'validatorComplete',
-                    },
-                  ],
-                },
-                validatorTimingCheck: {
-                  invoke: {
-                    src: 'checkIfCanGetValidators',
-                    input: ({ context }) => context.startSlot,
-                    onDone: [
-                      {
-                        guard: ({ event }) => event.output.canProceed,
-                        target: 'validatorFetching',
-                      },
-                      {
-                        target: 'validatorWaiting',
-                      },
-                    ],
-                    onError: 'validatorWaiting',
-                  },
-                },
-                validatorWaiting: {
-                  after: {
-                    [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'validatorTimingCheck',
-                  },
-                },
-                validatorFetching: {
-                  invoke: {
-                    src: 'fetchValidators',
-                    input: ({ context }) => ({ startSlot: context.startSlot }),
-                    onDone: [
-                      {
-                        actions: assign({
-                          validatorsInfoFetched: true,
-                        }),
-                        target: 'validatorComplete',
-                      },
-                    ],
-                    onError: 'validatorComplete',
-                  },
-                },
-                validatorComplete: { type: 'final' },
-              },
-            },
+            // validators: {
+            //   initial: 'validatorStatusCheck',
+            //   states: {
+            //     validatorStatusCheck: {
+            //       always: [
+            //         {
+            //           guard: 'validatorsNotFetched',
+            //           target: 'validatorTimingCheck',
+            //         },
+            //         {
+            //           target: 'validatorComplete',
+            //         },
+            //       ],
+            //     },
+            //     validatorTimingCheck: {
+            //       invoke: {
+            //         src: 'checkIfCanGetValidators',
+            //         input: ({ context }) => context.startSlot,
+            //         onDone: [
+            //           {
+            //             guard: ({ event }) => event.output.canProceed,
+            //             target: 'validatorFetching',
+            //           },
+            //           {
+            //             target: 'validatorWaiting',
+            //           },
+            //         ],
+            //         onError: 'validatorWaiting',
+            //       },
+            //     },
+            //     validatorWaiting: {
+            //       after: {
+            //         [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'validatorTimingCheck',
+            //       },
+            //     },
+            //     validatorFetching: {
+            //       invoke: {
+            //         src: 'fetchValidators',
+            //         input: ({ context }) => ({ startSlot: context.startSlot }),
+            //         onDone: [
+            //           {
+            //             actions: assign({
+            //               validatorsInfoFetched: true,
+            //             }),
+            //             target: 'validatorComplete',
+            //           },
+            //         ],
+            //         onError: 'validatorComplete',
+            //       },
+            //     },
+            //     validatorComplete: { type: 'final' },
+            //   },
+            // },
 
             /**
              * Rewards processing track
@@ -245,31 +243,31 @@ export const epochProcessorMachine = setup({
              * 2. Current slot is greater than the epoch's end slot
              */
             rewards: {
-              initial: 'rewardStatusCheck',
+              initial: 'checkingCanProcess',
               states: {
-                rewardStatusCheck: {
+                checkingCanProcess: {
                   always: [
                     {
                       guard: 'canProcessRewards',
-                      target: 'rewardProcessing',
+                      target: 'processing',
                     },
                     {
-                      target: 'rewardWaiting',
+                      target: 'waiting',
                     },
                   ],
                 },
-                rewardWaiting: {
+                waiting: {
                   after: {
-                    [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'rewardStatusCheck', // Check conditions again after 10 seconds
+                    [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'checkingCanProcess',
                   },
                 },
-                rewardProcessing: {
+                processing: {
                   // Placeholder for actual rewards processing logic
                   after: {
-                    [ms('1s')]: 'rewardComplete',
+                    [ms('1s')]: 'complete',
                   },
                 },
-                rewardComplete: { type: 'final' },
+                complete: { type: 'final' },
               },
             },
           },
@@ -277,22 +275,28 @@ export const epochProcessorMachine = setup({
 
         /**
          * Process slots for the epoch
-         * This state waits for committees to be ready before processing slots
+         * This state waits for committees to be ready before starting
          */
         slotsProcessing: {
-          initial: 'slotIdle',
+          initial: 'waitingForCommittees',
           states: {
-            slotIdle: {
+            waitingForCommittees: {
+              always: [
+                {
+                  guard: ({ context }) => context.epochDBStatus.committeesFetched,
+                  target: 'processingSlots',
+                },
+              ],
               on: {
-                COMMITTEES_READY: 'slotSpawning',
+                COMMITTEES_FETCHED: 'processingSlots',
               },
             },
-            slotSpawning: {
+            processingSlots: {
               entry: assign({
-                slotActor: ({ context, spawn }) => {
-                  const slotId = `slotProcessor:${context.epoch}`;
-                  return spawn('slotProcessor', {
-                    id: slotId,
+                slotOrchestratorActor: ({ context, spawn }) => {
+                  const orchestratorId = `slotOrchestrator:${context.epoch}`;
+                  return spawn('slotOrchestratorMachine', {
+                    id: orchestratorId,
                     input: {
                       epoch: context.epoch,
                     },
@@ -300,28 +304,27 @@ export const epochProcessorMachine = setup({
                 },
               }),
               on: {
-                SLOT_COMPLETED: {
-                  target: 'slotComplete',
+                SLOTS_COMPLETED: {
+                  target: 'complete',
                   actions: [
-                    stopChild(({ context }) => context.slotActor?.id || ''),
+                    stopChild(({ context }) => context.slotOrchestratorActor?.id || ''),
                     assign({
-                      slotsFetched: true,
-                      slotActor: null,
+                      slotOrchestratorActor: null,
                     }),
                   ],
                 },
               },
             },
-            slotComplete: {
+            complete: {
               type: 'final',
             },
           },
         },
       },
-      onDone: 'epochComplete',
+      onDone: 'complete',
     },
 
-    epochComplete: {
+    complete: {
       entry: [
         sendParent(({ context }) => ({
           type: 'EPOCH_COMPLETED',

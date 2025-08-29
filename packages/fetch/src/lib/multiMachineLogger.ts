@@ -86,11 +86,6 @@ export class MultiMachineLogger {
   private updateDisplay() {
     const statusData = {
       timestamp: new Date().toISOString(),
-      summary: {
-        totalMachines: this.machines.size,
-        activeMachines: Array.from(this.machines.values()).filter((m) => m.currentLog).length,
-        lastUpdate: new Date().toLocaleString(),
-      },
       machines: {} as Record<string, any>,
     };
 

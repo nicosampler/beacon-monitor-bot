@@ -14,6 +14,7 @@ model Epoch {
   rewardsFetched            Boolean @default(false) // Whether the rewards for this epoch have been fetched
   committeesFetched         Boolean @default(false) // Whether the committees for this epoch have been fetched
   slotsFetched              Boolean @default(false) // Whether the slots for this epoch have been fetched
+  syncCommitteesFetched     Boolean @default(false) // Whether the sync committees for this epoch have been fetched
 }
 
 model Slot {

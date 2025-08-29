@@ -4,7 +4,7 @@ import { z } from 'zod';
 const _env = process.env;
 
 export const env = createEnv({
-  clientPrefix: 'FIX_SERVER_ERROR',
+  clientPrefix: 'IF_NOT_PROVIDED_IT_FAILS',
   client: {},
   server: {
     // App
@@ -19,7 +19,7 @@ export const env = createEnv({
       (val) => (typeof val === 'string' ? val.split(',').map(Number) : []),
       z.array(z.number()),
     ),
-    TG_BOT_IS_DEV: z.boolean().optional().default(false),
+    TG_BOT_IS_DEV: z.preprocess((val) => val === 'true', z.boolean().optional().default(false)),
 
     // Prisma
     // Logging
@@ -31,23 +31,31 @@ export const env = createEnv({
     NODE_SENTINEL_CHAIN: z.enum(['gnosis', 'ethereum']),
     NODE_SENTINEL_PRIVATE_KEY: z.string().optional(),
     NODE_SENTINEL_API_URL: z.string().url(),
-    NODE_SENTINEL_API_PORT: z.number().int().positive().default(3005),
+    NODE_SENTINEL_API_PORT: z.preprocess((val) => {
+      if (val === undefined || val === '') return undefined;
+      const num = Number(val);
+      return isNaN(num) ? undefined : num;
+    }, z.number().int().positive().default(3005)),
     NODE_SENTINEL_API_SECRET_KEY: z.string(),
+
     // Beacon
-    BEACON_GENESIS_TIMESTAMP: z
-      .number()
-      .int()
-      .positive()
-      .transform((val) => val * (process.env.NODE_SENTINEL_CHAIN === 'gnosis' ? 1 : 1000)),
-    BEACON_SLOT_DURATION_IN_SECONDS: z.number().int().positive(),
-    BEACON_SLOTS_PER_EPOCH: z.number().int().positive(),
-    BEACON_DELAY_SLOTS_TO_HEAD: z.number().int().positive(),
-    BEACON_LOOKBACK_SLOT: z.number().int().min(0),
-    BEACON_MAX_ATTESTATION_DELAY: z.number().int().min(2),
+    BEACON_GENESIS_TIMESTAMP: z.preprocess((val) => {
+      const numVal = Number(val);
+      return numVal * (process.env.NODE_SENTINEL_CHAIN === 'gnosis' ? 1 : 1000);
+    }, z.number().int().positive()),
+    BEACON_SLOT_DURATION_IN_SECONDS: z.preprocess(
+      (val) => Number(val),
+      z.number().int().positive(),
+    ),
+    BEACON_SLOTS_PER_EPOCH: z.preprocess((val) => Number(val), z.number().int().positive()),
+    BEACON_DELAY_SLOTS_TO_HEAD: z.preprocess((val) => Number(val), z.number().int().positive()),
+    BEACON_LOOKBACK_SLOT: z.preprocess((val) => Number(val), z.number().int().min(0)),
+    BEACON_MAX_ATTESTATION_DELAY: z.preprocess((val) => Number(val), z.number().int().min(2)),
+
     // Beacon API
     BEACON_API_URL: z.string().url(),
     BEACON_API_BKP_URL: z.string().url(),
-    BEACON_API_REQUEST_PER_SECOND: z.number().int().positive(),
+    BEACON_API_REQUEST_PER_SECOND: z.preprocess((val) => Number(val), z.number().int().positive()),
 
     // Execution API
     EXECUTION_EXPLORER_URL: z.string().url(),
@@ -55,16 +63,22 @@ export const env = createEnv({
     EXECUTION_API_KEY: z.string().optional(),
     EXECUTION_API_BKP_URL: z.string().url(),
     EXECUTION_API_BKP_KEY: z.string().optional(),
-    EXECUTION_API_REQUEST_PER_SECOND: z.number().int().positive(),
+    EXECUTION_API_REQUEST_PER_SECOND: z.preprocess(
+      (val) => Number(val),
+      z.number().int().positive(),
+    ),
     EXECUTION_RPC_URL: z.string().url(),
 
     // Blockchain
-    BLOCKCHAIN_CHAIN_ID: z.number().int().positive(),
+    BLOCKCHAIN_CHAIN_ID: z.preprocess((val) => Number(val), z.number().int().positive()),
     BLOCKCHAIN_TOKEN_SYMBOL: z.string(),
     BLOCKCHAIN_CL_REWARDS_SYMBOL: z.string(),
     BLOCKCHAIN_EL_REWARDS_SYMBOL: z.string(),
     BLOCKCHAIN_FEE_REWARDS_IN_STABLE: z.preprocess((val) => val === 'true', z.boolean()),
-    BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD: z.number().int().positive(),
+    BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD: z.preprocess(
+      (val) => Number(val),
+      z.number().int().positive(),
+    ),
     BLOCKCHAIN_FEE_REWARDS_SYMBOL: z.string(),
     BLOCKCHAIN_SC_DEPOSIT_ADDRESS: z.string(),
 
@@ -74,24 +88,6 @@ export const env = createEnv({
   },
   runtimeEnv: {
     ..._env,
-
-    TG_BOT_IS_DEV: _env['TG_BOT_IS_DEV'] === 'true',
-
-    // Beacon config
-    BEACON_GENESIS_TIMESTAMP: Number(_env['BEACON_GENESIS_TIMESTAMP']),
-    BEACON_SLOT_DURATION_IN_SECONDS: Number(_env['BEACON_SLOT_DURATION_IN_SECONDS']),
-    BEACON_SLOTS_PER_EPOCH: Number(_env['BEACON_SLOTS_PER_EPOCH']),
-    BEACON_DELAY_SLOTS_TO_HEAD: Number(_env['BEACON_DELAY_SLOTS_TO_HEAD']),
-    BEACON_LOOKBACK_SLOT: Number(_env['BEACON_LOOKBACK_SLOT']),
-    BEACON_MAX_ATTESTATION_DELAY: Number(_env['BEACON_MAX_ATTESTATION_DELAY']),
-    BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD: Number(
-      _env['BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD'],
-    ),
-    // Beacon-node API
-    BEACON_API_REQUEST_PER_SECOND: Number(_env['BEACON_API_REQUEST_PER_SECOND']),
-
-    // Execution API
-    EXECUTION_API_REQUEST_PER_SECOND: Number(_env['EXECUTION_API_REQUEST_PER_SECOND']),
   },
   emptyStringAsUndefined: true,
 });

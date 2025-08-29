@@ -41,7 +41,7 @@ export const fetchBlockAndSyncRewardsTask = async (logger: CustomLogger) => {
     return;
   }
 
-  return _fetchBlockAndSyncRewards(slotToFetch, maxSlotToFetch, logger);
+  return _fetchBlockAndSyncRewards(slotToFetch, 1, []);
 };
 
 /* 

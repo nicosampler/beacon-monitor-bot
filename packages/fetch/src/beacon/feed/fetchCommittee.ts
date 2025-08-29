@@ -111,9 +111,9 @@ async function saveCommittee(epoch: number, slots: number[], committees: Committ
 
   await prisma.$transaction(
     async (tx) => {
-      // Insert slots
+      // Single bulk INSERT with ON CONFLICT - equivalent to original performance
       await tx.$executeRaw`
-        INSERT INTO "Slot" (slot, "attestationsFetched", "committeeValidatorCounts")
+        INSERT INTO "Slot" (slot, "attestationsProcessed", "committeeValidatorCounts")
         SELECT 
           unnest(${slots}::integer[]), 
           false,
@@ -122,7 +122,7 @@ async function saveCommittee(epoch: number, slots: number[], committees: Committ
           "committeeValidatorCounts" = EXCLUDED."committeeValidatorCounts"
       `;
 
-      // Insert committees
+      // Insert committees in batches for better performance
       const batchSize = 100000;
       const batches = chunk(committees, batchSize);
       for (const batch of batches) {

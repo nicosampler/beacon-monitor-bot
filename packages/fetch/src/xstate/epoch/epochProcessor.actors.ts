@@ -68,7 +68,7 @@ export const pickNextEpoch = fromPromise(async (): Promise<PickNextEpochResult> 
       rewardsFetched: nextEpoch.rewardsFetched ?? false,
       committeesFetched: nextEpoch.committeesFetched ?? false,
       slotsFetched: nextEpoch.slotsFetched ?? false,
-      syncCommitteesFetched: !!existingSyncCommittee,
+      syncCommitteesFetched: nextEpoch.syncCommitteesFetched ?? false,
     };
 
     return result;
@@ -149,9 +149,9 @@ export const checkIfCanGetValidators = fromPromise(async ({ input }: { input: nu
 /**
  * Guard function to check if validators have not been fetched yet
  */
-export const validatorsNotFetched = ({ context }: { context: ProcessEpochContext }): boolean => {
-  return !context.validatorsInfoFetched;
-};
+// export const validatorsNotFetched = ({ context }: { context: ProcessEpochContext }): boolean => {
+//   return !context.validatorsInfoFetched;
+// };
 
 /**
  * Guard function to check if we can fetch committees
@@ -183,9 +183,9 @@ export const rewardsNotFetched = ({ context }: { context: ProcessEpochContext })
  */
 export const canProcessRewards = ({ context }: { context: ProcessEpochContext }): boolean => {
   // First condition: validators must have been fetched for the current epoch
-  if (!context.validatorsInfoFetched) {
-    return false;
-  }
+  // if (!context.validatorsInfoFetched) {
+  //   return false;
+  // }
 
   // Second condition: current slot must be greater than the epoch's end slot
   const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
@@ -279,6 +279,12 @@ export const fetchSyncCommittees = fromPromise(async ({ input }: { input: { epoc
         validatorAggregates: syncCommitteeData.validator_aggregates,
       },
       update: {},
+    });
+
+    // Mark the epoch as having sync committees fetched
+    await prisma.epoch.update({
+      where: { epoch: input.epoch },
+      data: { syncCommitteesFetched: true },
     });
 
     logger.info(

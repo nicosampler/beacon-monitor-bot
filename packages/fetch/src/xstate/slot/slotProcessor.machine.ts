@@ -19,7 +19,6 @@ import {
 } from './slotProcessor.actors.js';
 
 import { Block } from '@/src/beacon/types.js';
-import { getEpochSlots } from '@/src/beacon/utils/misc.js';
 import { env } from '@/src/env.js';
 
 export interface SlotProcessorContext {
@@ -35,6 +34,7 @@ export type SlotProcessorEvents = { type: 'SLOT_COMPLETED' };
 
 export interface SlotProcessorInput {
   epoch: number;
+  slot: number;
 }
 
 export interface SlotProcessorSetup {
@@ -80,10 +80,10 @@ export const slotProcessorMachine = setup({
   },
 }).createMachine({
   id: 'SlotProcessor',
-  initial: 'checkingSlotStatus',
+  initial: 'gettingSlot',
   context: ({ input }) => ({
     epoch: input.epoch,
-    slot: getEpochSlots(input.epoch).startSlot,
+    slot: input.slot,
     slotDb: null,
     syncCommittee: null,
   }),
@@ -401,99 +401,98 @@ export const slotProcessorMachine = setup({
           },
         },
 
-        validatorStatuses: {
-          initial: 'validatorStatusesCheck',
-          // context para pasar los validadores y hacer fetch de sus estados.
-          states: {
-            validatorStatusesCheck: {
-              always: [
-                {
-                  guard: ({ context }) => context.slotDb?.validatorsStatusesProcessed === true,
-                  target: 'validatorStatusesComplete',
-                },
-                {
-                  target: 'validatorStatusesProcessing',
-                },
-              ],
-            },
-            validatorStatusesProcessing: {
-              invoke: {
-                src: 'updateValidatorStatuses',
-                input: ({ context }) => ({
-                  slot: context.slot,
-                  epoch: context.epoch,
-                  beaconBlockData:
-                    context.beaconBlockData && context.beaconBlockData !== 'SLOT MISSED'
-                      ? {
-                          slot: parseInt(context.beaconBlockData.data.message.slot),
-                          epoch: context.epoch,
-                          blockHash: context.beaconBlockData.data.message.body.eth1_data.block_hash,
-                          proposerIndex: parseInt(
-                            context.beaconBlockData.data.message.proposer_index,
-                          ),
-                        }
-                      : undefined,
-                }),
-                onDone: {
-                  target: 'validatorStatusesComplete',
-                  actions: assign({}),
-                },
-                onError: {
-                  target: 'validatorStatusesProcessing',
-                },
-              },
-            },
+        // validatorStatuses: {
+        //   initial: 'validatorStatusesCheck',
+        //   // context para pasar los validadores y hacer fetch de sus estados.
+        //   states: {
+        //     validatorStatusesCheck: {
+        //       always: [
+        //         {
+        //           guard: ({ context }) => context.slotDb?.validatorsStatusesProcessed === true,
+        //           target: 'validatorStatusesComplete',
+        //         },
+        //         {
+        //           target: 'validatorStatusesProcessing',
+        //         },
+        //       ],
+        //     },
+        //     validatorStatusesProcessing: {
+        //       invoke: {
+        //         src: 'updateValidatorStatuses',
+        //         input: ({ context }) => ({
+        //           slot: context.slot,
+        //           epoch: context.epoch,
+        //           beaconBlockData:
+        //             context.beaconBlockData && context.beaconBlockData !== 'SLOT MISSED'
+        //               ? {
+        //                   slot: parseInt(context.beaconBlockData.data.message.slot),
+        //                   epoch: context.epoch,
+        //                   blockHash: context.beaconBlockData.data.message.body.eth1_data.block_hash,
+        //                   proposerIndex: parseInt(
+        //                     context.beaconBlockData.data.message.proposer_index,
+        //                   ),
+        //                 }
+        //               : undefined,
+        //         }),
+        //         onDone: {
+        //           target: 'validatorStatusesComplete',
+        //           actions: assign({}),
+        //         },
+        //         onError: {
+        //           target: 'validatorStatusesProcessing',
+        //         },
+        //       },
+        //     },
 
-            validatorStatusesComplete: { type: 'final' },
-          },
-        },
+        //     validatorStatusesComplete: { type: 'final' },
+        //   },
+        // },
 
         //withdrawal_credentials.slice(-40)
-
-        withdrawals: {
-          initial: 'withdrawalsCheck',
-          states: {
-            withdrawalsCheck: {
-              always: [
-                {
-                  guard: ({ context }) => context.slotDb?.withdrawalsProcessed === true,
-                  target: 'withdrawalsComplete',
-                },
-                {
-                  target: 'withdrawalsProcessing',
-                },
-              ],
-            },
-            withdrawalsProcessing: {
-              invoke: {
-                src: 'processWithdrawals',
-                input: ({ context }) => ({
-                  slot: context.slot,
-                  epoch: context.epoch,
-                  beaconBlockData:
-                    context.beaconBlockData && context.beaconBlockData !== 'SLOT MISSED'
-                      ? {
-                          slot: parseInt(context.beaconBlockData.data.message.slot),
-                          epoch: context.epoch,
-                          blockHash: context.beaconBlockData.data.message.body.eth1_data.block_hash,
-                          proposerIndex: parseInt(
-                            context.beaconBlockData.data.message.proposer_index,
-                          ),
-                        }
-                      : undefined,
-                }),
-                onDone: {
-                  target: 'withdrawalsComplete',
-                  actions: assign({}),
-                },
-                onError: {
-                  target: 'withdrawalsProcessing',
-                },
-              },
-            },
-            withdrawalsComplete: { type: 'final' },
-          },
-        },
+        // withdrawals: {
+        //   initial: 'withdrawalsCheck',
+        //   states: {
+        //     withdrawalsCheck: {
+        //       always: [
+        //         {
+        //           guard: ({ context }) => context.slotDb?.withdrawalsProcessed === true,
+        //           target: 'withdrawalsComplete',
+        //         },
+        //         {
+        //           target: 'withdrawalsProcessing',
+        //         },
+        //       ],
+        //     },
+        //     withdrawalsProcessing: {
+        //       invoke: {
+        //         src: 'processWithdrawals',
+        //         input: ({ context }) => ({
+        //           slot: context.slot,
+        //           epoch: context.epoch,
+        //           beaconBlockData:
+        //             context.beaconBlockData && context.beaconBlockData !== 'SLOT MISSED'
+        //               ? {
+        //                   slot: parseInt(context.beaconBlockData.data.message.slot),
+        //                   epoch: context.epoch,
+        //                   blockHash: context.beaconBlockData.data.message.body.eth1_data.block_hash,
+        //                   proposerIndex: parseInt(
+        //                     context.beaconBlockData.data.message.proposer_index,
+        //                   ),
+        //                 }
+        //               : undefined,
+        //         }),
+        //         onDone: {
+        //           target: 'withdrawalsComplete',
+        //           actions: assign({}),
+        //         },
+        //         onError: {
+        //           target: 'withdrawalsProcessing',
+        //         },
+        //       },
+        //     },
+        //     withdrawalsComplete: { type: 'final' },
+        //   },
+        // },
       },
     },
 

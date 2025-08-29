@@ -13,8 +13,14 @@ export const getCreateEpochActor = () => {
   const actor = createActor(Epoch);
 
   actor.subscribe((snapshot) => {
+    const { context } = snapshot;
+
     logMachine('EpochCreator', `State: ${JSON.stringify(snapshot.value)}`, {
-      context: snapshot.context,
+      // Current state info
+      lastEpoch: context.lastEpoch,
+      epochsToCreate: context.epochsToCreate,
+      // Simple status
+      hasEpochsToCreate: context.epochsToCreate.length > 0,
     });
   });
 
@@ -25,40 +31,21 @@ export const getEpochOrchestratorActor = () => {
   const actor = createActor(EpochOrchestrator);
 
   actor.subscribe((snapshot) => {
-    const {
-      context: { maxConcurrentEpochs, epochs },
-    } = snapshot;
+    const { context } = snapshot;
 
-    // Filter active epochs (those with actorRef)
-    const activeEpochs = Array.from(epochs.entries())
-      .filter(([_, epochEntry]) => epochEntry.actorRef !== undefined)
-      .map(([epochNumber, epochEntry]) => ({
-        epochNumber,
-        data: epochEntry.data,
-        actorId: epochEntry.actorRef?.id || 'unknown',
-        actorState: epochEntry.actorRef?.getSnapshot().value || 'unknown',
-      }));
-
-    // Filter queued epochs (those without actorRef)
-    const queuedEpochs = Array.from(epochs.entries())
-      .filter(([_, epochEntry]) => epochEntry.actorRef === undefined)
-      .map(([epochNumber, epochEntry]) => ({
-        epochNumber,
-        data: epochEntry.data,
-      }));
+    // Get information about the current epoch actor if it exists
+    const epochActorInfo = context.epochActor
+      ? {
+          state: context.epochActor.getSnapshot().value,
+          epochData: context.epochData,
+        }
+      : null;
 
     logMachine('EpochOrchestrator', `State: ${JSON.stringify(snapshot.value)}`, {
-      maxConcurrentEpochs,
-      totalEpochs: epochs.size,
-      activeEpochs: activeEpochs.length,
-      queuedEpochs: queuedEpochs.length,
-      // Active spawns with detailed information
-      activeSpawns: activeEpochs,
-      // Queued epochs waiting for spawn
-      queuedSpawns: queuedEpochs,
-      // Simple arrays for backward compatibility
-      activeEpochNumbers: activeEpochs.map((e) => e.epochNumber),
-      queuedEpochNumbers: queuedEpochs.map((e) => e.epochNumber),
+      // Current epoch being processed
+      currentEpoch: context.epochData?.epoch || null,
+      // Active epoch processor if any
+      spawnedEpochProcessor: epochActorInfo,
     });
   });
 

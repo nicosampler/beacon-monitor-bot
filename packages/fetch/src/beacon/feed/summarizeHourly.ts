@@ -19,8 +19,8 @@ async function hasUnprocessedSlots(endSlot: number): Promise<boolean> {
   const slot = await prisma.slot.findUnique({
     where: {
       slot: endSlot,
-      attestationsFetched: true,
-      blockAndSyncRewardsFetched: true,
+      attestationsProcessed: true,
+      blockAndSyncRewardsProcessed: true,
     },
   });
   return slot == null;

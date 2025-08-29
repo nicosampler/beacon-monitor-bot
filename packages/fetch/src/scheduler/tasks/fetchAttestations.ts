@@ -54,7 +54,7 @@ export const fetchAttestationsTask = async (logger: CustomLogger) => {
       },
     });
 
-    return _fetchAttestations(slotToFetch, logger);
+    return _fetchAttestations(slotToFetch, [], {});
   } catch (error) {
     logger.error('Error fetching attestations:', error);
   }
