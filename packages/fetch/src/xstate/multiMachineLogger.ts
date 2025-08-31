@@ -11,6 +11,7 @@ interface MachineLogEntry {
 interface MachineLogger {
   machineId: string;
   currentLog: MachineLogEntry | null;
+  isFinal: boolean;
 }
 
 export class MultiMachineLogger {
@@ -39,6 +40,7 @@ export class MultiMachineLogger {
       this.machines.set(machineId, {
         machineId,
         currentLog: null,
+        isFinal: false,
       });
     }
     return this.machines.get(machineId)!;
@@ -50,6 +52,12 @@ export class MultiMachineLogger {
    */
   addLog(machineId: string, state: string, context?: Record<string, unknown>) {
     const machine = this.getOrCreateMachine(machineId);
+
+    // Don't update if machine is already in final state
+    if (machine.isFinal) {
+      return;
+    }
+
     const timestamp = new Date().toLocaleTimeString();
 
     const logEntry: MachineLogEntry = {
@@ -59,6 +67,35 @@ export class MultiMachineLogger {
     };
 
     machine.currentLog = logEntry;
+  }
+
+  /**
+   * Mark a machine as final and schedule it for removal from memory
+   * This is the event-based way to signal final states
+   */
+  markMachineAsFinal(machineId: string, finalState?: string) {
+    const machine = this.machines.get(machineId);
+    if (!machine) {
+      return;
+    }
+
+    // Update the final state if provided
+    if (finalState) {
+      machine.currentLog = {
+        timestamp: new Date().toLocaleTimeString(),
+        state: finalState,
+        context: machine.currentLog?.context,
+      };
+    }
+
+    // Mark as final
+    machine.isFinal = true;
+
+    // Remove from memory after a short delay
+    setTimeout(() => {
+      this.machines.delete(machineId);
+      console.log(`Machine ${machineId} removed from memory after reaching final state`);
+    }, 3000); // 3 second delay to show final state
   }
 
   /**
@@ -73,6 +110,7 @@ export class MultiMachineLogger {
         state: 'Machine removed',
         context: machine.currentLog?.context,
       };
+      machine.isFinal = true;
       // Remove after a short delay to show the final state
       setTimeout(() => {
         this.machines.delete(machineId);
@@ -93,10 +131,11 @@ export class MultiMachineLogger {
     for (const [machineId, machine] of this.machines) {
       if (machine.currentLog) {
         statusData.machines[machineId] = {
-          status: 'active',
+          status: machine.isFinal ? 'final' : 'active',
           lastUpdate: machine.currentLog.timestamp,
           state: this.parseState(machine.currentLog.state),
           context: machine.currentLog.context || null,
+          isFinal: machine.isFinal,
         };
       } else {
         statusData.machines[machineId] = {
@@ -211,6 +250,15 @@ export const getMultiMachineLogger = (): MultiMachineLogger => {
     globalMultiLogger = new MultiMachineLogger();
   }
   return globalMultiLogger;
+};
+
+/**
+ * Mark a machine as final and schedule it for removal from memory
+ * Use this function when you know a machine has reached its final state
+ */
+export const logRemoveMachine = (machineId: string, finalState?: string) => {
+  const logger = getMultiMachineLogger();
+  logger.markMachineAsFinal(machineId, finalState);
 };
 
 /**

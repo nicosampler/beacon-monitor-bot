@@ -305,3 +305,20 @@ export const checkSyncCommitteeStatus = fromPromise(
     }
   },
 );
+
+/**
+ * Actor to update the epoch's slotsFetched flag to true
+ */
+export const updateSlotsFetched = fromPromise(async ({ input }: { input: { epoch: number } }) => {
+  try {
+    await prisma.epoch.update({
+      where: { epoch: input.epoch },
+      data: { slotsFetched: true },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating slotsFetched:', error);
+    throw error;
+  }
+});

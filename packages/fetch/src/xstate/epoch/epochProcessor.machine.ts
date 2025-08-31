@@ -19,6 +19,7 @@ import {
   fetchSyncCommittees,
   checkIfCanGetValidators,
   checkSyncCommitteeStatus,
+  updateSlotsFetched,
 } from '@/src/xstate/epoch/epochProcessor.actors.js';
 import { ProcessEpochContext, ProcessEpochSetup } from '@/src/xstate/epoch/epochProcessor.types.js';
 import { logMachine, logActor } from '@/src/xstate/multiMachineLogger.js';
@@ -32,6 +33,7 @@ export const epochProcessorMachine = setup({
     checkIfCanGetValidators,
     checkSyncCommitteeStatus,
     slotOrchestratorMachine,
+    updateSlotsFetched,
   },
   guards: {
     canProcessEpoch,
@@ -135,12 +137,6 @@ export const epochProcessorMachine = setup({
               initial: 'waitingForCommittees',
               states: {
                 waitingForCommittees: {
-                  // always: [
-                  //   {
-                  //     guard: ({ context }) => context.epochDBStatus.committeesFetched,
-                  //     target: 'processingSlots',
-                  //   },
-                  // ],
                   on: {
                     COMMITTEES_FETCHED: 'processingSlots',
                   },
@@ -167,13 +163,25 @@ export const epochProcessorMachine = setup({
                   }),
                   on: {
                     SLOTS_COMPLETED: {
-                      target: 'complete',
+                      target: 'updateSlotsFetched',
                       actions: [
                         stopChild(({ context }) => context.slotOrchestratorActor?.id || ''),
                         assign({
                           slotOrchestratorActor: null,
                         }),
                       ],
+                    },
+                  },
+                },
+                updateSlotsFetched: {
+                  invoke: {
+                    src: 'updateSlotsFetched',
+                    input: ({ context }) => ({ epoch: context.epoch }),
+                    onDone: {
+                      target: 'complete',
+                    },
+                    onError: {
+                      target: 'updateSlotsFetched',
                     },
                   },
                 },

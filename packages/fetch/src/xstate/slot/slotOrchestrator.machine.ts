@@ -2,20 +2,22 @@ import { setup, assign, stopChild, sendParent, ActorRefFrom } from 'xstate';
 
 import { getEpochSlots } from '@/src/beacon/utils/misc.js';
 import { env } from '@/src/env.js';
-import { logMachine, logActor } from '@/src/xstate/multiMachineLogger.js';
+import { logMachine, logActor, logRemoveMachine } from '@/src/xstate/multiMachineLogger.js';
+import { findNextUnprocessedSlot } from '@/src/xstate/slot/slot.actors.js';
 import { slotProcessorMachine } from '@/src/xstate/slot/slotProcessor.machine.js';
 
 export interface SlotOrchestratorContext {
   epoch: number;
   startSlot: number;
   endSlot: number;
-  currentSlot: number;
+  currentSlot: number | null;
   slotActor: ActorRefFrom<typeof slotProcessorMachine> | null;
 }
 
 export type SlotOrchestratorEvents =
   | { type: 'SLOTS_COMPLETED'; epoch: number }
-  | { type: 'SLOT_COMPLETED' };
+  | { type: 'SLOT_COMPLETED' }
+  | { type: 'NEXT_SLOT_FOUND'; nextSlot: number };
 
 export interface SlotOrchestratorInput {
   epoch: number;
@@ -26,6 +28,7 @@ export interface SlotOrchestratorInput {
  *
  * It is responsible for:
  * - Getting all slots for the epoch
+ * - Finding the next unprocessed slot
  * - Spawning slot processor machines sequentially
  * - Monitoring slot completion
  * - Moving to the next slot until all slots are processed
@@ -41,6 +44,7 @@ export const slotOrchestratorMachine = setup({
   },
   actors: {
     slotProcessor: slotProcessorMachine,
+    findNextUnprocessedSlot,
   },
 }).createMachine({
   id: 'SlotOrchestrator',
@@ -53,15 +57,35 @@ export const slotOrchestratorMachine = setup({
       epoch: input.epoch,
       startSlot,
       endSlot,
-      currentSlot: startSlot,
+      currentSlot: null,
       slotActor: null,
     };
   },
   states: {
     initializing: {
+      invoke: {
+        src: 'findNextUnprocessedSlot',
+        input: ({ context }) => ({
+          startSlot: context.startSlot,
+          endSlot: context.endSlot,
+        }),
+        onDone: {
+          target: 'checkingSlots',
+          actions: assign({
+            currentSlot: ({ event, context }) =>
+              event.output == null ? context.endSlot : event.output,
+          }),
+        },
+        onError: {
+          target: 'initializing',
+        },
+      },
+    },
+
+    checkingSlots: {
       always: [
         {
-          guard: ({ context }) => context.currentSlot <= context.endSlot,
+          guard: ({ context }) => context.currentSlot! <= context.endSlot,
           target: 'spawningSlotProcessor',
         },
         {
@@ -82,7 +106,7 @@ export const slotOrchestratorMachine = setup({
             id: slotId,
             input: {
               epoch: context.epoch,
-              slot: context.currentSlot,
+              slot: context.currentSlot!,
             },
           });
 
@@ -93,23 +117,18 @@ export const slotOrchestratorMachine = setup({
         },
       }),
       on: {
-        'slotProcessor.done': {
-          target: 'slotComplete',
-          actions: [
-            stopChild(({ context }) => context.slotActor?.id || ''),
-            assign({
-              slotActor: null,
-              currentSlot: ({ context }) => context.currentSlot + 1,
-            }),
-          ],
-        },
         SLOT_COMPLETED: {
           target: 'slotComplete',
           actions: [
+            ({ context }) => {
+              if (context.slotActor) {
+                logRemoveMachine(context.slotActor.id, 'SLOT_COMPLETED');
+              }
+            },
             stopChild(({ context }) => context.slotActor?.id || ''),
             assign({
               slotActor: null,
-              currentSlot: ({ context }) => context.currentSlot + 1,
+              currentSlot: ({ context }) => context.currentSlot! + 1,
             }),
           ],
         },
@@ -119,7 +138,7 @@ export const slotOrchestratorMachine = setup({
     slotComplete: {
       always: [
         {
-          guard: ({ context }) => context.currentSlot <= context.endSlot,
+          guard: ({ context }) => context.currentSlot! <= context.endSlot,
           target: 'spawningSlotProcessor',
         },
         {

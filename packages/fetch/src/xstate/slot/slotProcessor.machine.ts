@@ -17,7 +17,7 @@ import {
   checkAndGetCommitteeValidatorsAmounts,
   cleanupOldCommittees,
   updateAttestationsProcessed,
-} from './slotProcessor.actors.js';
+} from './slot.actors.js';
 
 import { Block } from '@/src/beacon/types.js';
 import { env } from '@/src/env.js';
