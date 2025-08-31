@@ -1,5 +1,5 @@
 import ms from 'ms';
-import { setup, assign, sendParent, stopChild } from 'xstate';
+import { setup, assign, sendParent, stopChild, raise } from 'xstate';
 
 import { slotOrchestratorMachine } from '../slot/slotOrchestrator.machine.js';
 
@@ -11,7 +11,6 @@ import {
   //validatorsNotFetched,
   canFetchCommittees,
   canFetchSyncCommittees,
-  rewardsNotFetched,
   canProcessRewards,
   isFirstEpochOfSyncCommitteePeriod,
   isLookbackEpoch,
@@ -22,6 +21,7 @@ import {
   checkSyncCommitteeStatus,
 } from '@/src/xstate/epoch/epochProcessor.actors.js';
 import { ProcessEpochContext, ProcessEpochSetup } from '@/src/xstate/epoch/epochProcessor.types.js';
+import { logMachine, logActor } from '@/src/xstate/multiMachineLogger.js';
 
 export const epochProcessorMachine = setup({
   types: {} as ProcessEpochSetup,
@@ -38,7 +38,6 @@ export const epochProcessorMachine = setup({
     //validatorsNotFetched,
     canFetchCommittees,
     canFetchSyncCommittees,
-    rewardsNotFetched,
     canProcessRewards,
     isFirstEpochOfSyncCommitteePeriod,
     isLookbackEpoch,
@@ -123,7 +122,63 @@ export const epochProcessorMachine = setup({
                 },
                 complete: {
                   type: 'final',
-                  entry: [sendParent({ type: 'COMMITTEES_FETCHED' })],
+                  entry: raise({ type: 'COMMITTEES_FETCHED' }),
+                },
+              },
+            },
+
+            /**
+             * Process slots for the epoch
+             * This state waits for committees to be ready before starting
+             */
+            slotsProcessing: {
+              initial: 'waitingForCommittees',
+              states: {
+                waitingForCommittees: {
+                  // always: [
+                  //   {
+                  //     guard: ({ context }) => context.epochDBStatus.committeesFetched,
+                  //     target: 'processingSlots',
+                  //   },
+                  // ],
+                  on: {
+                    COMMITTEES_FETCHED: 'processingSlots',
+                  },
+                },
+                processingSlots: {
+                  entry: assign({
+                    slotOrchestratorActor: ({ context, spawn }) => {
+                      const orchestratorId = `slotOrchestrator:${context.epoch}`;
+                      // Register the spawned slot orchestrator machine
+                      logMachine(orchestratorId, 'Spawning', { epoch: context.epoch });
+
+                      const actor = spawn('slotOrchestratorMachine', {
+                        id: orchestratorId,
+                        input: {
+                          epoch: context.epoch,
+                        },
+                      });
+
+                      // Automatically log the actor's state and context
+                      logActor(actor, orchestratorId);
+
+                      return actor;
+                    },
+                  }),
+                  on: {
+                    SLOTS_COMPLETED: {
+                      target: 'complete',
+                      actions: [
+                        stopChild(({ context }) => context.slotOrchestratorActor?.id || ''),
+                        assign({
+                          slotOrchestratorActor: null,
+                        }),
+                      ],
+                    },
+                  },
+                },
+                complete: {
+                  type: 'final',
                 },
               },
             },
@@ -269,54 +324,6 @@ export const epochProcessorMachine = setup({
                 },
                 complete: { type: 'final' },
               },
-            },
-          },
-        },
-
-        /**
-         * Process slots for the epoch
-         * This state waits for committees to be ready before starting
-         */
-        slotsProcessing: {
-          initial: 'waitingForCommittees',
-          states: {
-            waitingForCommittees: {
-              always: [
-                {
-                  guard: ({ context }) => context.epochDBStatus.committeesFetched,
-                  target: 'processingSlots',
-                },
-              ],
-              on: {
-                COMMITTEES_FETCHED: 'processingSlots',
-              },
-            },
-            processingSlots: {
-              entry: assign({
-                slotOrchestratorActor: ({ context, spawn }) => {
-                  const orchestratorId = `slotOrchestrator:${context.epoch}`;
-                  return spawn('slotOrchestratorMachine', {
-                    id: orchestratorId,
-                    input: {
-                      epoch: context.epoch,
-                    },
-                  });
-                },
-              }),
-              on: {
-                SLOTS_COMPLETED: {
-                  target: 'complete',
-                  actions: [
-                    stopChild(({ context }) => context.slotOrchestratorActor?.id || ''),
-                    assign({
-                      slotOrchestratorActor: null,
-                    }),
-                  ],
-                },
-              },
-            },
-            complete: {
-              type: 'final',
             },
           },
         },

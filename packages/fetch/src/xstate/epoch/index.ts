@@ -1,9 +1,9 @@
 import { createActor } from 'xstate';
 
-import { logMachine } from '@/src/lib/multiMachineLogger.js';
 import { epochCreationMachine } from '@/src/xstate/epoch/epochCreator.machine.js';
 import { epochOrchestratorMachine } from '@/src/xstate/epoch/epochOrchestrator.machine.js';
 import { epochProcessorMachine } from '@/src/xstate/epoch/epochProcessor.machine.js';
+import { logMachine } from '@/src/xstate/multiMachineLogger.js';
 
 export const Epoch = epochCreationMachine;
 export const ProcessEpoch = epochProcessorMachine;
@@ -15,7 +15,7 @@ export const getCreateEpochActor = () => {
   actor.subscribe((snapshot) => {
     const { context } = snapshot;
 
-    logMachine('EpochCreator', `State: ${JSON.stringify(snapshot.value)}`, {
+    logMachine('epochCreator', `State: ${JSON.stringify(snapshot.value)}`, {
       // Current state info
       lastEpoch: context.lastEpoch,
       epochsToCreate: context.epochsToCreate,
@@ -41,7 +41,7 @@ export const getEpochOrchestratorActor = () => {
         }
       : null;
 
-    logMachine('EpochOrchestrator', `State: ${JSON.stringify(snapshot.value)}`, {
+    logMachine('epochOrchestrator', `State: ${JSON.stringify(snapshot.value)}`, {
       // Current epoch being processed
       currentEpoch: context.epochData?.epoch || null,
       // Active epoch processor if any

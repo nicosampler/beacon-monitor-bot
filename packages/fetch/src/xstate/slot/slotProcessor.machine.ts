@@ -1,9 +1,9 @@
 import { Slot } from '@prisma/client';
 import ms from 'ms';
-import { setup, assign } from 'xstate';
+import { setup, assign, sendParent } from 'xstate';
 
 import {
-  getOrCreateSlot,
+  getSlot,
   checkSlotReady,
   fetchBeaconBlock,
   fetchELRewards,
@@ -16,6 +16,7 @@ import {
   updateSlotProcessed,
   checkAndGetCommitteeValidatorsAmounts,
   cleanupOldCommittees,
+  updateAttestationsProcessed,
 } from './slotProcessor.actors.js';
 
 import { Block } from '@/src/beacon/types.js';
@@ -37,12 +38,6 @@ export interface SlotProcessorInput {
   slot: number;
 }
 
-export interface SlotProcessorSetup {
-  context: SlotProcessorContext;
-  events: SlotProcessorEvents;
-  input: SlotProcessorInput;
-}
-
 /**
  * @fileoverview The slot processor is a state machine that is responsible for processing individual slots.
  *
@@ -62,9 +57,13 @@ export interface SlotProcessorSetup {
  */
 
 export const slotProcessorMachine = setup({
-  types: {} as SlotProcessorSetup,
+  types: {} as {
+    context: SlotProcessorContext;
+    events: SlotProcessorEvents;
+    input: SlotProcessorInput;
+  },
   actors: {
-    getOrCreateSlot,
+    getSlot,
     checkSlotReady,
     fetchBeaconBlock,
     fetchELRewards,
@@ -77,6 +76,7 @@ export const slotProcessorMachine = setup({
     updateSlotProcessed,
     checkAndGetCommitteeValidatorsAmounts,
     cleanupOldCommittees,
+    updateAttestationsProcessed,
   },
 }).createMachine({
   id: 'SlotProcessor',
@@ -95,23 +95,44 @@ export const slotProcessorMachine = setup({
      */
     gettingSlot: {
       invoke: {
-        src: 'getOrCreateSlot',
+        src: 'getSlot',
         input: ({ context }) => ({ slot: context.slot }),
         onDone: [
           {
             actions: assign({
               slotDb: ({ event }) => event.output,
             }),
-            guard: ({ event }) => event.output.processed === true,
-            target: 'completed',
-          },
-          {
-            target: 'checkingIfSlotIsReady',
+            target: 'analyzingSlot',
           },
         ],
         onError: {
           target: 'gettingSlot',
+          actions: ({ event }) => {
+            console.error('Error getting slot:', event.error);
+          },
         },
+      },
+    },
+
+    analyzingSlot: {
+      always: [
+        {
+          guard: ({ context }) => context.slotDb === null,
+          target: 'slotNotFound',
+        },
+        {
+          guard: ({ context }) => context.slotDb?.processed === true,
+          target: 'completed',
+        },
+        {
+          target: 'checkingIfSlotIsReady',
+        },
+      ],
+    },
+
+    slotNotFound: {
+      entry: ({ context }) => {
+        throw new Error(`Slot ${context.slot} not found or has no data`);
       },
     },
 
@@ -174,8 +195,8 @@ export const slotProcessorMachine = setup({
 
     /*
      * Processing the slot response to determine next action
-     * If response is 'SLOT MISSED', mark slot as completed and transition to completed
-     * If response is beacon data, transition to processingData
+     * If the response is 'SLOT MISSED', mark slot as completed and transition to completed
+     * If the response has beacon data, transition to processingData
      */
     processingSlotResponse: {
       always: [
@@ -204,25 +225,26 @@ export const slotProcessorMachine = setup({
       onDone: 'markingSlotCompleted',
       states: {
         executionRewards: {
-          initial: 'executionRewardsCheck',
+          initial: 'checkingCompletion',
           states: {
-            executionRewardsCheck: {
+            checkingCompletion: {
               always: [
                 {
                   guard: ({ context }) => context.slotDb?.executionRewardsProcessed === true,
-                  target: 'executionRewardsComplete',
+                  target: 'complete',
                 },
                 {
-                  target: 'executionRewardsProcessing',
+                  target: 'processing',
                 },
               ],
             },
-            executionRewardsProcessing: {
+            processing: {
               invoke: {
                 src: 'fetchELRewards',
                 input: ({ context }) => {
                   const _beaconBlockData = context.beaconBlockData as Block;
                   return {
+                    slot: context.slot,
                     block: Number(
                       _beaconBlockData.data.message.body.execution_payload.block_number,
                     ),
@@ -232,15 +254,17 @@ export const slotProcessorMachine = setup({
                   };
                 },
                 onDone: {
-                  target: 'executionRewardsComplete',
-                  actions: assign({}),
+                  target: 'complete',
                 },
                 onError: {
-                  target: 'executionRewardsProcessing',
+                  target: 'processing',
+                  actions: ({ event }) => {
+                    console.error('Error fetching execution rewards:', event.error);
+                  },
                 },
               },
             },
-            executionRewardsComplete: { type: 'final' },
+            complete: { type: 'final' },
           },
         },
 
@@ -251,7 +275,7 @@ export const slotProcessorMachine = setup({
               always: [
                 {
                   guard: ({ context }) => context.slotDb?.blockAndSyncRewardsProcessed === true,
-                  target: 'blockAndSyncRewardsComplete',
+                  target: 'complete',
                 },
                 {
                   target: 'syncCommitteeCheck',
@@ -301,7 +325,7 @@ export const slotProcessorMachine = setup({
                   };
                 },
                 onDone: {
-                  target: 'blockAndSyncRewardsComplete',
+                  target: 'complete',
                   actions: assign({}),
                 },
                 onError: {
@@ -312,7 +336,7 @@ export const slotProcessorMachine = setup({
 
             // TODO:prefetchBlockAndSyncRewards if the head is behind
 
-            blockAndSyncRewardsComplete: { type: 'final' },
+            complete: { type: 'final' },
           },
         },
 
@@ -323,7 +347,12 @@ export const slotProcessorMachine = setup({
               always: [
                 {
                   guard: ({ context }) => context.slotDb?.attestationsProcessed === true,
-                  target: 'attestationsComplete',
+                  target: 'complete',
+                },
+                {
+                  // Base case: slot n comes at slot n + 1
+                  guard: ({ context }) => context.slot === env.BEACON_LOOKBACK_SLOT,
+                  target: 'updateAttestationsProcessed',
                 },
                 {
                   target: 'checkAndGetCommitteeValidatorsAmounts',
@@ -389,7 +418,7 @@ export const slotProcessorMachine = setup({
                   slot: context.slot,
                 }),
                 onDone: {
-                  target: 'attestationsComplete',
+                  target: 'complete',
                   actions: assign({}),
                 },
                 onError: {
@@ -397,7 +426,19 @@ export const slotProcessorMachine = setup({
                 },
               },
             },
-            attestationsComplete: { type: 'final' },
+            updateAttestationsProcessed: {
+              invoke: {
+                src: 'updateAttestationsProcessed',
+                input: ({ context }) => ({ slot: context.slot }),
+                onDone: {
+                  target: 'complete',
+                },
+                onError: {
+                  target: 'updateAttestationsProcessed',
+                },
+              },
+            },
+            complete: { type: 'final' },
           },
         },
 
@@ -514,6 +555,7 @@ export const slotProcessorMachine = setup({
     },
 
     completed: {
+      entry: sendParent({ type: 'SLOT_COMPLETED' }),
       type: 'final',
     },
   },

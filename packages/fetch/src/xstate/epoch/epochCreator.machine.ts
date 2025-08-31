@@ -30,7 +30,6 @@ export const epochCreationMachine = setup({
   states: {
     poll: { always: 'initialize' },
     initialize: {
-      // Ensure context is properly initialized with default values
       entry: assign({
         lastEpoch: 0,
         epochsToCreate: [],

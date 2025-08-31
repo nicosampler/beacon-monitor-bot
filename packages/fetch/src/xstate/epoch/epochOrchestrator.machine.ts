@@ -5,6 +5,7 @@ import { getMinEpochToProcess, type EpochToProcess } from './epochOrchestrator.a
 import { epochProcessorMachine } from './epochProcessor.machine.js';
 
 import { env } from '@/src/env.js';
+import { logMachine, logActor } from '@/src/xstate/multiMachineLogger.js';
 
 export interface EpochOrchestratorContext {
   epochData: EpochToProcess | null;
@@ -68,7 +69,10 @@ export const epochOrchestratorMachine = setup({
           const { epoch } = context.epochData;
           const epochId = `epochProcessor:${epoch}`;
 
-          return spawn('epochProcessor', {
+          // Register the spawned epoch processor machine
+          logMachine(epochId, 'Spawning', { epoch });
+
+          const actor = spawn('epochProcessor', {
             id: epochId,
             input: {
               epoch,
@@ -79,6 +83,10 @@ export const epochOrchestratorMachine = setup({
               syncCommitteesFetched: context.epochData.syncCommitteesFetched,
             },
           });
+
+          logActor(actor, epochId);
+
+          return actor;
         },
       }),
       on: {

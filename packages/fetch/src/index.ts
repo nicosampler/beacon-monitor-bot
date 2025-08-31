@@ -1,8 +1,8 @@
-import { getMultiMachineLogger } from '@/src/lib/multiMachineLogger.js';
 import createLogger from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { initValidators } from '@/src/utils/initValidators.js';
-import { getCreateEpochActor, getEpochOrchestratorActor } from '@/src/xstate/epoch/index.js';
+import initXstateMachines from '@/src/xstate/index.js';
+import { getMultiMachineLogger } from '@/src/xstate/multiMachineLogger.js';
 
 const prisma = getPrisma();
 const logger = createLogger('index file');
@@ -13,11 +13,7 @@ async function main() {
   // Initialize validators if table is empty
   await initValidators();
 
-  const createEpochsActor = getCreateEpochActor();
-  createEpochsActor.start();
-
-  const epochOrchestratorActor = getEpochOrchestratorActor();
-  epochOrchestratorActor.start();
+  await initXstateMachines();
 
   // Handle graceful shutdown
   process.on('SIGINT', () => {

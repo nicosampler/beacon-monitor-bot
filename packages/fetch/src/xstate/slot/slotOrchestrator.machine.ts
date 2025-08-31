@@ -1,20 +1,21 @@
 import { setup, assign, stopChild, sendParent, ActorRefFrom } from 'xstate';
 
 import { getEpochSlots } from '@/src/beacon/utils/misc.js';
+import { env } from '@/src/env.js';
+import { logMachine, logActor } from '@/src/xstate/multiMachineLogger.js';
 import { slotProcessorMachine } from '@/src/xstate/slot/slotProcessor.machine.js';
 
 export interface SlotOrchestratorContext {
   epoch: number;
   startSlot: number;
   endSlot: number;
-  currentSlotIndex: number;
+  currentSlot: number;
   slotActor: ActorRefFrom<typeof slotProcessorMachine> | null;
-  slotsToProcess: number[];
 }
 
 export type SlotOrchestratorEvents =
   | { type: 'SLOTS_COMPLETED'; epoch: number }
-  | { type: 'slotProcessor.done' };
+  | { type: 'SLOT_COMPLETED' };
 
 export interface SlotOrchestratorInput {
   epoch: number;
@@ -45,23 +46,22 @@ export const slotOrchestratorMachine = setup({
   id: 'SlotOrchestrator',
   initial: 'initializing',
   context: ({ input }) => {
-    const { startSlot, endSlot } = getEpochSlots(input.epoch);
-    const slotsToProcess = Array.from({ length: endSlot - startSlot + 1 }, (_, i) => startSlot + i);
+    const { startSlot: _startSlot, endSlot } = getEpochSlots(input.epoch);
+    const startSlot = Math.max(_startSlot, env.BEACON_LOOKBACK_SLOT);
 
     return {
       epoch: input.epoch,
       startSlot,
       endSlot,
-      currentSlotIndex: 0,
+      currentSlot: startSlot,
       slotActor: null,
-      slotsToProcess,
     };
   },
   states: {
     initializing: {
       always: [
         {
-          guard: ({ context }) => context.slotsToProcess.length > 0,
+          guard: ({ context }) => context.currentSlot <= context.endSlot,
           target: 'spawningSlotProcessor',
         },
         {
@@ -73,16 +73,23 @@ export const slotOrchestratorMachine = setup({
     spawningSlotProcessor: {
       entry: assign({
         slotActor: ({ context, spawn }) => {
-          const currentSlot = context.slotsToProcess[context.currentSlotIndex];
-          const slotId = `slotProcessor:${context.epoch}:${currentSlot}`;
+          const slotId = `slotProcessor:${context.epoch}:${context.currentSlot}`;
 
-          return spawn('slotProcessor', {
+          // Register the spawned slot processor machine
+          logMachine(slotId, 'Spawning', { epoch: context.epoch, slot: context.currentSlot });
+
+          const actor = spawn('slotProcessor', {
             id: slotId,
             input: {
               epoch: context.epoch,
-              slot: currentSlot,
+              slot: context.currentSlot,
             },
           });
+
+          // Automatically log the actor's state and context
+          logActor(actor, slotId);
+
+          return actor;
         },
       }),
       on: {
@@ -92,7 +99,17 @@ export const slotOrchestratorMachine = setup({
             stopChild(({ context }) => context.slotActor?.id || ''),
             assign({
               slotActor: null,
-              currentSlotIndex: ({ context }) => context.currentSlotIndex + 1,
+              currentSlot: ({ context }) => context.currentSlot + 1,
+            }),
+          ],
+        },
+        SLOT_COMPLETED: {
+          target: 'slotComplete',
+          actions: [
+            stopChild(({ context }) => context.slotActor?.id || ''),
+            assign({
+              slotActor: null,
+              currentSlot: ({ context }) => context.currentSlot + 1,
             }),
           ],
         },
@@ -102,7 +119,7 @@ export const slotOrchestratorMachine = setup({
     slotComplete: {
       always: [
         {
-          guard: ({ context }) => context.currentSlotIndex < context.slotsToProcess.length,
+          guard: ({ context }) => context.currentSlot <= context.endSlot,
           target: 'spawningSlotProcessor',
         },
         {

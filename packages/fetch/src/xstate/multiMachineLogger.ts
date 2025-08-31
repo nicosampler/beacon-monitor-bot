@@ -230,6 +230,25 @@ export const removeMachine = (machineId: string) => {
   logger.removeMachine(machineId);
 };
 
+/**
+ * Automatically log an actor's state and context
+ * This function handles both initial registration and continuous state updates
+ * @param actor The XState actor to log
+ * @param machineId Optional custom machine ID, defaults to actor.id
+ */
+export const logActor = (
+  actor: { id: string; subscribe: (callback: (snapshot: any) => void) => void },
+  machineId?: string,
+) => {
+  const id = machineId || actor.id;
+
+  // Subscribe to the actor's state changes
+  actor.subscribe((snapshot: any) => {
+    const { context } = snapshot;
+    logMachine(id, `State: ${JSON.stringify(snapshot.value)}`, context);
+  });
+};
+
 // Backward compatibility aliases
 /**
  * @deprecated Use logMachine instead

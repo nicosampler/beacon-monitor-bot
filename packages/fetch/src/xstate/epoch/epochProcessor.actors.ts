@@ -34,16 +34,10 @@ export const pickNextEpoch = fromPromise(async (): Promise<PickNextEpochResult> 
           { rewardsFetched: false },
           { committeesFetched: false },
           { slotsFetched: false },
+          { syncCommitteesFetched: false },
         ],
       },
       orderBy: { epoch: 'asc' },
-      select: {
-        epoch: true,
-        validatorsInfoFetched: true,
-        rewardsFetched: true,
-        committeesFetched: true,
-        slotsFetched: true,
-      },
     });
 
     if (!nextEpoch) {
@@ -53,12 +47,12 @@ export const pickNextEpoch = fromPromise(async (): Promise<PickNextEpochResult> 
     const { startSlot, endSlot } = getEpochSlots(nextEpoch.epoch);
 
     // Check if sync committees have been fetched for this epoch
-    const existingSyncCommittee = await prisma.syncCommittee.findFirst({
-      where: {
-        fromEpoch: { lte: nextEpoch.epoch },
-        toEpoch: { gte: nextEpoch.epoch },
-      },
-    });
+    // const existingSyncCommittee = await prisma.syncCommittee.findFirst({
+    //   where: {
+    //     fromEpoch: { lte: nextEpoch.epoch },
+    //     toEpoch: { gte: nextEpoch.epoch },
+    //   },
+    // });
 
     const result: PickNextEpochOutput = {
       epoch: nextEpoch.epoch,
@@ -166,13 +160,6 @@ export const canFetchCommittees = ({ context }: { context: ProcessEpochContext }
   }
 
   return true;
-};
-
-/**
- * Guard function to check if rewards have not been fetched yet
- */
-export const rewardsNotFetched = ({ context }: { context: ProcessEpochContext }): boolean => {
-  return !context.rewardsFetched;
 };
 
 /**

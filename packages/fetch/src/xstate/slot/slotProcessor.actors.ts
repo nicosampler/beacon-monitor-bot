@@ -104,20 +104,21 @@ export interface CheckSlotReadyOutput {
 /**
  * Actor to check if a slot is already processed
  */
-export const getOrCreateSlot = fromPromise(async ({ input }: { input: CheckSlotProcessedInput }) =>
-  prisma.slot.upsert({
+export const getSlot = fromPromise(async ({ input }: { input: CheckSlotProcessedInput }) => {
+  const slot = await prisma.slot.findFirst({
     where: {
       slot: input.slot,
     },
-    create: {
-      slot: input.slot,
-      processed: false,
-    },
-    update: {
-      processed: true,
-    },
-  }),
-);
+  });
+
+  if (!slot) {
+    // Return null instead of throwing an error
+    // This allows the state machine to handle the case gracefully
+    return null;
+  }
+
+  return slot;
+});
 
 /**
  * Actor to check if a slot is ready to be processed
@@ -137,13 +138,25 @@ export const fetchBeaconBlock = fromPromise(async ({ input }: { input: { slot: n
 );
 
 export const fetchELRewards = fromPromise(
-  async ({ input }: { input: { block: number; timestamp: number } }) => {
+  async ({ input }: { input: { slot: number; block: number; timestamp: number } }) => {
     const blockInfo = await getBlock(input.block);
     if (!blockInfo) {
       throw new Error(`Block ${input.block} not found`);
     }
-    await prisma.executionRewards.create({
-      data: blockInfo,
+
+    prisma.$transaction(async (tx) => {
+      await tx.executionRewards.create({
+        data: blockInfo,
+      });
+
+      await tx.slot.update({
+        where: {
+          slot: input.slot,
+        },
+        data: {
+          executionRewardsProcessed: true,
+        },
+      });
     });
   },
 );
@@ -313,7 +326,9 @@ export const checkAndGetCommitteeValidatorsAmounts = fromPromise(
     try {
       // Get unique slots from attestations in beacon block data
       const attestations = input.beaconBlockData.data.message.body.attestations || [];
-      const uniqueSlots = [...new Set(attestations.map((att) => parseInt(att.data.slot)))];
+      const uniqueSlots = [...new Set(attestations.map((att) => parseInt(att.data.slot)))].filter(
+        (slot) => slot >= env.BEACON_LOOKBACK_SLOT,
+      );
 
       if (uniqueSlots.length === 0) {
         throw new Error('No attestations found');
@@ -354,5 +369,16 @@ export const updateSlotProcessed = fromPromise(
       data: {
         processed: true,
       },
+    }),
+);
+
+/**
+ * Actor to update attestations processed status in database
+ */
+export const updateAttestationsProcessed = fromPromise(
+  async ({ input }: { input: CheckSlotProcessedInput }) =>
+    prisma.slot.update({
+      where: { slot: input.slot },
+      data: { attestationsProcessed: true },
     }),
 );

@@ -48,7 +48,10 @@ export const env = createEnv({
       z.number().int().positive(),
     ),
     BEACON_SLOTS_PER_EPOCH: z.preprocess((val) => Number(val), z.number().int().positive()),
-    BEACON_DELAY_SLOTS_TO_HEAD: z.preprocess((val) => Number(val), z.number().int().positive()),
+    BEACON_DELAY_SLOTS_TO_HEAD: z.preprocess(
+      (val) => Number(val),
+      z.number().int().positive().min(2),
+    ),
     BEACON_LOOKBACK_SLOT: z.preprocess((val) => Number(val), z.number().int().min(0)),
     BEACON_MAX_ATTESTATION_DELAY: z.preprocess((val) => Number(val), z.number().int().min(2)),
 
