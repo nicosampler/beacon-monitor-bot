@@ -1,5 +1,5 @@
 import ms from 'ms';
-import { setup, assign, sendParent, stopChild, raise, ActorRef } from 'xstate';
+import { setup, assign, sendParent, stopChild, raise, ActorRefFrom } from 'xstate';
 
 import { slotOrchestratorMachine, SlotsCompletedEvent } from '../slot/slotOrchestrator.machine.js';
 
@@ -36,8 +36,8 @@ type ProcessEpochContext = {
     slotsFetched: boolean;
     syncCommitteesFetched: boolean;
   };
-  slotOrchestratorActor?: ActorRef<any, any> | null;
-  currentSlot?: number; // Add currentSlot to track current slot number
+  slotOrchestratorActor?: ActorRefFrom<typeof slotOrchestratorMachine> | null;
+  currentSlot?: number;
 };
 
 type ProcessEpochEvents =
