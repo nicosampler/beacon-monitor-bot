@@ -6,7 +6,7 @@ import {
   getLastCreatedEpochOrNull,
   computeNextEpochBatch,
   enqueueEpochs,
-} from '@/src/xstate/epoch/epochCreator.actors.js';
+} from '@/src/xstate/epoch/epoch.actors.js';
 
 export const epochCreationMachine = setup({
   types: {

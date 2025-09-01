@@ -1,7 +1,7 @@
 import ms from 'ms';
 import { setup, assign, stopChild, ActorRefFrom } from 'xstate';
 
-import { getMinEpochToProcess, type EpochToProcess } from './epochOrchestrator.actors.js';
+import { getMinEpochToProcess, type EpochToProcess } from './epoch.actors.js';
 import { epochProcessorMachine } from './epochProcessor.machine.js';
 
 import { env } from '@/src/env.js';

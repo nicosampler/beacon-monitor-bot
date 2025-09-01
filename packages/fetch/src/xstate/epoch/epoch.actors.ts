@@ -3,28 +3,103 @@ import { fromPromise } from 'xstate';
 import { beacon_getSyncCommittees } from '@/src/beacon/endpoints.js';
 import { fetchCommittee } from '@/src/beacon/feed/fetchCommittee.js';
 import { fetchValidators as fetchValidatorsFromBeacon } from '@/src/beacon/feed/fetchValidators.js';
-import { getEpochFromSlot, getEpochSlots } from '@/src/beacon/utils/misc.js';
-import {
-  getEpochNumberFromTimestamp,
-  getSlotNumberFromTimestamp,
-} from '@/src/beacon/utils/time.js';
+import { getEpochFromSlot, getEpochSlots, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
+import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { getSyncCommitteePeriodStartEpoch } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 import createLogger from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
-import {
-  PickNextEpochOutput,
-  PickNextEpochResult,
-  ProcessEpochContext,
-} from '@/src/xstate/epoch/epochProcessor.types.js';
 
 const prisma = getPrisma();
+
+export const getLastCreatedEpochOrNull = fromPromise(async () => {
+  try {
+    const lastEpoch = await prisma.epoch.findFirst({
+      orderBy: { epoch: 'desc' },
+      select: { epoch: true },
+    });
+    return lastEpoch?.epoch ?? null;
+  } catch (error) {
+    console.error('Error fetching last created epoch:', error);
+    throw error;
+  }
+});
+
+export const computeNextEpochBatch = fromPromise(
+  async ({ input }: { input: { lastEpoch: number | null } }) => {
+    const MAX_UNPROCESSED_EPOCHS = 5;
+
+    try {
+      // Get count of unprocessed epochs
+      const unprocessedCount = await prisma.epoch.count({
+        where: {
+          OR: [
+            { rewardsFetched: false },
+            { committeesFetched: false },
+            { slotsFetched: false },
+            { syncCommitteesFetched: false },
+          ],
+        },
+      });
+
+      // If we already have 5 or more unprocessed epochs, don't create new ones
+      if (unprocessedCount >= MAX_UNPROCESSED_EPOCHS) {
+        return [];
+      }
+
+      // Calculate how many epochs we need to create
+      const epochsNeeded = MAX_UNPROCESSED_EPOCHS - unprocessedCount;
+
+      // Get the starting epoch for creation
+      const lookbackEpoch = getEpochFromSlot(getOldestLookbackSlot());
+      const lastEpoch = input.lastEpoch;
+      const startEpoch = lastEpoch ? lastEpoch + 1 : lookbackEpoch;
+
+      // Create array of epochs to create
+      const epochsToCreate = [];
+      for (let i = 0; i < epochsNeeded; i++) {
+        epochsToCreate.push(startEpoch + i);
+      }
+
+      return epochsToCreate;
+    } catch (error) {
+      console.error('Error computing next epoch batch:', error);
+      throw error;
+    }
+  },
+);
+
+export const enqueueEpochs = fromPromise(
+  async ({ input }: { input: { epochsToCreate: number[] } }) => {
+    try {
+      const epochsToCreate = input.epochsToCreate;
+
+      const epochsData = epochsToCreate.map((epoch: number) => ({
+        epoch: epoch,
+        validatorsInfoFetched: false,
+        validatorsBalancesFetched: false,
+        rewardsFetched: false,
+        committeesFetched: false,
+      }));
+
+      await prisma.epoch.createMany({
+        data: epochsData,
+        skipDuplicates: true,
+      });
+
+      return { count: epochsToCreate.length };
+    } catch (error) {
+      console.error('Error enqueuing epochs:', error);
+      throw error;
+    }
+  },
+);
 
 /**
  * Finds the next epoch that needs processing
  * Returns the epoch number and slot range, or null if no epoch needs processing
  */
-export const pickNextEpoch = fromPromise(async (): Promise<PickNextEpochResult> => {
+export const pickNextEpoch = fromPromise(async () => {
   try {
     // Find the earliest epoch where any of the completion flags is false
     const nextEpoch = await prisma.epoch.findFirst({
@@ -54,7 +129,7 @@ export const pickNextEpoch = fromPromise(async (): Promise<PickNextEpochResult> 
     //   },
     // });
 
-    const result: PickNextEpochOutput = {
+    const result = {
       epoch: nextEpoch.epoch,
       startSlot,
       endSlot,
@@ -72,57 +147,54 @@ export const pickNextEpoch = fromPromise(async (): Promise<PickNextEpochResult> 
   }
 });
 
-/**
- * Guard function to check if the epoch is the first epoch of a sync committee period
- */
-export const isFirstEpochOfSyncCommitteePeriod = ({
-  context,
-}: {
-  context: ProcessEpochContext;
-}): boolean => {
-  return context.epoch === getSyncCommitteePeriodStartEpoch(context.epoch);
-};
+export interface EpochToProcess {
+  epoch: number;
+  validatorsInfoFetched: boolean;
+  rewardsFetched: boolean;
+  committeesFetched: boolean;
+  slotsFetched: boolean;
+  syncCommitteesFetched: boolean;
+}
 
 /**
- * Guard function to check if the epoch is the lookback epoch (derived from BEACON_LOOKBACK_SLOT)
+ * Finds the minimum unprocessed epoch that needs processing
+ * Returns a single epoch with its current state
  */
-export const isLookbackEpoch = ({ context }: { context: ProcessEpochContext }): boolean => {
-  const lookbackEpoch = getEpochFromSlot(env.BEACON_LOOKBACK_SLOT);
-  return context.epoch === lookbackEpoch;
-};
+export const getMinEpochToProcess = fromPromise(async (): Promise<EpochToProcess | null> => {
+  try {
+    // Find the minimum epoch where any of the completion flags is false
+    const nextEpoch = await prisma.epoch.findFirst({
+      where: {
+        OR: [
+          { validatorsInfoFetched: false },
+          { rewardsFetched: false },
+          { committeesFetched: false },
+          { slotsFetched: false },
+        ],
+      },
+      orderBy: { epoch: 'asc' },
+      select: {
+        epoch: true,
+        validatorsInfoFetched: true,
+        rewardsFetched: true,
+        committeesFetched: true,
+        slotsFetched: true,
+        syncCommitteesFetched: true,
+      },
+    });
 
-/**
- * Guard function to check if we have a next epoch to process
- */
-export const hasNextEpoch = ({ event }: { event: any }): boolean => {
-  return event.output !== null;
-};
+    if (!nextEpoch) {
+      return null;
+    }
 
-/**
- * Guard function to check if we can start processing an epoch
- * Based on the logic from fetchEpochInfo.ts
- */
-export const canProcessEpoch = ({ context }: { context: ProcessEpochContext }): boolean => {
-  const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
-
-  // We need to wait for the epoch to start
-  if (context.epoch > currentEpoch + 1) {
-    return false;
+    return {
+      ...nextEpoch,
+    };
+  } catch (error) {
+    console.error('Error getting min epoch to process:', error);
+    throw error;
   }
-
-  return true;
-};
-
-/**
- * Guard function to check if the epoch has already started (timing condition only)
- * We need to wait for the current slot to be greater than the first slot of the epoch
- */
-export const hasEpochAlreadyStarted = ({ context }: { context: ProcessEpochContext }): boolean => {
-  const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
-
-  // We need to wait for the current slot to be greater than the first slot of the epoch
-  return currentSlot > context.startSlot;
-};
+});
 
 /**
  * Actor to check if we can fetch validators (timing + database conditions)
@@ -139,60 +211,6 @@ export const checkIfCanGetValidators = fromPromise(async ({ input }: { input: nu
     return { canProceed: false };
   }
 });
-
-/**
- * Guard function to check if validators have not been fetched yet
- */
-// export const validatorsNotFetched = ({ context }: { context: ProcessEpochContext }): boolean => {
-//   return !context.validatorsInfoFetched;
-// };
-
-/**
- * Guard function to check if we can fetch committees
- * Based on logic from fetchCommittee.ts
- */
-export const canFetchCommittees = ({ context }: { context: ProcessEpochContext }): boolean => {
-  const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
-
-  // We can fetch up to 1 epoch in advance
-  if (context.epoch >= currentEpoch + 1) {
-    return false;
-  }
-
-  return true;
-};
-
-/**
- * Guard function to check if rewards can be processed
- * Rewards can only be processed when:
- * 1. Validators have been fetched for the current epoch
- * 2. Current slot is greater than the epoch's end slot
- */
-export const canProcessRewards = ({ context }: { context: ProcessEpochContext }): boolean => {
-  // First condition: validators must have been fetched for the current epoch
-  // if (!context.validatorsInfoFetched) {
-  //   return false;
-  // }
-
-  // Second condition: current slot must be greater than the epoch's end slot
-  const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
-  return currentSlot > context.endSlot;
-};
-
-/**
- * Guard function to check if we can fetch sync committees
- * Based on logic from fetchSyncCommittees.ts
- */
-export const canFetchSyncCommittees = ({ context }: { context: ProcessEpochContext }): boolean => {
-  const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
-
-  // We can fetch up to 1 epoch in advance
-  if (context.epoch > currentEpoch + 1) {
-    return false;
-  }
-
-  return true;
-};
 
 /**
  * Actor to fetch validators for the first slot of an epoch

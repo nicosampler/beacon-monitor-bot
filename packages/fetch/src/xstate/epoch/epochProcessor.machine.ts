@@ -1,19 +1,12 @@
 import ms from 'ms';
-import { setup, assign, sendParent, stopChild, raise } from 'xstate';
+import { setup, assign, sendParent, stopChild, raise, ActorRef } from 'xstate';
 
-import { slotOrchestratorMachine } from '../slot/slotOrchestrator.machine.js';
+import { slotOrchestratorMachine, SlotsCompletedEvent } from '../slot/slotOrchestrator.machine.js';
 
 import { getEpochSlots } from '@/src/beacon/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 import {
-  canProcessEpoch,
-  //validatorsNotFetched,
-  canFetchCommittees,
-  canFetchSyncCommittees,
-  canProcessRewards,
-  isFirstEpochOfSyncCommitteePeriod,
-  isLookbackEpoch,
   fetchValidators,
   fetchCommittees,
   fetchSyncCommittees,
@@ -21,12 +14,52 @@ import {
   checkSyncCommitteeStatus,
   updateSlotsFetched,
   checkSlotsProcessed,
-} from '@/src/xstate/epoch/epochProcessor.actors.js';
-import { ProcessEpochContext, ProcessEpochSetup } from '@/src/xstate/epoch/epochProcessor.types.js';
+} from '@/src/xstate/epoch/epoch.actors.js';
+import {
+  canProcessEpoch,
+  canFetchCommittees,
+  canFetchSyncCommittees,
+  canProcessRewards,
+  isFirstEpochOfSyncCommitteePeriod,
+  isLookbackEpoch,
+} from '@/src/xstate/epoch/epoch.guards.js';
 import { logMachine, logActor } from '@/src/xstate/multiMachineLogger.js';
 
+type ProcessEpochContext = {
+  epoch: number;
+  startSlot: number;
+  endSlot: number;
+  epochDBStatus: {
+    validatorsInfoFetched: boolean;
+    rewardsFetched: boolean;
+    committeesFetched: boolean;
+    slotsFetched: boolean;
+    syncCommitteesFetched: boolean;
+  };
+  slotOrchestratorActor?: ActorRef<any, any> | null;
+  currentSlot?: number; // Add currentSlot to track current slot number
+};
+
+type ProcessEpochEvents =
+  | {
+      type: 'COMMITTEES_FETCHED';
+    }
+  | SlotsCompletedEvent;
+
 export const epochProcessorMachine = setup({
-  types: {} as ProcessEpochSetup,
+  types: {} as {
+    context: ProcessEpochContext;
+    events: ProcessEpochEvents;
+    input: {
+      epoch: number;
+      validatorsInfoFetched: boolean;
+      rewardsFetched: boolean;
+      committeesFetched: boolean;
+      slotsFetched: boolean;
+      syncCommitteesFetched: boolean;
+      currentSlot?: number; // Add currentSlot to input type
+    };
+  },
   actors: {
     fetchValidators,
     fetchCommittees,

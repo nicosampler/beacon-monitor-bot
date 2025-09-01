@@ -14,8 +14,11 @@ export interface SlotOrchestratorContext {
   slotActor: ActorRefFrom<typeof slotProcessorMachine> | null;
 }
 
+// Extract the SLOTS_COMPLETED event type for reuse in other machines
+export type SlotsCompletedEvent = { type: 'SLOTS_COMPLETED'; epoch: number };
+
 export type SlotOrchestratorEvents =
-  | { type: 'SLOTS_COMPLETED'; epoch: number }
+  | SlotsCompletedEvent
   | { type: 'SLOT_COMPLETED' }
   | { type: 'NEXT_SLOT_FOUND'; nextSlot: number };
 
