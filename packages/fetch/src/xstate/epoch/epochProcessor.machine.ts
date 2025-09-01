@@ -20,6 +20,7 @@ import {
   checkIfCanGetValidators,
   checkSyncCommitteeStatus,
   updateSlotsFetched,
+  checkSlotsProcessed,
 } from '@/src/xstate/epoch/epochProcessor.actors.js';
 import { ProcessEpochContext, ProcessEpochSetup } from '@/src/xstate/epoch/epochProcessor.types.js';
 import { logMachine, logActor } from '@/src/xstate/multiMachineLogger.js';
@@ -34,6 +35,7 @@ export const epochProcessorMachine = setup({
     checkSyncCommitteeStatus,
     slotOrchestratorMachine,
     updateSlotsFetched,
+    checkSlotsProcessed,
   },
   guards: {
     canProcessEpoch,
@@ -138,7 +140,23 @@ export const epochProcessorMachine = setup({
               states: {
                 waitingForCommittees: {
                   on: {
-                    COMMITTEES_FETCHED: 'processingSlots',
+                    COMMITTEES_FETCHED: 'checkingSlotsProcessed',
+                  },
+                },
+                checkingSlotsProcessed: {
+                  invoke: {
+                    src: 'checkSlotsProcessed',
+                    input: ({ context }) => ({ epoch: context.epoch }),
+                    onDone: [
+                      {
+                        guard: ({ event }) => event.output.slotsProcessed,
+                        target: 'complete',
+                      },
+                      {
+                        target: 'processingSlots',
+                      },
+                    ],
+                    onError: 'checkingSlotsProcessed',
                   },
                 },
                 processingSlots: {

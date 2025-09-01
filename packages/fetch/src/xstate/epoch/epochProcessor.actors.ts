@@ -322,3 +322,20 @@ export const updateSlotsFetched = fromPromise(async ({ input }: { input: { epoch
     throw error;
   }
 });
+
+/**
+ * Actor to check if slots have already been processed for an epoch
+ */
+export const checkSlotsProcessed = fromPromise(async ({ input }: { input: { epoch: number } }) => {
+  try {
+    const epoch = await prisma.epoch.findUnique({
+      where: { epoch: input.epoch },
+      select: { slotsFetched: true },
+    });
+
+    return { slotsProcessed: epoch?.slotsFetched ?? false };
+  } catch (error) {
+    console.error('Error checking slots processed status:', error);
+    throw error;
+  }
+});
