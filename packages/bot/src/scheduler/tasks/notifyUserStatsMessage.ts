@@ -366,9 +366,9 @@ function formatStatsMessage(
     `━━━━━━━━━━━━━━━━━`,
     `${formatTableColumn('', 4)}${formatTableColumn('APY%', 7)}${formatTableColumn(env.BLOCKCHAIN_CL_REWARDS_SYMBOL, 9)}${formatTableColumn(env.BLOCKCHAIN_EL_REWARDS_SYMBOL, 9)}${formatTableColumn('Total', 10)}`,
     `${formatTableColumn('*d:*', 4)}${formatTableColumn(formatNumber(stats.rewards?.daily?.apy ?? 0, 4), 7)}${formatTableColumn(formatNumber(stats.rewards?.daily?.consensus ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.daily?.execution ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.daily?.usd ?? 0, 4, '$'), 10)}`,
-    '*w:* Indexing.',
+    `${formatTableColumn('*w:*', 4)}${formatTableColumn(formatNumber(stats.rewards?.weekly?.apy ?? 0, 4), 7)}${formatTableColumn(formatNumber(stats.rewards?.weekly?.consensus ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.weekly?.execution ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.weekly?.usd ?? 0, 4, '$'), 10)}`,
+
     '*m:* Indexing.',
-    //`${formatTableColumn('*w:*', 4)}${formatTableColumn(formatNumber(stats.rewards?.weekly?.apy ?? 0, 4), 7)}${formatTableColumn(formatNumber(stats.rewards?.weekly?.consensus ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.weekly?.execution ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.weekly?.usd ?? 0, 4, '$'), 10)}`,
     //`${formatTableColumn('*m:*', 4)}${formatTableColumn(formatNumber(stats.rewards?.monthly?.apy ?? 0, 4), 7)}${formatTableColumn(formatNumber(stats.rewards?.monthly?.consensus ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.monthly?.execution ?? 0, 3), 9)}${formatTableColumn(formatNumber(stats.rewards?.monthly?.usd ?? 0, 4, '$'), 10)}`,
   ].join('\n');
 
