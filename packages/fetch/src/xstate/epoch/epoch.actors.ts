@@ -1,8 +1,10 @@
 import { fromPromise } from 'xstate';
 
 import { beacon_getSyncCommittees } from '@/src/beacon/endpoints.js';
+import { fetchAttestationsRewards as _fetchAttestationsRewards } from '@/src/beacon/feed/fetchAttestationsRewards.js';
 import { fetchCommittee } from '@/src/beacon/feed/fetchCommittee.js';
 import { fetchValidators as fetchValidatorsFromBeacon } from '@/src/beacon/feed/fetchValidators.js';
+import { fetchValidatorsBalances as _fetchValidatorsBalances } from '@/src/beacon/feed/fetchValidatorsBalances.js';
 import { getEpochFromSlot, getEpochSlots, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { getSyncCommitteePeriodStartEpoch } from '@/src/beacon/utils/time.js';
@@ -116,18 +118,10 @@ export const pickNextEpoch = fromPromise(async () => {
     });
 
     if (!nextEpoch) {
-      return null; // No epoch needs processing
+      return null;
     }
 
     const { startSlot, endSlot } = getEpochSlots(nextEpoch.epoch);
-
-    // Check if sync committees have been fetched for this epoch
-    // const existingSyncCommittee = await prisma.syncCommittee.findFirst({
-    //   where: {
-    //     fromEpoch: { lte: nextEpoch.epoch },
-    //     toEpoch: { gte: nextEpoch.epoch },
-    //   },
-    // });
 
     const result = {
       epoch: nextEpoch.epoch,
@@ -199,18 +193,20 @@ export const getMinEpochToProcess = fromPromise(async (): Promise<EpochToProcess
 /**
  * Actor to check if we can fetch validators (timing + database conditions)
  */
-export const checkIfCanGetValidators = fromPromise(async ({ input }: { input: number }) => {
-  try {
-    const startSlot = input;
-    const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+export const checkIfCanFetchValidatorsBalances = fromPromise(
+  async ({ input }: { input: { slot: number } }) => {
+    try {
+      const startSlot = input.slot;
+      const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
 
-    // First check if the epoch has already started
-    return { canProceed: currentSlot >= startSlot };
-  } catch (error) {
-    console.error('Error checking if can get validators:', error);
-    return { canProceed: false };
-  }
-});
+      // First check if the epoch has already started
+      return { canProceed: currentSlot > startSlot };
+    } catch (error) {
+      console.error('Error checking if can get validators:', error);
+      return { canProceed: false };
+    }
+  },
+);
 
 /**
  * Actor to fetch validators for the first slot of an epoch
@@ -236,6 +232,18 @@ export const fetchValidators = fromPromise(async ({ input }: { input: { startSlo
     throw error;
   }
 });
+
+export const fetchValidatorsBalances = fromPromise(
+  async ({ input }: { input: { startSlot: number } }) => {
+    await _fetchValidatorsBalances(input.startSlot);
+  },
+);
+
+export const fetchAttestationsRewards = fromPromise(
+  async ({ input }: { input: { epoch: number } }) => {
+    await _fetchAttestationsRewards(input.epoch);
+  },
+);
 
 /**
  * Actor to fetch committees for an epoch

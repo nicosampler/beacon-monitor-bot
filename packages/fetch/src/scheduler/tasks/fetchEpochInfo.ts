@@ -1,6 +1,6 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { fetchBeaconRewards } from '@/src/beacon/feed/fetchBeaconRewards.js'; // Assuming this function exists
+import { fetchAttestationsRewards } from '@/src/beacon/feed/fetchAttestationsRewards.js'; // Assuming this function exists
 import { fetchValidators } from '@/src/beacon/feed/fetchValidators.js';
 import { fetchValidatorsBalances } from '@/src/beacon/feed/fetchValidatorsBalances.js';
 import { getEpochSlots, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
@@ -79,7 +79,7 @@ async function fetchEpochInfoTask(logger: CustomLogger) {
 
   // Get beacon rewards for the current epoch
   if (!dbEpoch.rewardsFetched) {
-    await fetchBeaconRewards(logger, epochToFetch);
+    await fetchAttestationsRewards(logger, epochToFetch);
     await prisma.epoch.update({
       where: { epoch: epochToFetch },
       data: { rewardsFetched: true },

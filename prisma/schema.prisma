@@ -9,7 +9,6 @@ datasource db {
 
 model Epoch {
   epoch                     Int     @id
-  validatorsInfoFetched     Boolean @default(false) // Whether the validators for this epoch have been fetched
   validatorsBalancesFetched Boolean @default(false) // Whether the validators balances for this epoch have been fetched
   rewardsFetched            Boolean @default(false) // Whether the rewards for this epoch have been fetched
   committeesFetched         Boolean @default(false) // Whether the committees for this epoch have been fetched
@@ -84,19 +83,21 @@ model ExecutionRewards {
 
 // Note: HourlyValidatorStats and HourlyBlockAndSyncRewards have been separated to avoid deadlocks.
 // both processes that update these tables are running in parallel.
+// one updates blockAndSyncRewards, the other updates attestations rewards.
 model HourlyValidatorStats {
   validatorIndex Int
   hour           Int // 0-23
   date           DateTime @db.Date // dd-mm-yyyy
 
-  // TODO: remove these
-  blockReward   BigInt? // Reward for proposing a block
-  syncCommittee BigInt? // Rewarded for participating in the sync committee
+  head       BigInt?
+  target     BigInt?
+  source     BigInt?
+  inactivity BigInt?
 
-  head       BigInt? // Reward for attesting
-  target     BigInt? // Reward for attesting
-  source     BigInt? // Reward for attesting
-  inactivity BigInt? // Reward for attesting
+  idealHead       BigInt?
+  idealTarget     BigInt?
+  idealSource     BigInt?
+  idealInactivity BigInt?
 
   attestationsMissed Int?
 

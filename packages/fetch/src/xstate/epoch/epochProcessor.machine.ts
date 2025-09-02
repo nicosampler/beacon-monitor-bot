@@ -7,10 +7,11 @@ import { getEpochSlots } from '@/src/beacon/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 import {
-  fetchValidators,
+  fetchAttestationsRewards,
+  fetchValidatorsBalances,
   fetchCommittees,
   fetchSyncCommittees,
-  checkIfCanGetValidators,
+  checkIfCanFetchValidatorsBalances,
   checkSyncCommitteeStatus,
   updateSlotsFetched,
   checkSlotsProcessed,
@@ -29,8 +30,8 @@ type ProcessEpochContext = {
   epoch: number;
   startSlot: number;
   endSlot: number;
-  epochDBStatus: {
-    validatorsInfoFetched: boolean;
+  epochDBSnapshot: {
+    validatorsBalancesFetched: boolean;
     rewardsFetched: boolean;
     committeesFetched: boolean;
     slotsFetched: boolean;
@@ -44,6 +45,9 @@ type ProcessEpochEvents =
   | {
       type: 'COMMITTEES_FETCHED';
     }
+  | {
+      type: 'VALIDATORS_BALANCES_FETCHED';
+    }
   | SlotsCompletedEvent;
 
 export const epochProcessorMachine = setup({
@@ -52,19 +56,20 @@ export const epochProcessorMachine = setup({
     events: ProcessEpochEvents;
     input: {
       epoch: number;
-      validatorsInfoFetched: boolean;
+      currentSlot?: number;
+      validatorsBalancesFetched: boolean;
       rewardsFetched: boolean;
       committeesFetched: boolean;
       slotsFetched: boolean;
       syncCommitteesFetched: boolean;
-      currentSlot?: number; // Add currentSlot to input type
     };
   },
   actors: {
-    fetchValidators,
+    fetchValidatorsBalances,
+    fetchAttestationsRewards,
     fetchCommittees,
     fetchSyncCommittees,
-    checkIfCanGetValidators,
+    checkIfCanFetchValidatorsBalances,
     checkSyncCommitteeStatus,
     slotOrchestratorMachine,
     updateSlotsFetched,
@@ -72,7 +77,6 @@ export const epochProcessorMachine = setup({
   },
   guards: {
     canProcessEpoch,
-    //validatorsNotFetched,
     canFetchCommittees,
     canFetchSyncCommittees,
     canProcessRewards,
@@ -88,9 +92,9 @@ export const epochProcessorMachine = setup({
       epoch: input.epoch,
       startSlot: startSlot,
       endSlot: endSlot,
-      // read-only statuses
-      epochDBStatus: {
-        validatorsInfoFetched: input.validatorsInfoFetched,
+      epochDBSnapshot: {
+        // read-only statuses
+        validatorsBalancesFetched: input.validatorsBalancesFetched,
         rewardsFetched: input.rewardsFetched,
         committeesFetched: input.committeesFetched,
         slotsFetched: input.slotsFetched,
@@ -137,7 +141,7 @@ export const epochProcessorMachine = setup({
                 checkingEpochStatus: {
                   always: [
                     {
-                      guard: ({ context }) => !context.epochDBStatus.committeesFetched,
+                      guard: ({ context }) => !context.epochDBSnapshot.committeesFetched,
                       target: 'fetching',
                     },
                     {
@@ -246,13 +250,13 @@ export const epochProcessorMachine = setup({
              * Get sync committees
              * Sync committees persist across multiple epochs, we fetch them only for the first epoch of the sync committee period
              */
-            syncCommittees: {
+            syncingCommittees: {
               initial: 'checkingEpochStatus',
               states: {
                 checkingEpochStatus: {
                   always: [
                     {
-                      guard: ({ context }) => context.epochDBStatus.syncCommitteesFetched,
+                      guard: ({ context }) => context.epochDBSnapshot.syncCommitteesFetched,
                       target: 'complete',
                     },
                     {
@@ -292,63 +296,67 @@ export const epochProcessorMachine = setup({
               },
             },
 
+            //TODO: fetch validators pending of activation
+            // make fetchValidators receive statuses to fetch.
+            // trackingTransitioningValidators: {
+            // }
+
             /**
-             * Get all active beacon validators
-             * We need to know the validators to calculate missed rewards
+             * Get all active beacon validators balances
+             * We need to know the validators balances to calculate missed rewards
              */
-            // validators: {
-            //   initial: 'validatorStatusCheck',
-            //   states: {
-            //     validatorStatusCheck: {
-            //       always: [
-            //         {
-            //           guard: 'validatorsNotFetched',
-            //           target: 'validatorTimingCheck',
-            //         },
-            //         {
-            //           target: 'validatorComplete',
-            //         },
-            //       ],
-            //     },
-            //     validatorTimingCheck: {
-            //       invoke: {
-            //         src: 'checkIfCanGetValidators',
-            //         input: ({ context }) => context.startSlot,
-            //         onDone: [
-            //           {
-            //             guard: ({ event }) => event.output.canProceed,
-            //             target: 'validatorFetching',
-            //           },
-            //           {
-            //             target: 'validatorWaiting',
-            //           },
-            //         ],
-            //         onError: 'validatorWaiting',
-            //       },
-            //     },
-            //     validatorWaiting: {
-            //       after: {
-            //         [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'validatorTimingCheck',
-            //       },
-            //     },
-            //     validatorFetching: {
-            //       invoke: {
-            //         src: 'fetchValidators',
-            //         input: ({ context }) => ({ startSlot: context.startSlot }),
-            //         onDone: [
-            //           {
-            //             actions: assign({
-            //               validatorsInfoFetched: true,
-            //             }),
-            //             target: 'validatorComplete',
-            //           },
-            //         ],
-            //         onError: 'validatorComplete',
-            //       },
-            //     },
-            //     validatorComplete: { type: 'final' },
-            //   },
-            // },
+            validatorsBalances: {
+              initial: 'checkingStatus',
+              states: {
+                checkingStatus: {
+                  always: [
+                    {
+                      guard: ({ context }) => context.epochDBSnapshot.validatorsBalancesFetched,
+                      target: 'complete',
+                    },
+                    {
+                      target: 'waitingForSlotToStart',
+                    },
+                  ],
+                },
+                waitingForSlotToStart: {
+                  invoke: {
+                    src: 'checkIfCanFetchValidatorsBalances',
+                    input: ({ context }) => ({ slot: context.startSlot }),
+                    onDone: [
+                      {
+                        guard: ({ event }) => event.output.canProceed,
+                        target: 'fetching',
+                      },
+                      {
+                        target: 'waitingForSlotToStartDelaying',
+                      },
+                    ],
+                  },
+                },
+                waitingForSlotToStartDelaying: {
+                  after: {
+                    [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'waitingForSlotToStart',
+                  },
+                },
+                fetching: {
+                  invoke: {
+                    src: 'fetchValidatorsBalances',
+                    input: ({ context }) => ({ startSlot: context.startSlot }),
+                    onDone: [
+                      {
+                        target: 'complete',
+                      },
+                    ],
+                    onError: 'fetching',
+                  },
+                },
+                complete: {
+                  entry: raise({ type: 'VALIDATORS_BALANCES_FETCHED' }),
+                  type: 'final',
+                },
+              },
+            },
 
             /**
              * Rewards processing track
@@ -357,8 +365,13 @@ export const epochProcessorMachine = setup({
              * 2. Current slot is greater than the epoch's end slot
              */
             rewards: {
-              initial: 'checkingCanProcess',
+              initial: 'waitingForValidatorsBalances',
               states: {
+                waitingForValidatorsBalances: {
+                  on: {
+                    VALIDATORS_BALANCES_FETCHED: 'checkingCanProcess',
+                  },
+                },
                 checkingCanProcess: {
                   always: [
                     {
@@ -366,19 +379,25 @@ export const epochProcessorMachine = setup({
                       target: 'processing',
                     },
                     {
-                      target: 'waiting',
+                      target: 'delayingCanProcess',
                     },
                   ],
                 },
-                waiting: {
+                delayingCanProcess: {
                   after: {
                     [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'checkingCanProcess',
                   },
                 },
-                processing: {
-                  // Placeholder for actual rewards processing logic
-                  after: {
-                    [ms('1s')]: 'complete',
+                fetching: {
+                  invoke: {
+                    src: 'fetchAttestationsRewards',
+                    input: ({ context }) => ({ epoch: context.epoch }),
+                    onDone: [
+                      {
+                        target: 'complete',
+                      },
+                    ],
+                    onError: 'fetching',
                   },
                 },
                 complete: { type: 'final' },

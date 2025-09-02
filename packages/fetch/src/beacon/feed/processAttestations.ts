@@ -104,7 +104,7 @@ async function processAttestation(
       // Process each validator's attestation in this committee
       for (let i = 0; i < committeeAggregationBits.length; i++) {
         if (committeeAggregationBits[i] === '1') {
-          const attestationDelay = slotNumber - attestationSlot;
+          const attestationDelay = slotNumber - attestationSlot - 1;
           const attestationInfo = {
             slot: attestationSlot,
             index: committeeBit,

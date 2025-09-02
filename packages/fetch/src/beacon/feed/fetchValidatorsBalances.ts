@@ -4,10 +4,9 @@ import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
 import { beacon_getValidatorsBalances } from '@/src/beacon/endpoints.js';
-import { db_getFinalValidatorIds, db_getMaxValidatorId } from '@/src/utils/db.js';
-import { CustomLogger } from '@/src/lib/pino.js';
-import { getPrisma } from '@/src/lib/prisma.js';
 import { getEpochFromSlot } from '@/src/beacon/utils/misc.js';
+import { getPrisma } from '@/src/lib/prisma.js';
+import { db_getFinalValidatorIds, db_getMaxValidatorId } from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 
@@ -15,9 +14,7 @@ const prisma = getPrisma();
 async function saveValidatorBalancesToDatabase(
   validatorBalances: Array<{ index: string; balance: string }>,
   slot: number,
-  logger: CustomLogger,
 ) {
-  logger.info('Saving result to db.');
   try {
     await prisma.$transaction(
       async (tx) => {
@@ -62,21 +59,16 @@ async function saveValidatorBalancesToDatabase(
         timeout: ms('1m'),
       },
     );
-
-    logger.info(`Successfully saved ${validatorBalances.length} validator balances to database`);
   } catch (error) {
-    logger.error(`Error saving validator balances to database`, error);
+    console.error(`Error saving validator balances to database`, error);
     throw error;
   }
 }
 
-export async function fetchValidatorsBalances(logger: CustomLogger, slot: number) {
-  const start = Date.now();
-  logger.info(`Fetching validators balances.`);
+export async function fetchValidatorsBalances(slot: number) {
   try {
     const totalValidators = await db_getMaxValidatorId();
     if (totalValidators == 0) {
-      logger.info('No validators ids to fetch');
       return;
     }
 
@@ -108,17 +100,13 @@ export async function fetchValidatorsBalances(logger: CustomLogger, slot: number
           break;
         }
       } catch (error) {
-        logger.error(`Error processing batch`, error);
+        console.error(`Error processing batch`, error);
       }
     }
 
-    logger.info(
-      `All validator balances fetched in ${((Date.now() - start) / 1000 / 60).toFixed(2)} minutes`,
-    );
-
     // Save all collected data to database
-    await saveValidatorBalancesToDatabase(allValidatorBalances, slot, logger);
+    await saveValidatorBalancesToDatabase(allValidatorBalances, slot);
   } catch (error) {
-    logger.error(`Error fetching validator balances info`, error);
+    console.error(`Error fetching validator balances info`, error);
   }
 }

@@ -5,7 +5,6 @@ import ms from 'ms';
 import { beacon_getAttestationRewards } from '@/src/beacon/endpoints.js';
 import { AttestationRewards } from '@/src/beacon/types.js';
 import { getTimestampFromEpochNumber } from '@/src/beacon/utils/time.js';
-import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
 import { db_getAttestingValidatorsIds, db_getValidatorsEffectiveBalances } from '@/src/utils/db.js';
@@ -67,7 +66,10 @@ async function insertBatchIntoTempTable(
   `;
 }
 
-async function mergeAndUpdateEpoch(tx: Prisma.TransactionClient, epoch: number): Promise<void> {
+async function processTmpTableAndUpdateEpoch(
+  tx: Prisma.TransactionClient,
+  epoch: number,
+): Promise<void> {
   // Merge data from temporary table to main table
   await tx.$executeRaw`
     INSERT INTO "HourlyValidatorStats" 
@@ -90,27 +92,24 @@ async function mergeAndUpdateEpoch(tx: Prisma.TransactionClient, epoch: number):
 }
 
 // Main function
-export async function fetchBeaconRewards(logger: CustomLogger, epoch: number) {
-  const start = Date.now();
+export async function fetchAttestationsRewards(epoch: number) {
   try {
-    logger.info(`Fetching rewards.`);
-
     const epochTimestamp = getTimestampFromEpochNumber(epoch);
     const { date, hour } = convertToUTC(epochTimestamp);
 
-    // 1. Truncate temp table
+    // Truncate temp table
     await truncateTempTable();
 
-    // Get all validator ids to fetch info
+    // Get all validator in non final states fetch info
     const allValidatorIds = await db_getAttestingValidatorsIds();
     let idealRewardsMap: Map<string, AttestationRewards['data']['ideal_rewards'][number]> | null =
       null;
 
-    // Process all validators in batches
+    // split all validators in batches
     const validatorBatches = chunk(allValidatorIds, 1000000);
     allValidatorIds.length = 0;
 
-    // 2. Load data into temp table
+    // Fetch rewards in batches and save in a temp table
     for (const batch of validatorBatches) {
       // Get effective balances for the validators in the batch
       const validatorsEffectiveBalances = await db_getValidatorsEffectiveBalances(batch);
@@ -122,15 +121,16 @@ export async function fetchBeaconRewards(logger: CustomLogger, epoch: number) {
       );
       validatorsEffectiveBalances.length = 0;
 
-      // Get attestation rewards for this batch
+      // fetch the beacon chain to get the rewards for this batch
       const epochRewards = await beacon_getAttestationRewards(epoch, batch);
 
-      // Create ideal rewards map if this is the first batch
+      // Create ideal-rewards map if this is the first batch
+      // ideal-rewards is for the epoch, so we only need to do it once
       if (!idealRewardsMap) {
         idealRewardsMap = createIdealRewardsMap(epochRewards);
       }
 
-      // Save rewards data in temp table
+      // Save rewards in a temp table
       const rewardBatches = chunk(epochRewards.data.total_rewards, 12_000);
       for (const rewardBatch of rewardBatches) {
         await insertBatchIntoTempTable(
@@ -144,24 +144,18 @@ export async function fetchBeaconRewards(logger: CustomLogger, epoch: number) {
       batch.length = 0;
     }
 
-    // 3. Execute merge and update in a transaction
+    // process tmb results and combine them in the main table
+    // also mark the epoch as rewards fetched
     await prisma.$transaction(
       async (tx) => {
-        await mergeAndUpdateEpoch(tx, epoch);
+        await processTmpTableAndUpdateEpoch(tx, epoch);
       },
       {
         timeout: ms('3m'),
       },
     );
-
-    // 4. Final truncate if everything went well
-    await truncateTempTable();
-
-    logger.info(
-      `All Epoch rewards processed in ${((Date.now() - start) / 1000 / 60).toFixed(2)} minutes`,
-    );
   } catch (error) {
-    logger.error('Error processing rewards:', error);
+    console.error('Error processing rewards:', error);
     throw error;
   }
 }
