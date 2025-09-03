@@ -29,7 +29,7 @@ const _fetchExecutionRewardsTask = async (logger: CustomLogger) => {
     blockToQuery = latestReward.blockNumber + 1;
   }
 
-  logger.addContext(`for block ${blockToQuery}`);
+  logger.setContext(`for block ${blockToQuery}`);
 
   await fetchExecutionRewards(logger, blockToQuery);
 };

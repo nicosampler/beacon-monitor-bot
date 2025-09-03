@@ -72,7 +72,7 @@ const createLogger = (initialContext: string | null, enabled: boolean = true, co
 
   return {
     // Add method to update context
-    addContext: (extraContext: string) => {
+    setContext: (extraContext: string) => {
       currentContext = currentContext ? `${_initialContext} - ${extraContext}` : extraContext;
     },
     info: (message: string, ...args: unknown[]) => logWithContext('info', message, ...args),

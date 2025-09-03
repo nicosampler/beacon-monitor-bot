@@ -16,9 +16,6 @@ export interface EpochOrchestratorContext {
 
 export type EpochOrchestratorEvents = { type: 'EPOCH_COMPLETED'; machineId: string };
 
-// Create a custom logger for epoch processing
-const epochLogger = createLogger('EpochOrchestrator', true);
-
 /**
  * @fileoverview The epoch orchestrator is a state machine that is responsible for orchestrating the processing of epochs.
  *
@@ -45,7 +42,7 @@ export const epochOrchestratorMachine = setup({
   context: {
     epochData: null,
     epochActor: null,
-    logger: epochLogger,
+    logger: createLogger('EpochOrchestrator'),
   },
   states: {
     gettingMinEpoch: {
@@ -63,7 +60,7 @@ export const epochOrchestratorMachine = setup({
                 const epoch = event.output?.epoch;
                 if (epoch && context.logger) {
                   // Add epoch context to the logger for incremental logging
-                  context.logger.addContext(`Epoch-${epoch}`);
+                  context.logger.setContext(`Epoch-${epoch}`);
                   context.logger.info('start processing epoch', { epoch });
                 }
               },
@@ -109,14 +106,7 @@ export const epochOrchestratorMachine = setup({
         ({ context }) => {
           const epoch = context.epochData?.epoch;
           if (epoch && context.logger) {
-            context.logger.info('spawning epoch processor', {
-              epoch,
-              validatorsBalancesFetched: context.epochData?.validatorsBalancesFetched,
-              rewardsFetched: context.epochData?.rewardsFetched,
-              committeesFetched: context.epochData?.committeesFetched,
-              slotsFetched: context.epochData?.slotsFetched,
-              syncCommitteesFetched: context.epochData?.syncCommitteesFetched,
-            });
+            context.logger.info('spawning epoch processor');
           }
         },
       ],
@@ -128,7 +118,6 @@ export const epochOrchestratorMachine = setup({
               const epoch = context.epochData?.epoch;
               if (epoch && context.logger) {
                 context.logger.info('epoch processing completed', {
-                  epoch,
                   machineId: event.machineId,
                 });
               }

@@ -18,7 +18,7 @@ export const initValidators = async () => {
       // Fetch validators using the provided function
       const _fetchValidators = async () => {
         const logger = createLogger('fetchValidators', true);
-        logger.addContext(`head`);
+        logger.setContext(`head`);
         await fetchValidators(logger, 'head');
       };
 

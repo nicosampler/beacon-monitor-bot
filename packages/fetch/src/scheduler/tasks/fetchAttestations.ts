@@ -23,7 +23,7 @@ export const fetchAttestationsTask = async (logger: CustomLogger) => {
     const lastProcessedSlot = await db_getLastSlotWithAttestations();
     const slotToFetch = lastProcessedSlot ? lastProcessedSlot.slot + 1 : oldestLookbackSlot;
 
-    logger.addContext(`attestation: ${slotToFetch}`);
+    logger.setContext(`attestation: ${slotToFetch}`);
 
     // Skip if the slot to fetch is greater than the max slot to fetch
     if (slotToFetch > maxSlotToFetch) {

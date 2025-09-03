@@ -23,7 +23,7 @@ export const fetchBlockAndSyncRewardsTask = async (logger: CustomLogger) => {
   const lastProcessedSlot = await db_getLastSlotWithSyncRewards();
   const slotToFetch = lastProcessedSlot ? lastProcessedSlot.slot + 1 : oldestLookbackSlot;
 
-  logger.addContext(`slot: ${slotToFetch}`);
+  logger.setContext(`slot: ${slotToFetch}`);
 
   if (slotToFetch > maxSlotToFetch) {
     logger.info(`Skipping, greater than max slot to fetch ${maxSlotToFetch}`);

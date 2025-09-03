@@ -36,7 +36,7 @@ async function fetchEpochInfoTask(logger: CustomLogger) {
   const epochToFetch = lastProcessedEpoch ? lastProcessedEpoch.epoch + 1 : oldestLookbackEpoch;
   const { startSlot, endSlot } = getEpochSlots(epochToFetch);
 
-  logger.addContext(`epoch: ${epochToFetch}`);
+  logger.setContext(`epoch: ${epochToFetch}`);
 
   // We need to wait for the current epoch to finish
   if (epochToFetch >= currentEpoch) {

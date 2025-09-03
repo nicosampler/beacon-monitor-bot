@@ -214,7 +214,7 @@ export const checkIfCanFetchValidatorsBalances = fromPromise(
 export const fetchValidators = fromPromise(async ({ input }: { input: { startSlot: number } }) => {
   try {
     const logger = createLogger('fetchValidators', true);
-    logger.addContext(`startSlot: ${input.startSlot}`);
+    logger.setContext(`startSlot: ${input.startSlot}`);
 
     await fetchValidatorsFromBeacon(logger, input.startSlot);
 
@@ -251,7 +251,7 @@ export const fetchAttestationsRewards = fromPromise(
 export const fetchCommittees = fromPromise(async ({ input }: { input: { epoch: number } }) => {
   try {
     const logger = createLogger('fetchCommittees', true);
-    logger.addContext(`epoch: ${input.epoch}`);
+    logger.setContext(`epoch: ${input.epoch}`);
 
     // Fetch committee for the epoch
     await fetchCommittee(logger, input.epoch);

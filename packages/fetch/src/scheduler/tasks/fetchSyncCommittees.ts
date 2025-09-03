@@ -49,7 +49,7 @@ epochToFetch: ${epochToFetch}`);
     return;
   }
 
-  logger.addContext(`EpochToFetch: ${epochToFetch}`);
+  logger.setContext(`EpochToFetch: ${epochToFetch}`);
 
   if (epochToFetch > currentEpoch) {
     logger.info(`To soon to fetch`);

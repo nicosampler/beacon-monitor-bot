@@ -29,7 +29,7 @@ async function fetchNewCommittees(logger: CustomLogger): Promise<void> {
   const epochToFetch = lastEpochWithCommittees
     ? lastEpochWithCommittees.epoch + 1
     : oldestLookbackEpoch;
-  logger.addContext(`Epoch: ${epochToFetch}`);
+  logger.setContext(`Epoch: ${epochToFetch}`);
 
   // Skip if the committee data for the epoch is not yet available
   if (epochToFetch > headEpoch + 1) {
