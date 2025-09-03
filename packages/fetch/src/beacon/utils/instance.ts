@@ -1,10 +1,9 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 import { setupCache } from 'axios-cache-interceptor';
-import * as AxiosLogger from 'axios-logger';
 import ms from 'ms';
 
 import { limitRequests } from '@/src/beacon/utils/rateLimiter.js';
-import { logRequest, logResponse } from '@/src/utils/http/index.js';
+import { logRequest, logResponse } from '@/src/lib/httpPino.js';
 
 const _instance = axios.create();
 
@@ -19,7 +18,3 @@ instance.interceptors.request.use(async (config: InternalAxiosRequestConfig) => 
   return config;
 });
 instance.interceptors.response.use(logResponse);
-
-AxiosLogger.setGlobalConfig({
-  data: false,
-});

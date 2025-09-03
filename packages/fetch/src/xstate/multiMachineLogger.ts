@@ -94,7 +94,7 @@ export class MultiMachineLogger {
     // Remove from memory after a short delay
     setTimeout(() => {
       this.machines.delete(machineId);
-      console.log(`Machine ${machineId} removed from memory after reaching final state`);
+      // console.log(`Machine ${machineId} removed from memory after reaching final state`);
     }, 3000); // 3 second delay to show final state
   }
 

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import chalk from 'chalk';
 import Pino, { DestinationStream, pino } from 'pino';
 
 import { env } from '@/src/env.js';
@@ -22,8 +23,28 @@ const getCurrentLogFileName = () => {
   return `${day}-${month}-${year}.log`;
 };
 
-// Function to create a logger with optional context
-const createLogger = (initialContext: string | null, enabled: boolean = true) => {
+// Helper function to apply color to text using chalk
+const applyColor = (text: string, colorName = 'white'): string => {
+  if (!colorName) return text;
+
+  // Map color names to chalk methods
+  const colorMap: Record<string, (text: string) => string> = {
+    blue: chalk.blue,
+    cyan: chalk.cyan,
+    green: chalk.green,
+    red: chalk.red,
+    yellow: chalk.yellow,
+    magenta: chalk.magenta,
+    white: chalk.white,
+    gray: chalk.gray,
+  };
+
+  const colorFn = colorMap[colorName];
+  return colorFn ? colorFn(text) : text;
+};
+
+// Function to create a logger with optional context and color
+const createLogger = (initialContext: string | null, enabled: boolean = true, color = 'yellow') => {
   const _initialContext = initialContext;
   // Add context state that can be modified
   let currentContext = initialContext;
@@ -36,8 +57,17 @@ const createLogger = (initialContext: string | null, enabled: boolean = true) =>
     // Only skip logging if enabled is false AND it's not an error
     if (!enabled && level !== 'error') return;
 
-    const logObject = currentContext ? { context: currentContext, ...args } : args;
-    logger[level](logObject, message);
+    // Include context in the message itself for cleaner output with optional color
+    const contextualMessage = currentContext
+      ? `${applyColor(`[${currentContext}]`, color)} ${applyColor(message)}`
+      : applyColor(message);
+
+    // Only pass an object if there are additional arguments, otherwise just pass the message
+    if (args.length > 0) {
+      logger[level](args[0], contextualMessage);
+    } else {
+      logger[level](contextualMessage);
+    }
   };
 
   return {
@@ -70,6 +100,11 @@ const createPinoLogger = () => {
       options: {
         destination: logPath,
         colorize: false, // Disable colors for file output
+        messageFormat: '{msg}',
+        ignore: 'pid,hostname',
+        translateTime: 'HH:MM:ss.l',
+        singleLine: true,
+        hideObject: false,
       },
     };
   } else {
@@ -77,6 +112,11 @@ const createPinoLogger = () => {
       target: 'pino-pretty',
       options: {
         colorize: true,
+        messageFormat: '{msg}',
+        ignore: 'pid,hostname',
+        translateTime: 'HH:MM:ss.l',
+        singleLine: true,
+        hideObject: false,
       },
     };
   }
