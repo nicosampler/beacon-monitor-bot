@@ -14,6 +14,7 @@ import {
   checkIfCanFetchValidatorsBalances,
   checkSyncCommitteeStatus,
   updateSlotsFetched,
+  updateSyncCommitteesFetched,
   checkSlotsProcessed,
 } from '@/src/xstate/epoch/epoch.actors.js';
 import {
@@ -73,6 +74,7 @@ export const epochProcessorMachine = setup({
     checkSyncCommitteeStatus,
     slotOrchestratorMachine,
     updateSlotsFetched,
+    updateSyncCommitteesFetched,
     checkSlotsProcessed,
   },
   guards: {
@@ -271,13 +273,25 @@ export const epochProcessorMachine = setup({
                     onDone: [
                       {
                         guard: ({ event }) => event.output.isFetched,
-                        target: 'complete',
+                        target: 'updateSyncCommitteesFetched',
                       },
                       {
                         target: 'fetching',
                       },
                     ],
                     onError: 'checkingInDBTable',
+                  },
+                },
+                updateSyncCommitteesFetched: {
+                  invoke: {
+                    src: 'updateSyncCommitteesFetched',
+                    input: ({ context }) => ({ epoch: context.epoch }),
+                    onDone: {
+                      target: 'complete',
+                    },
+                    onError: {
+                      target: 'updateSyncCommitteesFetched',
+                    },
                   },
                 },
                 fetching: {
@@ -376,7 +390,7 @@ export const epochProcessorMachine = setup({
                   always: [
                     {
                       guard: 'canProcessRewards',
-                      target: 'processing',
+                      target: 'fetching',
                     },
                     {
                       target: 'delayingCanProcess',
@@ -397,7 +411,12 @@ export const epochProcessorMachine = setup({
                         target: 'complete',
                       },
                     ],
-                    onError: 'fetching',
+                    onError: {
+                      target: 'fetching',
+                      actions: ({ event }) => {
+                        console.error('Error fetching attestations rewards:', event.error);
+                      },
+                    },
                   },
                 },
                 complete: { type: 'final' },

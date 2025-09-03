@@ -76,7 +76,7 @@ export const epochOrchestratorMachine = setup({
             id: epochId,
             input: {
               epoch,
-              validatorsInfoFetched: context.epochData.validatorsInfoFetched,
+              validatorsBalancesFetched: context.epochData.validatorsBalancesFetched,
               rewardsFetched: context.epochData.rewardsFetched,
               committeesFetched: context.epochData.committeesFetched,
               slotsFetched: context.epochData.slotsFetched,

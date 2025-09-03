@@ -1,14 +1,12 @@
 import { fromPromise } from 'xstate';
 
-import { beacon_getSyncCommittees } from '@/src/beacon/endpoints.js';
 import { fetchAttestationsRewards as _fetchAttestationsRewards } from '@/src/beacon/feed/fetchAttestationsRewards.js';
 import { fetchCommittee } from '@/src/beacon/feed/fetchCommittee.js';
+import { fetchSyncCommittees as _fetchSyncCommittees } from '@/src/beacon/feed/fetchSyncCommittee.js';
 import { fetchValidators as fetchValidatorsFromBeacon } from '@/src/beacon/feed/fetchValidators.js';
 import { fetchValidatorsBalances as _fetchValidatorsBalances } from '@/src/beacon/feed/fetchValidatorsBalances.js';
 import { getEpochFromSlot, getEpochSlots, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
-import { getSyncCommitteePeriodStartEpoch } from '@/src/beacon/utils/time.js';
-import { env } from '@/src/env.js';
 import createLogger from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 
@@ -37,6 +35,7 @@ export const computeNextEpochBatch = fromPromise(
         where: {
           OR: [
             { rewardsFetched: false },
+            { validatorsBalancesFetched: false },
             { committeesFetched: false },
             { slotsFetched: false },
             { syncCommitteesFetched: false },
@@ -78,10 +77,11 @@ export const enqueueEpochs = fromPromise(
 
       const epochsData = epochsToCreate.map((epoch: number) => ({
         epoch: epoch,
-        validatorsInfoFetched: false,
         validatorsBalancesFetched: false,
         rewardsFetched: false,
         committeesFetched: false,
+        slotsFetched: false,
+        syncCommitteesFetched: false,
       }));
 
       await prisma.epoch.createMany({
@@ -107,7 +107,7 @@ export const pickNextEpoch = fromPromise(async () => {
     const nextEpoch = await prisma.epoch.findFirst({
       where: {
         OR: [
-          { validatorsInfoFetched: false },
+          { validatorsBalancesFetched: false },
           { rewardsFetched: false },
           { committeesFetched: false },
           { slotsFetched: false },
@@ -127,7 +127,7 @@ export const pickNextEpoch = fromPromise(async () => {
       epoch: nextEpoch.epoch,
       startSlot,
       endSlot,
-      validatorsInfoFetched: nextEpoch.validatorsInfoFetched ?? false,
+      validatorsBalancesFetched: nextEpoch.validatorsBalancesFetched ?? false,
       rewardsFetched: nextEpoch.rewardsFetched ?? false,
       committeesFetched: nextEpoch.committeesFetched ?? false,
       slotsFetched: nextEpoch.slotsFetched ?? false,
@@ -143,7 +143,7 @@ export const pickNextEpoch = fromPromise(async () => {
 
 export interface EpochToProcess {
   epoch: number;
-  validatorsInfoFetched: boolean;
+  validatorsBalancesFetched: boolean;
   rewardsFetched: boolean;
   committeesFetched: boolean;
   slotsFetched: boolean;
@@ -160,7 +160,7 @@ export const getMinEpochToProcess = fromPromise(async (): Promise<EpochToProcess
     const nextEpoch = await prisma.epoch.findFirst({
       where: {
         OR: [
-          { validatorsInfoFetched: false },
+          { validatorsBalancesFetched: false },
           { rewardsFetched: false },
           { committeesFetched: false },
           { slotsFetched: false },
@@ -169,7 +169,7 @@ export const getMinEpochToProcess = fromPromise(async (): Promise<EpochToProcess
       orderBy: { epoch: 'asc' },
       select: {
         epoch: true,
-        validatorsInfoFetched: true,
+        validatorsBalancesFetched: true,
         rewardsFetched: true,
         committeesFetched: true,
         slotsFetched: true,
@@ -219,11 +219,11 @@ export const fetchValidators = fromPromise(async ({ input }: { input: { startSlo
     await fetchValidatorsFromBeacon(logger, input.startSlot);
 
     // Update the epoch to mark validators as fetched
-    const epochNumber = Math.floor(input.startSlot / env.BEACON_SLOTS_PER_EPOCH);
-    await prisma.epoch.update({
-      where: { epoch: epochNumber },
-      data: { validatorsInfoFetched: true },
-    });
+    // const epochNumber = Math.floor(input.startSlot / env.BEACON_SLOTS_PER_EPOCH);
+    // await prisma.epoch.update({
+    //   where: { epoch: epochNumber },
+    //   data: { validatorsInfoFetched: true },
+    // });
 
     logger.info('Validators fetched successfully');
     return { success: true };
@@ -266,49 +266,9 @@ export const fetchCommittees = fromPromise(async ({ input }: { input: { epoch: n
 /**
  * Actor to fetch sync committees for an epoch
  */
-export const fetchSyncCommittees = fromPromise(async ({ input }: { input: { epoch: number } }) => {
-  try {
-    const logger = createLogger('fetchSyncCommittees', true);
-    logger.addContext(`epoch: ${input.epoch}`);
-
-    // Get the sync committee period start for the epoch
-    const periodStartEpoch = getSyncCommitteePeriodStartEpoch(input.epoch);
-
-    // Fetch sync committee data for the period
-    const syncCommitteeData = await beacon_getSyncCommittees(periodStartEpoch);
-
-    // Store the sync committee data in the database
-    await prisma.syncCommittee.upsert({
-      where: {
-        fromEpoch_toEpoch: {
-          fromEpoch: periodStartEpoch,
-          toEpoch: periodStartEpoch + env.BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD - 1,
-        },
-      },
-      create: {
-        fromEpoch: periodStartEpoch,
-        toEpoch: periodStartEpoch + env.BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD - 1,
-        validators: syncCommitteeData.validators,
-        validatorAggregates: syncCommitteeData.validator_aggregates,
-      },
-      update: {},
-    });
-
-    // Mark the epoch as having sync committees fetched
-    await prisma.epoch.update({
-      where: { epoch: input.epoch },
-      data: { syncCommitteesFetched: true },
-    });
-
-    logger.info(
-      `Sync committees fetched successfully for period ${periodStartEpoch} to ${periodStartEpoch + env.BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD - 1}`,
-    );
-    return { success: true };
-  } catch (error) {
-    console.error('Error fetching sync committees:', error);
-    throw error;
-  }
-});
+export const fetchSyncCommittees = fromPromise(async ({ input }: { input: { epoch: number } }) =>
+  _fetchSyncCommittees(input.epoch),
+);
 
 /**
  * Actor to check if sync committee for a specific epoch is already fetched
@@ -348,6 +308,25 @@ export const updateSlotsFetched = fromPromise(async ({ input }: { input: { epoch
     throw error;
   }
 });
+
+/**
+ * Actor to update the epoch's syncCommitteesFetched flag to true
+ */
+export const updateSyncCommitteesFetched = fromPromise(
+  async ({ input }: { input: { epoch: number } }) => {
+    try {
+      await prisma.epoch.update({
+        where: { epoch: input.epoch },
+        data: { syncCommitteesFetched: true },
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating syncCommitteesFetched:', error);
+      throw error;
+    }
+  },
+);
 
 /**
  * Actor to check if slots have already been processed for an epoch

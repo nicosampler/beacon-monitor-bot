@@ -25,6 +25,10 @@ interface HourlyStats {
     target: bigint;
     source: bigint;
     inactivity: bigint;
+    missedHead: bigint;
+    missedTarget: bigint;
+    missedSource: bigint;
+    missedInactivity: bigint;
     attestationsMissed: number;
     syncCommittee: bigint;
     blockReward: bigint;
@@ -73,6 +77,10 @@ export async function aggregateHourlyStats(date: Date) {
         COALESCE(target, 0) as target,
         COALESCE(source, 0) as source,
         COALESCE(inactivity, 0) as inactivity,
+        COALESCE("missedHead", 0) as "missedHead",
+        COALESCE("missedTarget", 0) as "missedTarget",
+        COALESCE("missedSource", 0) as "missedSource",
+        COALESCE("missedInactivity", 0) as "missedInactivity",
         COALESCE("attestationsMissed", 0) as "attestationsMissed",
         COALESCE("syncCommittee", 0) as "syncCommittee", -- TMP: remove this 
         COALESCE("blockReward", 0) as "blockReward" -- TMP: remove this 
@@ -88,6 +96,10 @@ export async function aggregateHourlyStats(date: Date) {
         0 as target,
         0 as source,
         0 as inactivity,
+        0 as "missedHead",
+        0 as "missedTarget",
+        0 as "missedSource",
+        0 as "missedInactivity",
         0 as "attestationsMissed",
         COALESCE("syncCommittee", 0) as "syncCommittee",
         COALESCE("blockReward", 0) as "blockReward"
@@ -101,6 +113,10 @@ export async function aggregateHourlyStats(date: Date) {
         'target', SUM(target),
         'source', SUM(source),
         'inactivity', SUM(inactivity),
+        'missedHead', SUM("missedHead"),
+        'missedTarget', SUM("missedTarget"),
+        'missedSource', SUM("missedSource"),
+        'missedInactivity', SUM("missedInactivity"),
         'attestationsMissed', SUM("attestationsMissed"),
         'syncCommittee', SUM("syncCommittee"),
         'blockReward', SUM("blockReward")
@@ -149,6 +165,10 @@ export async function summarizeAtomicTransaction(
             target: stat._sum.target || null,
             source: stat._sum.source || null,
             inactivity: stat._sum.inactivity || null,
+            missedHead: stat._sum.missedHead || null,
+            missedTarget: stat._sum.missedTarget || null,
+            missedSource: stat._sum.missedSource || null,
+            missedInactivity: stat._sum.missedInactivity || null,
             attestationsMissed: stat._sum.attestationsMissed || null,
             syncCommittee: stat._sum.syncCommittee || null,
             blockReward: stat._sum.blockReward || null,

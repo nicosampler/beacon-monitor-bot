@@ -94,10 +94,10 @@ model HourlyValidatorStats {
   source     BigInt?
   inactivity BigInt?
 
-  idealHead       BigInt?
-  idealTarget     BigInt?
-  idealSource     BigInt?
-  idealInactivity BigInt?
+  missedHead       BigInt?
+  missedTarget     BigInt?
+  missedSource     BigInt?
+  missedInactivity BigInt?
 
   attestationsMissed Int?
 
@@ -127,6 +127,11 @@ model EpochRewardsTemp {
   source     BigInt?
   inactivity BigInt?
 
+  missedHead       BigInt?
+  missedTarget     BigInt?
+  missedSource     BigInt?
+  missedInactivity BigInt?
+
   @@id([validatorIndex, date, hour])
 }
 
@@ -140,6 +145,11 @@ model DailyValidatorStats {
   inactivity    BigInt?
   syncCommittee BigInt?
   blockReward   BigInt?
+
+  missedHead       BigInt?
+  missedTarget     BigInt?
+  missedSource     BigInt?
+  missedInactivity BigInt?
 
   attestationsMissed Int?
 

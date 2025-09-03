@@ -290,12 +290,12 @@ export async function db_getFinalValidatorIds(): Promise<number[]> {
   return finalStateValidators.map((v) => v.id);
 }
 
-export async function db_getValidatorsEffectiveBalances(validatorIds: number[]) {
+export async function db_getValidatorsBalances(validatorIds: number[]) {
   return prisma.validator.findMany({
     where: {
       id: { in: validatorIds },
     },
-    select: { id: true, effectiveBalance: true },
+    select: { id: true, balance: true },
   });
 }
 
