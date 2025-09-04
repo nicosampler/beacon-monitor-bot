@@ -200,7 +200,7 @@ export const checkIfCanFetchValidatorsBalances = fromPromise(
       const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
 
       // First check if the epoch has already started
-      return { canProceed: currentSlot > startSlot };
+      return { canProceed: currentSlot >= startSlot };
     } catch (error) {
       console.error('Error checking if can get validators:', error);
       return { canProceed: false };

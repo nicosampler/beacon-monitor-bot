@@ -1,17 +1,18 @@
 import ms from 'ms';
-import { setup, assign, stopChild, ActorRefFrom } from 'xstate';
+import { setup, assign, stopChild, ActorRefFrom, log } from 'xstate';
 
 import { getMinEpochToProcess, type EpochToProcess } from './epoch.actors.js';
 import { epochProcessorMachine } from './epochProcessor.machine.js';
 
 import { env } from '@/src/env.js';
-import createLogger from '@/src/lib/pino.js';
+import type { CustomLogger } from '@/src/lib/pino.js';
 import { logMachine, logActor } from '@/src/xstate/multiMachineLogger.js';
+import { pinoLog } from '@/src/xstate/pinoLog.js';
 
 export interface EpochOrchestratorContext {
   epochData: EpochToProcess | null;
   epochActor: ActorRefFrom<typeof epochProcessorMachine> | null;
-  logger?: ReturnType<typeof createLogger>;
+  logger?: CustomLogger;
 }
 
 export type EpochOrchestratorEvents = { type: 'EPOCH_COMPLETED'; machineId: string };
@@ -42,7 +43,6 @@ export const epochOrchestratorMachine = setup({
   context: {
     epochData: null,
     epochActor: null,
-    logger: createLogger('EpochOrchestrator'),
   },
   states: {
     gettingMinEpoch: {
@@ -56,21 +56,26 @@ export const epochOrchestratorMachine = setup({
               assign({
                 epochData: ({ event }) => event.output,
               }),
-              ({ context, event }) => {
-                const epoch = event.output?.epoch;
-                if (epoch && context.logger) {
-                  // Add epoch context to the logger for incremental logging
-                  context.logger.setContext(`Epoch-${epoch}`);
-                  context.logger.info('start processing epoch', { epoch });
-                }
-              },
+              pinoLog(
+                ({ event }) => `Start processing epoch ${event.output?.epoch}`,
+                'EpochOrchestrator',
+              ),
             ],
           },
           {
             target: 'noEpochsToProcess',
           },
         ],
-        onError: 'retryGettingEpoch',
+        onError: [
+          {
+            target: 'retryGettingEpoch',
+            actions: pinoLog(
+              ({ event }) => `Error getting min epoch to process: ${event.error}`,
+              'EpochOrchestrator',
+              'error',
+            ),
+          },
+        ],
       },
     },
 
@@ -103,25 +108,19 @@ export const epochOrchestratorMachine = setup({
             return actor;
           },
         }),
-        ({ context }) => {
-          const epoch = context.epochData?.epoch;
-          if (epoch && context.logger) {
-            context.logger.info('spawning epoch processor');
-          }
-        },
+        pinoLog(
+          ({ context }) => `Spawning epoch processor for epoch ${context.epochData?.epoch}`,
+          'EpochOrchestrator',
+        ),
       ],
       on: {
         EPOCH_COMPLETED: {
           target: 'gettingMinEpoch',
           actions: [
-            ({ context, event }) => {
-              const epoch = context.epochData?.epoch;
-              if (epoch && context.logger) {
-                context.logger.info('epoch processing completed', {
-                  machineId: event.machineId,
-                });
-              }
-            },
+            pinoLog(
+              ({ event }) => `Epoch processing completed for epoch ${event.machineId}`,
+              'EpochOrchestrator',
+            ),
             stopChild(({ event }) => event.machineId),
             assign({
               epochData: null,
@@ -133,22 +132,14 @@ export const epochOrchestratorMachine = setup({
     },
 
     retryGettingEpoch: {
-      entry: ({ context }) => {
-        if (context.logger) {
-          context.logger.warn('retrying to get epoch after error');
-        }
-      },
+      entry: pinoLog(`Retrying getting min epoch to process`, 'EpochOrchestrator'),
       after: {
         [ms('1s')]: 'gettingMinEpoch',
       },
     },
 
     noEpochsToProcess: {
-      entry: ({ context }) => {
-        if (context.logger) {
-          context.logger.info('no epochs to process, waiting for next check');
-        }
-      },
+      entry: pinoLog('No epochs to process, waiting for next check', 'EpochOrchestrator'),
       after: {
         [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS}s`)]: 'gettingMinEpoch',
       },

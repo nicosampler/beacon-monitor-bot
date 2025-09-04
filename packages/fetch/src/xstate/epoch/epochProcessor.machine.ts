@@ -26,6 +26,7 @@ import {
   isLookbackEpoch,
 } from '@/src/xstate/epoch/epoch.guards.js';
 import { logMachine, logActor } from '@/src/xstate/multiMachineLogger.js';
+import { pinoLog } from '@/src/xstate/pinoLog.js';
 
 type ProcessEpochContext = {
   epoch: number;
@@ -112,6 +113,10 @@ export const epochProcessorMachine = setup({
      * We can process some data up to current epoch + 1.
      */
     checkingCanProcess: {
+      entry: pinoLog(
+        ({ context }) => `Checking if we can process the epoch, ${context.epoch}`,
+        'EpochProcessor',
+      ),
       always: [
         {
           guard: 'canProcessEpoch',
@@ -123,12 +128,20 @@ export const epochProcessorMachine = setup({
       ],
     },
     waiting: {
+      entry: pinoLog(
+        ({ context }) => `Waiting to start processing epoch ${context.epoch}`,
+        'EpochProcessor',
+      ),
       after: {
         [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'checkingCanProcess',
       },
     },
 
     epochProcessing: {
+      entry: pinoLog(
+        ({ context }) => `Starting epoch processing for epoch ${context.epoch}`,
+        'EpochProcessor',
+      ),
       type: 'parallel',
       states: {
         fetching: {
@@ -145,9 +158,17 @@ export const epochProcessorMachine = setup({
                     {
                       guard: ({ context }) => !context.epochDBSnapshot.committeesFetched,
                       target: 'fetching',
+                      actions: pinoLog(
+                        ({ context }) => `Fetching committees for epoch ${context.epoch}`,
+                        'EpochProcessor:committees',
+                      ),
                     },
                     {
                       target: 'complete',
+                      actions: pinoLog(
+                        ({ context }) => `Committees already fetched for epoch ${context.epoch} `,
+                        'EpochProcessor:committees',
+                      ),
                     },
                   ],
                 },
@@ -166,6 +187,10 @@ export const epochProcessorMachine = setup({
                 complete: {
                   type: 'final',
                   entry: raise({ type: 'COMMITTEES_FETCHED' }),
+                  actions: pinoLog(
+                    ({ context }) => `Committees done for epoch ${context.epoch} `,
+                    'EpochProcessor:committees',
+                  ),
                 },
               },
             },
@@ -260,9 +285,19 @@ export const epochProcessorMachine = setup({
                     {
                       guard: ({ context }) => context.epochDBSnapshot.syncCommitteesFetched,
                       target: 'complete',
+                      actions: pinoLog(
+                        ({ context }) =>
+                          `Sync committees already fetched for epoch ${context.epoch} `,
+                        'EpochProcessor:syncingCommittees',
+                      ),
                     },
                     {
                       target: 'checkingInDBTable',
+                      actions: pinoLog(
+                        ({ context }) =>
+                          `Checking sync committees in DB table for epoch ${context.epoch} `,
+                        'EpochProcessor:syncingCommittees',
+                      ),
                     },
                   ],
                 },
@@ -272,11 +307,20 @@ export const epochProcessorMachine = setup({
                     input: ({ context }) => ({ epoch: context.epoch }),
                     onDone: [
                       {
+                        actions: pinoLog(
+                          ({ context }) =>
+                            `Sync committees found in DB table for epoch ${context.epoch} `,
+                          'EpochProcessor:syncingCommittees',
+                        ),
                         guard: ({ event }) => event.output.isFetched,
                         target: 'updateSyncCommitteesFetched',
                       },
                       {
                         target: 'fetching',
+                        actions: pinoLog(
+                          ({ context }) => `Fetching sync committees for epoch ${context.epoch} `,
+                          'EpochProcessor:syncingCommittees',
+                        ),
                       },
                     ],
                     onError: 'checkingInDBTable',
@@ -306,7 +350,13 @@ export const epochProcessorMachine = setup({
                     onError: 'fetching',
                   },
                 },
-                complete: { type: 'final' },
+                complete: {
+                  type: 'final',
+                  actions: pinoLog(
+                    ({ context }) => `Sync committees done for epoch ${context.epoch} `,
+                    'EpochProcessor:syncingCommittees',
+                  ),
+                },
               },
             },
 
@@ -327,9 +377,19 @@ export const epochProcessorMachine = setup({
                     {
                       guard: ({ context }) => context.epochDBSnapshot.validatorsBalancesFetched,
                       target: 'complete',
+                      actions: pinoLog(
+                        ({ context }) =>
+                          `Validators balances already fetched for epoch ${context.epoch} `,
+                        'EpochProcessor:validatorsBalances',
+                      ),
                     },
                     {
                       target: 'waitingForSlotToStart',
+                      actions: pinoLog(
+                        ({ context }) =>
+                          `Waiting to fetch validators balances for epoch ${context.epoch} `,
+                        'EpochProcessor:validatorsBalances',
+                      ),
                     },
                   ],
                 },
@@ -341,6 +401,11 @@ export const epochProcessorMachine = setup({
                       {
                         guard: ({ event }) => event.output.canProceed,
                         target: 'fetching',
+                        actions: pinoLog(
+                          ({ context }) =>
+                            `Fetching validators balances for epoch ${context.epoch} `,
+                          'EpochProcessor:validatorsBalances',
+                        ),
                       },
                       {
                         target: 'waitingForSlotToStartDelaying',
@@ -354,6 +419,10 @@ export const epochProcessorMachine = setup({
                   },
                 },
                 fetching: {
+                  entry: pinoLog(
+                    ({ context }) => `Fetching validators balances for epoch ${context.epoch} `,
+                    'EpochProcessor:validatorsBalances',
+                  ),
                   invoke: {
                     src: 'fetchValidatorsBalances',
                     input: ({ context }) => ({ startSlot: context.startSlot }),
@@ -368,6 +437,10 @@ export const epochProcessorMachine = setup({
                 complete: {
                   entry: raise({ type: 'VALIDATORS_BALANCES_FETCHED' }),
                   type: 'final',
+                  actions: pinoLog(
+                    ({ context }) => `Validators balances done for epoch ${context.epoch} `,
+                    'EpochProcessor:validatorsBalances',
+                  ),
                 },
               },
             },
@@ -382,15 +455,44 @@ export const epochProcessorMachine = setup({
               initial: 'waitingForValidatorsBalances',
               states: {
                 waitingForValidatorsBalances: {
+                  actions: pinoLog(
+                    ({ context }) =>
+                      `Waiting for validators balances to be fetched for epoch ${context.epoch} `,
+                    'EpochProcessor:rewards',
+                  ),
                   on: {
-                    VALIDATORS_BALANCES_FETCHED: 'checkingCanProcess',
+                    VALIDATORS_BALANCES_FETCHED: 'checkingValidatorsBalancesFetched',
                   },
+                },
+                // check if validators balances are already fetched
+                checkingValidatorsBalancesFetched: {
+                  always: [
+                    {
+                      guard: ({ context }) => context.epochDBSnapshot.validatorsBalancesFetched,
+                      target: 'complete',
+                      actions: pinoLog(
+                        ({ context }) => `Already fetched for epoch ${context.epoch} `,
+                        'EpochProcessor:rewards',
+                      ),
+                    },
+                    {
+                      target: 'checkingCanProcess',
+                      actions: pinoLog(
+                        ({ context }) => `Waiting to fetch for epoch ${context.epoch} `,
+                        'EpochProcessor:rewards',
+                      ),
+                    },
+                  ],
                 },
                 checkingCanProcess: {
                   always: [
                     {
                       guard: 'canProcessRewards',
                       target: 'fetching',
+                      actions: pinoLog(
+                        ({ context }) => `Fetching for epoch ${context.epoch} `,
+                        'EpochProcessor:rewards',
+                      ),
                     },
                     {
                       target: 'delayingCanProcess',
@@ -419,7 +521,13 @@ export const epochProcessorMachine = setup({
                     },
                   },
                 },
-                complete: { type: 'final' },
+                complete: {
+                  type: 'final',
+                  actions: pinoLog(
+                    ({ context }) => `Done for epoch ${context.epoch} `,
+                    'EpochProcessor:rewards',
+                  ),
+                },
               },
             },
           },
@@ -430,6 +538,10 @@ export const epochProcessorMachine = setup({
 
     complete: {
       entry: [
+        pinoLog(
+          ({ context }) => `Epoch processing completed for epoch ${context.epoch}`,
+          'EpochProcessor',
+        ),
         sendParent(({ context }) => ({
           type: 'EPOCH_COMPLETED',
           machineId: `epochProcessor:${context.epoch}`,
