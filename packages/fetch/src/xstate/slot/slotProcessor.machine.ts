@@ -78,6 +78,21 @@ export const slotProcessorMachine = setup({
     cleanupOldCommittees,
     updateAttestationsProcessed,
   },
+  guards: {
+    isSlotNotFound: ({ context }) => context.slotDb === null,
+    isSlotAlreadyProcessed: ({ context }) => context.slotDb?.processed === true,
+    isSlotReady: ({ event }) => event.output?.isReady === true,
+    isSlotMissed: ({ context }) => context.beaconBlockData === 'SLOT MISSED',
+    isSlotNotMissed: ({ context }) => context.beaconBlockData !== 'SLOT MISSED',
+    areExecutionRewardsProcessed: ({ context }) =>
+      context.slotDb?.executionRewardsProcessed === true,
+    areBlockAndSyncRewardsProcessed: ({ context }) =>
+      context.slotDb?.blockAndSyncRewardsProcessed === true,
+    hasSyncCommittee: ({ event }) => event.output?.syncCommittee !== null,
+    areAttestationsProcessed: ({ context }) => context.slotDb?.attestationsProcessed === true,
+    isLookbackSlot: ({ context }) => context.slot === env.BEACON_LOOKBACK_SLOT,
+    allSlotsHaveCounts: ({ event }) => event.output?.allSlotsHaveCounts === true,
+  },
 }).createMachine({
   id: 'SlotProcessor',
   initial: 'gettingSlot',
@@ -117,11 +132,11 @@ export const slotProcessorMachine = setup({
     analyzingSlot: {
       always: [
         {
-          guard: ({ context }) => context.slotDb === null,
+          guard: 'isSlotNotFound',
           target: 'slotNotFound',
         },
         {
-          guard: ({ context }) => context.slotDb?.processed === true,
+          guard: 'isSlotAlreadyProcessed',
           target: 'completed',
         },
         {
@@ -147,7 +162,7 @@ export const slotProcessorMachine = setup({
         input: ({ context }) => ({ slot: context.slot }),
         onDone: [
           {
-            guard: ({ event }) => event.output.isReady === true,
+            guard: 'isSlotReady',
             target: 'fetchingBeaconBlockData',
           },
           {
@@ -201,11 +216,11 @@ export const slotProcessorMachine = setup({
     processingSlotResponse: {
       always: [
         {
-          guard: ({ context }) => context.beaconBlockData === 'SLOT MISSED',
+          guard: 'isSlotMissed',
           target: 'markingSlotCompleted',
         },
         {
-          guard: ({ context }) => context.beaconBlockData !== 'SLOT MISSED',
+          guard: 'isSlotNotMissed',
           target: 'processingData',
         },
       ],
@@ -230,7 +245,7 @@ export const slotProcessorMachine = setup({
             checkingCompletion: {
               always: [
                 {
-                  guard: ({ context }) => context.slotDb?.executionRewardsProcessed === true,
+                  guard: 'areExecutionRewardsProcessed',
                   target: 'complete',
                 },
                 {
@@ -274,7 +289,7 @@ export const slotProcessorMachine = setup({
             blockAndSyncRewardsCheck: {
               always: [
                 {
-                  guard: ({ context }) => context.slotDb?.blockAndSyncRewardsProcessed === true,
+                  guard: 'areBlockAndSyncRewardsProcessed',
                   target: 'complete',
                 },
                 {
@@ -289,7 +304,7 @@ export const slotProcessorMachine = setup({
                 input: ({ context }) => ({ epoch: context.epoch }),
                 onDone: [
                   {
-                    guard: ({ event }) => event.output.syncCommittee !== null,
+                    guard: 'hasSyncCommittee',
                     actions: assign({
                       syncCommittee: ({ event }) => event.output.syncCommittee,
                     }),
@@ -346,12 +361,12 @@ export const slotProcessorMachine = setup({
             attestationsCheck: {
               always: [
                 {
-                  guard: ({ context }) => context.slotDb?.attestationsProcessed === true,
+                  guard: 'areAttestationsProcessed',
                   target: 'complete',
                 },
                 {
                   // Base case: slot n comes at slot n + 1
-                  guard: ({ context }) => context.slot === env.BEACON_LOOKBACK_SLOT,
+                  guard: 'isLookbackSlot',
                   target: 'updateAttestationsProcessed',
                 },
                 {
@@ -368,7 +383,7 @@ export const slotProcessorMachine = setup({
                 }),
                 onDone: [
                   {
-                    guard: ({ event }) => event.output.allSlotsHaveCounts === true,
+                    guard: 'allSlotsHaveCounts',
                     target: 'attestationsProcessing',
                     actions: assign({
                       // slot -> validator indexes

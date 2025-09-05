@@ -37,6 +37,9 @@ export const epochOrchestratorMachine = setup({
     getMinEpochToProcess,
     epochProcessor: epochProcessorMachine,
   },
+  guards: {
+    hasEpochData: ({ event }: { event: any }) => event.output !== null,
+  },
 }).createMachine({
   id: 'EpochOrchestrator',
   initial: 'gettingMinEpoch',
@@ -50,7 +53,7 @@ export const epochOrchestratorMachine = setup({
         src: 'getMinEpochToProcess',
         onDone: [
           {
-            guard: ({ event }) => event.output !== null,
+            guard: 'hasEpochData',
             target: 'spawningEpochProcessor',
             actions: [
               assign({

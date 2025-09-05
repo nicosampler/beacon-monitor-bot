@@ -388,7 +388,7 @@ export const updateAttestationsProcessed = fromPromise(
  * If no slots are processed, returns startSlot
  * If all slots are processed, returns null
  */
-export const findNextUnprocessedSlot = fromPromise(
+export const findMinUnprocessedSlotInEpoch = fromPromise(
   async ({ input }: { input: { startSlot: number; endSlot: number } }) => {
     try {
       const { startSlot, endSlot } = input;

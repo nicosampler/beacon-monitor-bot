@@ -85,6 +85,15 @@ export const epochProcessorMachine = setup({
     canProcessRewards,
     isFirstEpochOfSyncCommitteePeriod,
     isLookbackEpoch,
+    // Simple guards for context checks
+    hasCommitteesNotFetched: ({ context }) => !context.epochDBSnapshot.committeesFetched,
+    hasSlotsProcessed: ({ event }: { event: any }) => event.output?.slotsProcessed === true,
+    hasSyncCommitteesFetched: ({ context }) => context.epochDBSnapshot.syncCommitteesFetched,
+    isSyncCommitteeFetched: ({ event }: { event: any }) => event.output?.isFetched === true,
+    hasValidatorsBalancesFetched: ({ context }) =>
+      context.epochDBSnapshot.validatorsBalancesFetched,
+    canProceedWithValidatorsBalances: ({ event }: { event: any }) =>
+      event.output?.canProceed === true,
   },
 }).createMachine({
   id: 'EpochProcessor',
@@ -156,7 +165,7 @@ export const epochProcessorMachine = setup({
                 checkingEpochStatus: {
                   always: [
                     {
-                      guard: ({ context }) => !context.epochDBSnapshot.committeesFetched,
+                      guard: 'hasCommitteesNotFetched',
                       target: 'fetching',
                       actions: pinoLog(
                         ({ context }) => `Fetching committees for epoch ${context.epoch}`,
@@ -203,6 +212,11 @@ export const epochProcessorMachine = setup({
               initial: 'waitingForCommittees',
               states: {
                 waitingForCommittees: {
+                  entry: pinoLog(
+                    ({ context }) =>
+                      `Waiting for committees to be fetched for epoch ${context.epoch} `,
+                    'EpochProcessor:slotsProcessing',
+                  ),
                   on: {
                     COMMITTEES_FETCHED: 'checkingSlotsProcessed',
                   },
@@ -213,11 +227,19 @@ export const epochProcessorMachine = setup({
                     input: ({ context }) => ({ epoch: context.epoch }),
                     onDone: [
                       {
-                        guard: ({ event }) => event.output.slotsProcessed,
+                        guard: 'hasSlotsProcessed',
                         target: 'complete',
+                        actions: pinoLog(
+                          ({ context }) => `Slots already processed for epoch ${context.epoch} `,
+                          'EpochProcessor:slotsProcessing',
+                        ),
                       },
                       {
                         target: 'processingSlots',
+                        actions: pinoLog(
+                          ({ context }) => `Processing slots for epoch ${context.epoch} `,
+                          'EpochProcessor:slotsProcessing',
+                        ),
                       },
                     ],
                     onError: 'checkingSlotsProcessed',
@@ -256,6 +278,10 @@ export const epochProcessorMachine = setup({
                   },
                 },
                 updateSlotsFetched: {
+                  entry: pinoLog(
+                    ({ context }) => `Updating slots fetched for epoch ${context.epoch} `,
+                    'EpochProcessor:slotsProcessing',
+                  ),
                   invoke: {
                     src: 'updateSlotsFetched',
                     input: ({ context }) => ({ epoch: context.epoch }),
@@ -269,6 +295,10 @@ export const epochProcessorMachine = setup({
                 },
                 complete: {
                   type: 'final',
+                  entry: pinoLog(
+                    ({ context }) => `Slots done for epoch ${context.epoch} `,
+                    'EpochProcessor:slotsProcessing',
+                  ),
                 },
               },
             },
@@ -283,7 +313,7 @@ export const epochProcessorMachine = setup({
                 checkingEpochStatus: {
                   always: [
                     {
-                      guard: ({ context }) => context.epochDBSnapshot.syncCommitteesFetched,
+                      guard: 'hasSyncCommitteesFetched',
                       target: 'complete',
                       actions: pinoLog(
                         ({ context }) =>
@@ -312,7 +342,7 @@ export const epochProcessorMachine = setup({
                             `Sync committees found in DB table for epoch ${context.epoch} `,
                           'EpochProcessor:syncingCommittees',
                         ),
-                        guard: ({ event }) => event.output.isFetched,
+                        guard: 'isSyncCommitteeFetched',
                         target: 'updateSyncCommitteesFetched',
                       },
                       {
@@ -375,7 +405,7 @@ export const epochProcessorMachine = setup({
                 checkingStatus: {
                   always: [
                     {
-                      guard: ({ context }) => context.epochDBSnapshot.validatorsBalancesFetched,
+                      guard: 'hasValidatorsBalancesFetched',
                       target: 'complete',
                       actions: pinoLog(
                         ({ context }) =>
@@ -399,7 +429,7 @@ export const epochProcessorMachine = setup({
                     input: ({ context }) => ({ slot: context.startSlot }),
                     onDone: [
                       {
-                        guard: ({ event }) => event.output.canProceed,
+                        guard: 'canProceedWithValidatorsBalances',
                         target: 'fetching',
                         actions: pinoLog(
                           ({ context }) =>
@@ -468,7 +498,7 @@ export const epochProcessorMachine = setup({
                 checkingValidatorsBalancesFetched: {
                   always: [
                     {
-                      guard: ({ context }) => context.epochDBSnapshot.validatorsBalancesFetched,
+                      guard: 'hasValidatorsBalancesFetched',
                       target: 'complete',
                       actions: pinoLog(
                         ({ context }) => `Already fetched for epoch ${context.epoch} `,
