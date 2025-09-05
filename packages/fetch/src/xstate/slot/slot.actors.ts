@@ -104,21 +104,13 @@ export interface CheckSlotReadyOutput {
 /**
  * Actor to check if a slot is already processed
  */
-export const getSlot = fromPromise(async ({ input }: { input: CheckSlotProcessedInput }) => {
-  const slot = await prisma.slot.findFirst({
+export const getSlot = fromPromise(async ({ input }: { input: CheckSlotProcessedInput }) =>
+  prisma.slot.findFirst({
     where: {
       slot: input.slot,
     },
-  });
-
-  if (!slot) {
-    // Return null instead of throwing an error
-    // This allows the state machine to handle the case gracefully
-    return null;
-  }
-
-  return slot;
-});
+  }),
+);
 
 /**
  * Actor to check if a slot is ready to be processed
@@ -127,6 +119,8 @@ export const getSlot = fromPromise(async ({ input }: { input: CheckSlotProcessed
 export const checkSlotReady = fromPromise(async ({ input }: { input: CheckSlotReadyInput }) => {
   const currentSlot = getSlotNumberFromTimestamp(Date.now());
   const maxSlotToFetch = currentSlot - env.BEACON_DELAY_SLOTS_TO_HEAD;
+  // if too many errors
+  // currentSlot >= input.slot + 1;
   return { isReady: input.slot <= maxSlotToFetch };
 });
 

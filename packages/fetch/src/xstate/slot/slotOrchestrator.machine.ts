@@ -3,6 +3,7 @@ import { setup, assign, stopChild, sendParent, ActorRefFrom } from 'xstate';
 import { getEpochSlots } from '@/src/beacon/utils/misc.js';
 import { env } from '@/src/env.js';
 import { logActor, logRemoveMachine } from '@/src/xstate/multiMachineLogger.js';
+import { pinoLog } from '@/src/xstate/pinoLog.js';
 import { findMinUnprocessedSlotInEpoch } from '@/src/xstate/slot/slot.actors.js';
 import { slotProcessorMachine } from '@/src/xstate/slot/slotProcessor.machine.js';
 
@@ -83,6 +84,22 @@ export const slotOrchestratorMachine = setup({
       slotActor: null,
       currentSlot: ({ context }) => context.currentSlot! + 1,
     }),
+    log_findMinUnprocessedSlotInEpoch: pinoLog(
+      ({ context }) => `Finding min unprocessed slot for epoch ${context.epoch}`,
+      'SlotOrchestrator',
+    ),
+    log_spawningSlotProcessor: pinoLog(
+      ({ context }) => `Spawning slot processor for epoch ${context.epoch}`,
+      'SlotOrchestrator',
+    ),
+    log_slotComplete: pinoLog(
+      ({ context }) => `Slot complete for epoch ${context.epoch}`,
+      'SlotOrchestrator',
+    ),
+    log_allSlotsComplete: pinoLog(
+      ({ context }) => `All slots complete for epoch ${context.epoch}`,
+      'SlotOrchestrator',
+    ),
   },
 }).createMachine({
   id: 'SlotOrchestrator',
@@ -101,6 +118,7 @@ export const slotOrchestratorMachine = setup({
   },
   states: {
     initializing: {
+      entry: 'log_findMinUnprocessedSlotInEpoch',
       invoke: {
         src: 'findMinUnprocessedSlotInEpoch',
         input: ({ context }) => ({
@@ -132,7 +150,7 @@ export const slotOrchestratorMachine = setup({
     },
 
     spawningSlotProcessor: {
-      entry: 'spawn_slotProcessor',
+      entry: ['spawn_slotProcessor', 'log_spawningSlotProcessor'],
       on: {
         SLOT_COMPLETED: {
           target: 'slotComplete',
@@ -146,6 +164,8 @@ export const slotOrchestratorMachine = setup({
     },
 
     slotComplete: {
+      entry: 'log_slotComplete',
+
       always: [
         {
           guard: 'hasSlotToProcess',
@@ -158,7 +178,7 @@ export const slotOrchestratorMachine = setup({
     },
 
     allSlotsComplete: {
-      entry: 'sendEvent_slotsCompleted',
+      entry: ['sendEvent_slotsCompleted'],
       type: 'final',
     },
   },

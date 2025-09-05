@@ -73,7 +73,7 @@ export const pinoLog = <
       const result = value(args, params);
       if (typeof result === 'string') {
         message = result;
-        data = { context: args.context, event: args.event };
+        // data = { context: args.context, event: args.event };
       } else {
         message = result.message;
         data = result.data;
