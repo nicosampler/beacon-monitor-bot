@@ -56,7 +56,7 @@ export const canFetchCommittees = ({ context }: { context: { epoch: number } }):
   return true;
 };
 
-export const canProcessRewards = ({ context }: { context: { endSlot: number } }): boolean => {
+export const hasEpochEnded = ({ context }: { context: { endSlot: number } }): boolean => {
   // First condition: validators must have been fetched for the current epoch
   // if (!context.validatorsInfoFetched) {
   //   return false;

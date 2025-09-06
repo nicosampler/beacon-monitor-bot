@@ -21,7 +21,7 @@ import {
   canProcessEpoch,
   canFetchCommittees,
   canFetchSyncCommittees,
-  canProcessRewards,
+  hasEpochEnded,
   isFirstEpochOfSyncCommitteePeriod,
   isLookbackEpoch,
 } from '@/src/xstate/epoch/epoch.guards.js';
@@ -82,7 +82,7 @@ export const epochProcessorMachine = setup({
     canProcessEpoch,
     canFetchCommittees,
     canFetchSyncCommittees,
-    canProcessRewards,
+    hasEpochEnded,
     isFirstEpochOfSyncCommitteePeriod,
     isLookbackEpoch,
     // Simple guards for context checks
@@ -491,33 +491,13 @@ export const epochProcessorMachine = setup({
                     'EpochProcessor:rewards',
                   ),
                   on: {
-                    VALIDATORS_BALANCES_FETCHED: 'checkingValidatorsBalancesFetched',
+                    VALIDATORS_BALANCES_FETCHED: 'waitingForEpochToEnd',
                   },
                 },
-                // check if validators balances are already fetched
-                checkingValidatorsBalancesFetched: {
+                waitingForEpochToEnd: {
                   always: [
                     {
-                      guard: 'hasValidatorsBalancesFetched',
-                      target: 'complete',
-                      actions: pinoLog(
-                        ({ context }) => `Already fetched for epoch ${context.epoch} `,
-                        'EpochProcessor:rewards',
-                      ),
-                    },
-                    {
-                      target: 'checkingCanProcess',
-                      actions: pinoLog(
-                        ({ context }) => `Waiting to fetch for epoch ${context.epoch} `,
-                        'EpochProcessor:rewards',
-                      ),
-                    },
-                  ],
-                },
-                checkingCanProcess: {
-                  always: [
-                    {
-                      guard: 'canProcessRewards',
+                      guard: 'hasEpochEnded',
                       target: 'fetching',
                       actions: pinoLog(
                         ({ context }) => `Fetching for epoch ${context.epoch} `,
@@ -531,7 +511,7 @@ export const epochProcessorMachine = setup({
                 },
                 delayingCanProcess: {
                   after: {
-                    [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'checkingCanProcess',
+                    [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'waitingForEpochToEnd',
                   },
                 },
                 fetching: {
