@@ -97,50 +97,6 @@ export const enqueueEpochs = fromPromise(
   },
 );
 
-/**
- * Finds the next epoch that needs processing
- * Returns the epoch number and slot range, or null if no epoch needs processing
- */
-export const pickNextEpoch = fromPromise(async () => {
-  try {
-    // Find the earliest epoch where any of the completion flags is false
-    const nextEpoch = await prisma.epoch.findFirst({
-      where: {
-        OR: [
-          { validatorsBalancesFetched: false },
-          { rewardsFetched: false },
-          { committeesFetched: false },
-          { slotsFetched: false },
-          { syncCommitteesFetched: false },
-        ],
-      },
-      orderBy: { epoch: 'asc' },
-    });
-
-    if (!nextEpoch) {
-      return null;
-    }
-
-    const { startSlot, endSlot } = getEpochSlots(nextEpoch.epoch);
-
-    const result = {
-      epoch: nextEpoch.epoch,
-      startSlot,
-      endSlot,
-      validatorsBalancesFetched: nextEpoch.validatorsBalancesFetched ?? false,
-      rewardsFetched: nextEpoch.rewardsFetched ?? false,
-      committeesFetched: nextEpoch.committeesFetched ?? false,
-      slotsFetched: nextEpoch.slotsFetched ?? false,
-      syncCommitteesFetched: nextEpoch.syncCommitteesFetched ?? false,
-    };
-
-    return result;
-  } catch (error) {
-    console.error('Error picking next epoch:', error);
-    throw error;
-  }
-});
-
 export interface EpochToProcess {
   epoch: number;
   validatorsBalancesFetched: boolean;
@@ -189,24 +145,6 @@ export const getMinEpochToProcess = fromPromise(async (): Promise<EpochToProcess
     throw error;
   }
 });
-
-/**
- * Actor to check if we can fetch validators (timing + database conditions)
- */
-export const checkIfCanFetchValidatorsBalances = fromPromise(
-  async ({ input }: { input: { slot: number } }) => {
-    try {
-      const startSlot = input.slot;
-      const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
-
-      // First check if the epoch has already started
-      return { canProceed: currentSlot >= startSlot };
-    } catch (error) {
-      console.error('Error checking if can get validators:', error);
-      return { canProceed: false };
-    }
-  },
-);
 
 /**
  * Actor to fetch validators for the first slot of an epoch
@@ -273,7 +211,7 @@ export const fetchSyncCommittees = fromPromise(async ({ input }: { input: { epoc
 /**
  * Actor to check if sync committee for a specific epoch is already fetched
  */
-export const checkSyncCommitteeStatus = fromPromise(
+export const checkSyncCommitteeForEpochInDB = fromPromise(
   async ({ input }: { input: { epoch: number } }) => {
     try {
       // Check if sync committee for this epoch is already fetched
@@ -327,20 +265,3 @@ export const updateSyncCommitteesFetched = fromPromise(
     }
   },
 );
-
-/**
- * Actor to check if slots have already been processed for an epoch
- */
-export const checkSlotsProcessed = fromPromise(async ({ input }: { input: { epoch: number } }) => {
-  try {
-    const epoch = await prisma.epoch.findUnique({
-      where: { epoch: input.epoch },
-      select: { slotsFetched: true },
-    });
-
-    return { slotsProcessed: epoch?.slotsFetched ?? false };
-  } catch (error) {
-    console.error('Error checking slots processed status:', error);
-    throw error;
-  }
-});

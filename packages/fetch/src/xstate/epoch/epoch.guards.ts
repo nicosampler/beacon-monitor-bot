@@ -19,10 +19,6 @@ export const isLookbackEpoch = ({ context }: { context: { epoch: number } }): bo
   return context.epoch === lookbackEpoch;
 };
 
-export const hasNextEpoch = ({ event }: { event: any }): boolean => {
-  return event.output !== null;
-};
-
 export const canProcessEpoch = ({ context }: { context: { epoch: number } }): boolean => {
   const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
 
@@ -32,17 +28,6 @@ export const canProcessEpoch = ({ context }: { context: { epoch: number } }): bo
   }
 
   return true;
-};
-
-export const hasEpochAlreadyStarted = ({
-  context,
-}: {
-  context: { startSlot: number };
-}): boolean => {
-  const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
-
-  // We need to wait for the current slot to be greater than the first slot of the epoch
-  return currentSlot > context.startSlot;
 };
 
 export const canFetchCommittees = ({ context }: { context: { epoch: number } }): boolean => {
@@ -57,12 +42,6 @@ export const canFetchCommittees = ({ context }: { context: { epoch: number } }):
 };
 
 export const hasEpochEnded = ({ context }: { context: { endSlot: number } }): boolean => {
-  // First condition: validators must have been fetched for the current epoch
-  // if (!context.validatorsInfoFetched) {
-  //   return false;
-  // }
-
-  // Second condition: current slot must be greater than the epoch's end slot
   const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
   return currentSlot > context.endSlot;
 };

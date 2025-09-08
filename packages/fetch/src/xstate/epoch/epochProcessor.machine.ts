@@ -11,11 +11,9 @@ import {
   fetchValidatorsBalances,
   fetchCommittees,
   fetchSyncCommittees,
-  checkIfCanFetchValidatorsBalances,
-  checkSyncCommitteeStatus,
+  checkSyncCommitteeForEpochInDB,
   updateSlotsFetched,
   updateSyncCommitteesFetched,
-  checkSlotsProcessed,
 } from '@/src/xstate/epoch/epoch.actors.js';
 import {
   canProcessEpoch,
@@ -71,12 +69,10 @@ export const epochProcessorMachine = setup({
     fetchAttestationsRewards,
     fetchCommittees,
     fetchSyncCommittees,
-    checkIfCanFetchValidatorsBalances,
-    checkSyncCommitteeStatus,
+    checkSyncCommitteeForEpochInDB,
     slotOrchestratorMachine,
     updateSlotsFetched,
     updateSyncCommitteesFetched,
-    checkSlotsProcessed,
   },
   guards: {
     canProcessEpoch,
@@ -85,15 +81,19 @@ export const epochProcessorMachine = setup({
     hasEpochEnded,
     isFirstEpochOfSyncCommitteePeriod,
     isLookbackEpoch,
-    // Simple guards for context checks
-    hasCommitteesNotFetched: ({ context }) => !context.epochDBSnapshot.committeesFetched,
-    hasSlotsProcessed: ({ event }: { event: any }) => event.output?.slotsProcessed === true,
+    canFetchValidatorsBalances: ({ context }) => {
+      const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+      return currentSlot >= context.startSlot;
+    },
+    //---------------------------------
+    isSyncCommitteeFetched: (_context: unknown, params: { isFetched: boolean }): boolean => {
+      return params.isFetched === true;
+    },
+    hasSlotsProcessed: ({ context }) => context.epochDBSnapshot.slotsFetched,
     hasSyncCommitteesFetched: ({ context }) => context.epochDBSnapshot.syncCommitteesFetched,
-    isSyncCommitteeFetched: ({ event }: { event: any }) => event.output?.isFetched === true,
+    hasCommitteesFetched: ({ context }) => context.epochDBSnapshot.committeesFetched,
     hasValidatorsBalancesFetched: ({ context }) =>
       context.epochDBSnapshot.validatorsBalancesFetched,
-    canProceedWithValidatorsBalances: ({ event }: { event: any }) =>
-      event.output?.canProceed === true,
   },
 }).createMachine({
   id: 'EpochProcessor',
@@ -145,7 +145,6 @@ export const epochProcessorMachine = setup({
         [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'checkingCanProcess',
       },
     },
-
     epochProcessing: {
       entry: pinoLog(
         ({ context }) => `Starting epoch processing for epoch ${context.epoch}`,
@@ -165,7 +164,7 @@ export const epochProcessorMachine = setup({
                 checkingEpochStatus: {
                   always: [
                     {
-                      guard: 'hasCommitteesNotFetched',
+                      guard: 'hasCommitteesFetched',
                       target: 'fetching',
                       actions: pinoLog(
                         ({ context }) => `Fetching committees for epoch ${context.epoch}`,
@@ -190,7 +189,6 @@ export const epochProcessorMachine = setup({
                         target: 'complete',
                       },
                     ],
-                    onError: 'fetching',
                   },
                 },
                 complete: {
@@ -222,52 +220,49 @@ export const epochProcessorMachine = setup({
                   },
                 },
                 checkingSlotsProcessed: {
-                  invoke: {
-                    src: 'checkSlotsProcessed',
-                    input: ({ context }) => ({ epoch: context.epoch }),
-                    onDone: [
-                      {
-                        guard: 'hasSlotsProcessed',
-                        target: 'complete',
-                        actions: pinoLog(
-                          ({ context }) => `Slots already processed for epoch ${context.epoch} `,
-                          'EpochProcessor:slotsProcessing',
-                        ),
-                      },
-                      {
-                        target: 'processingSlots',
-                        actions: pinoLog(
-                          ({ context }) => `Processing slots for epoch ${context.epoch} `,
-                          'EpochProcessor:slotsProcessing',
-                        ),
-                      },
-                    ],
-                    onError: 'checkingSlotsProcessed',
-                  },
+                  always: [
+                    {
+                      guard: 'hasSlotsProcessed',
+                      target: 'complete',
+                      actions: pinoLog(
+                        ({ context }) => `Slots already processed for epoch ${context.epoch} `,
+                        'EpochProcessor:slotsProcessing',
+                      ),
+                    },
+                    {
+                      target: 'processingSlots',
+                    },
+                  ],
                 },
                 processingSlots: {
-                  entry: assign({
-                    slotOrchestratorActor: ({ context, spawn }) => {
-                      const orchestratorId = `slotOrchestrator:${context.epoch}`;
-                      // Register the spawned slot orchestrator machine
-                      logMachine(orchestratorId, 'Spawning', { epoch: context.epoch });
+                  entry: [
+                    pinoLog(
+                      ({ context }) => `Processing slots for epoch ${context.epoch} `,
+                      'EpochProcessor:slotsProcessing',
+                    ),
+                    assign({
+                      slotOrchestratorActor: ({ context, spawn }) => {
+                        const orchestratorId = `slotOrchestrator:${context.epoch}`;
+                        // Register the spawned slot orchestrator machine
+                        logMachine(orchestratorId, 'Spawning', { epoch: context.epoch });
 
-                      const actor = spawn('slotOrchestratorMachine', {
-                        id: orchestratorId,
-                        input: {
-                          epoch: context.epoch,
-                        },
-                      });
+                        const actor = spawn('slotOrchestratorMachine', {
+                          id: orchestratorId,
+                          input: {
+                            epoch: context.epoch,
+                          },
+                        });
 
-                      // Automatically log the actor's state and context
-                      logActor(actor, orchestratorId);
+                        // Automatically log the actor's state and context
+                        logActor(actor, orchestratorId);
 
-                      return actor;
-                    },
-                  }),
+                        return actor;
+                      },
+                    }),
+                  ],
                   on: {
                     SLOTS_COMPLETED: {
-                      target: 'updateSlotsFetched',
+                      target: 'updatingSlotsFetched',
                       actions: [
                         stopChild(({ context }) => context.slotOrchestratorActor?.id || ''),
                         assign({
@@ -277,7 +272,7 @@ export const epochProcessorMachine = setup({
                     },
                   },
                 },
-                updateSlotsFetched: {
+                updatingSlotsFetched: {
                   entry: pinoLog(
                     ({ context }) => `Updating slots fetched for epoch ${context.epoch} `,
                     'EpochProcessor:slotsProcessing',
@@ -289,7 +284,7 @@ export const epochProcessorMachine = setup({
                       target: 'complete',
                     },
                     onError: {
-                      target: 'updateSlotsFetched',
+                      target: 'updatingSlotsFetched',
                     },
                   },
                 },
@@ -322,28 +317,33 @@ export const epochProcessorMachine = setup({
                       ),
                     },
                     {
-                      target: 'checkingInDBTable',
-                      actions: pinoLog(
-                        ({ context }) =>
-                          `Checking sync committees in DB table for epoch ${context.epoch} `,
-                        'EpochProcessor:syncingCommittees',
-                      ),
+                      target: 'checkingInDB',
                     },
                   ],
                 },
-                checkingInDBTable: {
+                checkingInDB: {
+                  entry: pinoLog(
+                    ({ context }) =>
+                      `Checking sync committees in DB table for epoch ${context.epoch} `,
+                    'EpochProcessor:syncingCommittees',
+                  ),
                   invoke: {
-                    src: 'checkSyncCommitteeStatus',
+                    src: 'checkSyncCommitteeForEpochInDB',
                     input: ({ context }) => ({ epoch: context.epoch }),
                     onDone: [
                       {
+                        guard: {
+                          type: 'isSyncCommitteeFetched',
+                          params: ({ event }) => ({
+                            isFetched: event.output.isFetched,
+                          }),
+                        },
+                        target: 'updatingSyncCommitteesFetched',
                         actions: pinoLog(
                           ({ context }) =>
                             `Sync committees found in DB table for epoch ${context.epoch} `,
                           'EpochProcessor:syncingCommittees',
                         ),
-                        guard: 'isSyncCommitteeFetched',
-                        target: 'updateSyncCommitteesFetched',
                       },
                       {
                         target: 'fetching',
@@ -353,10 +353,10 @@ export const epochProcessorMachine = setup({
                         ),
                       },
                     ],
-                    onError: 'checkingInDBTable',
+                    onError: 'checkingInDB',
                   },
                 },
-                updateSyncCommitteesFetched: {
+                updatingSyncCommitteesFetched: {
                   invoke: {
                     src: 'updateSyncCommitteesFetched',
                     input: ({ context }) => ({ epoch: context.epoch }),
@@ -424,24 +424,19 @@ export const epochProcessorMachine = setup({
                   ],
                 },
                 waitingForSlotToStart: {
-                  invoke: {
-                    src: 'checkIfCanFetchValidatorsBalances',
-                    input: ({ context }) => ({ slot: context.startSlot }),
-                    onDone: [
-                      {
-                        guard: 'canProceedWithValidatorsBalances',
-                        target: 'fetching',
-                        actions: pinoLog(
-                          ({ context }) =>
-                            `Fetching validators balances for epoch ${context.epoch} `,
-                          'EpochProcessor:validatorsBalances',
-                        ),
-                      },
-                      {
-                        target: 'waitingForSlotToStartDelaying',
-                      },
-                    ],
-                  },
+                  always: [
+                    {
+                      guard: 'canFetchValidatorsBalances',
+                      target: 'fetching',
+                      actions: pinoLog(
+                        ({ context }) => `Fetching validators balances for epoch ${context.epoch} `,
+                        'EpochProcessor:validatorsBalances',
+                      ),
+                    },
+                    {
+                      target: 'waitingForSlotToStartDelaying',
+                    },
+                  ],
                 },
                 waitingForSlotToStartDelaying: {
                   after: {
@@ -523,12 +518,6 @@ export const epochProcessorMachine = setup({
                         target: 'complete',
                       },
                     ],
-                    onError: {
-                      target: 'fetching',
-                      actions: ({ event }) => {
-                        console.error('Error fetching attestations rewards:', event.error);
-                      },
-                    },
                   },
                 },
                 complete: {
