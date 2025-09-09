@@ -12,23 +12,20 @@ import { db_getFinalValidatorIds } from '@/src/utils/db.js';
 const prisma = getPrisma();
 
 // Function to save validators info to database
-async function saveValidatorsToDatabase(
+export async function saveValidatorsToDatabase(
   validatorsInfo: Awaited<ReturnType<typeof beacon_getValidators>>,
-  logger: CustomLogger,
 ) {
-  try {
-    await prisma.$transaction(
-      async (tx) => {
-        // Create temporary table
-        await tx.$executeRaw`
+  await prisma.$transaction(
+    async (tx) => {
+      // Create temporary table
+      await tx.$executeRaw`
         CREATE TEMPORARY TABLE "TempValidator" (LIKE "Validator") ON COMMIT DROP
       `;
 
-        const batches = chunk(validatorsInfo, 6000);
-        logger.info(`Processing ${batches.length} batches of validators`);
+      const batches = chunk(validatorsInfo, 6000);
 
-        for (const batch of batches) {
-          await tx.$executeRaw`
+      for (const batch of batches) {
+        await tx.$executeRaw`
           INSERT INTO "TempValidator" (id, "withdrawalAddress", status, balance, "effectiveBalance")
           VALUES ${Prisma.join(
             batch.map(
@@ -48,10 +45,10 @@ async function saveValidatorsToDatabase(
             ', ',
           )}
         `;
-        }
+      }
 
-        // Merge data from temporary table to main table
-        await tx.$executeRaw`
+      // Merge data from temporary table to main table
+      await tx.$executeRaw`
         INSERT INTO "Validator" (id, "withdrawalAddress", status, balance, "effectiveBalance")
         SELECT id, "withdrawalAddress", status, balance, "effectiveBalance"
         FROM "TempValidator"
@@ -60,17 +57,11 @@ async function saveValidatorsToDatabase(
           "status" = EXCLUDED.status,
           "effectiveBalance" = EXCLUDED."effectiveBalance"
       `;
-      },
-      {
-        timeout: ms('2m'),
-      },
-    );
-
-    logger.info(`Successfully saved ${validatorsInfo.length} validators to database`);
-  } catch (error) {
-    logger.error(`Error saving validators to database`, error);
-    throw error;
-  }
+    },
+    {
+      timeout: ms('2m'),
+    },
+  );
 }
 
 /*
@@ -126,7 +117,7 @@ export async function fetchValidators(logger: CustomLogger, stateId: number | 'h
     );
 
     // Save all collected data to database
-    await saveValidatorsToDatabase(allValidatorsData, logger);
+    await saveValidatorsToDatabase(allValidatorsData);
   } catch (error) {
     logger.error(`Error fetching validators info`, error);
   }

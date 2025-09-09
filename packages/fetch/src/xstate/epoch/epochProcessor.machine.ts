@@ -14,6 +14,7 @@ import {
   checkSyncCommitteeForEpochInDB,
   updateSlotsFetched,
   updateSyncCommitteesFetched,
+  trackingTransitioningValidators,
 } from '@/src/xstate/epoch/epoch.actors.js';
 import {
   canProcessEpoch,
@@ -38,7 +39,6 @@ type ProcessEpochContext = {
     syncCommitteesFetched: boolean;
   };
   slotOrchestratorActor?: ActorRefFrom<typeof slotOrchestratorMachine> | null;
-  currentSlot?: number;
 };
 
 type ProcessEpochEvents =
@@ -56,7 +56,6 @@ export const epochProcessorMachine = setup({
     events: ProcessEpochEvents;
     input: {
       epoch: number;
-      currentSlot?: number;
       validatorsBalancesFetched: boolean;
       rewardsFetched: boolean;
       committeesFetched: boolean;
@@ -73,6 +72,7 @@ export const epochProcessorMachine = setup({
     slotOrchestratorMachine,
     updateSlotsFetched,
     updateSyncCommitteesFetched,
+    trackingTransitioningValidators,
   },
   guards: {
     canProcessEpoch,
@@ -105,7 +105,6 @@ export const epochProcessorMachine = setup({
       startSlot: startSlot,
       endSlot: endSlot,
       epochDBSnapshot: {
-        // read-only statuses
         validatorsBalancesFetched: input.validatorsBalancesFetched,
         rewardsFetched: input.rewardsFetched,
         committeesFetched: input.committeesFetched,
@@ -113,15 +112,12 @@ export const epochProcessorMachine = setup({
         syncCommitteesFetched: input.syncCommitteesFetched,
       },
       slotOrchestratorActor: null,
-      currentSlot: getSlotNumberFromTimestamp(Date.now()),
     } satisfies ProcessEpochContext;
   },
   states: {
-    /**
-     * Check if we can start processing the epoch
-     * We can process some data up to current epoch + 1.
-     */
     checkingCanProcess: {
+      description:
+        'Check if we can start processing the epoch. We can process some data up to current epoch + 1.',
       entry: pinoLog(
         ({ context }) => `Checking if we can process the epoch, ${context.epoch}`,
         'EpochProcessor',
@@ -155,10 +151,8 @@ export const epochProcessorMachine = setup({
         fetching: {
           type: 'parallel',
           states: {
-            /**
-             * Get epoch committees
-             */
             committees: {
+              description: 'Get epoch committees',
               initial: 'checkingEpochStatus',
               states: {
                 checkingEpochStatus: {
@@ -202,11 +196,9 @@ export const epochProcessorMachine = setup({
               },
             },
 
-            /**
-             * Process slots for the epoch
-             * This state waits for committees to be ready before starting
-             */
             slotsProcessing: {
+              description:
+                'Process slots for the epoch. This state waits for committees to be ready before starting.',
               initial: 'waitingForCommittees',
               states: {
                 waitingForCommittees: {
@@ -298,11 +290,9 @@ export const epochProcessorMachine = setup({
               },
             },
 
-            /**
-             * Get sync committees
-             * Sync committees persist across multiple epochs, we fetch them only for the first epoch of the sync committee period
-             */
             syncingCommittees: {
+              description:
+                'Get sync committees. Sync committees persist across multiple epochs, we fetch them only for the first epoch of the sync committee period.',
               initial: 'checkingEpochStatus',
               states: {
                 checkingEpochStatus: {
@@ -390,16 +380,33 @@ export const epochProcessorMachine = setup({
               },
             },
 
-            //TODO: fetch validators pending of activation
-            // make fetchValidators receive statuses to fetch.
-            // trackingTransitioningValidators: {
-            // }
+            trackingTransitioningValidators: {
+              description:
+                'Get all validators pending of activation and fetch their status to know if they have been activated.',
+              entry: pinoLog(
+                ({ context }) => `Tracking transitioning validators for epoch ${context.epoch}`,
+                'EpochProcessor:trackingTransitioningValidators',
+              ),
+              invoke: {
+                src: 'trackingTransitioningValidators',
+                input: ({ context }) => ({ epoch: context.epoch }),
+                onDone: {
+                  target: 'complete',
+                  actions: pinoLog(
+                    ({ context, event }) =>
+                      `Tracking transitioning validators completed for epoch ${context.epoch}. Processed ${event.output.processedCount} validators`,
+                    'EpochProcessor:trackingTransitioningValidators',
+                  ),
+                },
+                onError: {
+                  target: 'trackingTransitioningValidators',
+                },
+              },
+            },
 
-            /**
-             * Get all active beacon validators balances
-             * We need to know the validators balances to calculate missed rewards
-             */
             validatorsBalances: {
+              description:
+                'Get all active beacon validators balances. We need to know the validators balances to calculate missed rewards.',
               initial: 'checkingStatus',
               states: {
                 checkingStatus: {
@@ -470,13 +477,9 @@ export const epochProcessorMachine = setup({
               },
             },
 
-            /**
-             * Rewards processing track
-             * Rewards can only be processed when:
-             * 1. Validators have been fetched for the current epoch
-             * 2. Current slot is greater than the epoch's end slot
-             */
             rewards: {
+              description:
+                "Rewards processing track. Rewards can only be processed when: 1. Validators have been fetched for the current epoch 2. Current slot is greater than the epoch's end slot.",
               initial: 'waitingForValidatorsBalances',
               states: {
                 waitingForValidatorsBalances: {
@@ -534,7 +537,6 @@ export const epochProcessorMachine = setup({
       },
       onDone: 'complete',
     },
-
     complete: {
       entry: [
         pinoLog(

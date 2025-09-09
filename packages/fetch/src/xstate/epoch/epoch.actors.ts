@@ -1,12 +1,13 @@
 import { fromPromise } from 'xstate';
 
+import { beacon_getValidators } from '@/src/beacon/endpoints.js';
 import { fetchAttestationsRewards as _fetchAttestationsRewards } from '@/src/beacon/feed/fetchAttestationsRewards.js';
 import { fetchCommittee } from '@/src/beacon/feed/fetchCommittee.js';
 import { fetchSyncCommittees as _fetchSyncCommittees } from '@/src/beacon/feed/fetchSyncCommittee.js';
-import { fetchValidators as fetchValidatorsFromBeacon } from '@/src/beacon/feed/fetchValidators.js';
+import { saveValidatorsToDatabase as _saveValidatorsToDatabase } from '@/src/beacon/feed/fetchValidators.js';
 import { fetchValidatorsBalances as _fetchValidatorsBalances } from '@/src/beacon/feed/fetchValidatorsBalances.js';
-import { getEpochFromSlot, getEpochSlots, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
-import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
+import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
+import { VALIDATOR_STATUS } from '@/src/constants/index.js';
 import createLogger from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 
@@ -146,31 +147,6 @@ export const getMinEpochToProcess = fromPromise(async (): Promise<EpochToProcess
   }
 });
 
-/**
- * Actor to fetch validators for the first slot of an epoch
- */
-export const fetchValidators = fromPromise(async ({ input }: { input: { startSlot: number } }) => {
-  try {
-    const logger = createLogger('fetchValidators', true);
-    logger.setContext(`startSlot: ${input.startSlot}`);
-
-    await fetchValidatorsFromBeacon(logger, input.startSlot);
-
-    // Update the epoch to mark validators as fetched
-    // const epochNumber = Math.floor(input.startSlot / env.BEACON_SLOTS_PER_EPOCH);
-    // await prisma.epoch.update({
-    //   where: { epoch: epochNumber },
-    //   data: { validatorsInfoFetched: true },
-    // });
-
-    logger.info('Validators fetched successfully');
-    return { success: true };
-  } catch (error) {
-    console.error('Error fetching validators:', error);
-    throw error;
-  }
-});
-
 export const fetchValidatorsBalances = fromPromise(
   async ({ input }: { input: { startSlot: number } }) => {
     await _fetchValidatorsBalances(input.startSlot);
@@ -265,3 +241,29 @@ export const updateSyncCommitteesFetched = fromPromise(
     }
   },
 );
+
+/**
+ * Unified actor to track transitioning validators
+ * Fetches pending validators from DB, gets their data from beacon chain, and saves to DB
+ */
+export const trackingTransitioningValidators = fromPromise(async () => {
+  const pendingValidators = await prisma.validator.findMany({
+    where: {
+      status: {
+        in: [VALIDATOR_STATUS.pending_initialized, VALIDATOR_STATUS.pending_queued],
+      },
+    },
+    select: { id: true },
+  });
+
+  if (pendingValidators.length === 0) {
+    return { success: true, processedCount: 0 };
+  }
+
+  const validatorIds = pendingValidators.map((v) => String(v.id));
+  const validatorsData = await beacon_getValidators('head', validatorIds, null);
+
+  await _saveValidatorsToDatabase(validatorsData);
+
+  return { success: true, processedCount: validatorsData.length };
+});
