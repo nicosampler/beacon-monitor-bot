@@ -192,7 +192,6 @@ export async function fetchAttestationsRewards(epoch: number) {
         timeout: ms('3m'),
       },
     );
-    console.log('Attestations rewards fetched successfully');
   } catch (error) {
     console.error('Error processing rewards:', error);
     throw error;

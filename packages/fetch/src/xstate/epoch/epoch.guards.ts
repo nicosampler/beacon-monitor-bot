@@ -56,3 +56,12 @@ export const canFetchSyncCommittees = ({ context }: { context: { epoch: number }
 
   return true;
 };
+
+export const hasEpochAlreadyStarted = ({
+  context,
+}: {
+  context: { startSlot: number };
+}): boolean => {
+  const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+  return currentSlot >= context.startSlot;
+};

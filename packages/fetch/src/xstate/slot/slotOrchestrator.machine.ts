@@ -11,7 +11,7 @@ export interface SlotOrchestratorContext {
   epoch: number;
   startSlot: number;
   endSlot: number;
-  currentSlot: number | null;
+  currentSlot: number;
   slotActor: ActorRefFrom<typeof slotProcessorMachine> | null;
 }
 
@@ -51,7 +51,7 @@ export const slotOrchestratorMachine = setup({
     findMinUnprocessedSlotInEpoch,
   },
   guards: {
-    hasSlotToProcess: ({ context }) => context.currentSlot !== null,
+    hasSlotToProcess: ({ context }) => context.currentSlot <= context.endSlot,
   },
   actions: {
     sendEvent_slotsCompleted: sendParent(({ context }) => ({
@@ -66,7 +66,7 @@ export const slotOrchestratorMachine = setup({
           id: slotId,
           input: {
             epoch: context.epoch,
-            slot: context.currentSlot!,
+            slot: context.currentSlot,
           },
         });
 
@@ -76,34 +76,18 @@ export const slotOrchestratorMachine = setup({
         return actor;
       },
     }),
-    log_removeMachine: ({ context }) => {
-      logRemoveMachine(context.slotActor?.id || '', 'SLOT_COMPLETED');
-    },
-    stop_stopSlotProcessor: stopChild(({ context }) => context.slotActor?.id || ''),
+    stopSlotProcessor: stopChild(({ context }) => context.slotActor?.id || ''),
     assign_resetActorAndIncrementSlot: assign({
       slotActor: null,
       currentSlot: ({ context }) => context.currentSlot! + 1,
     }),
-    log_findMinUnprocessedSlotInEpoch: pinoLog(
-      ({ context }) => `Finding min unprocessed slot for epoch ${context.epoch}`,
-      'SlotOrchestrator',
-    ),
-    log_spawningSlotProcessor: pinoLog(
-      ({ context }) => `Spawning slot processor for epoch ${context.epoch}`,
-      'SlotOrchestrator',
-    ),
-    log_slotComplete: pinoLog(
-      ({ context }) => `Slot complete for epoch ${context.epoch}`,
-      'SlotOrchestrator',
-    ),
-    log_allSlotsComplete: pinoLog(
-      ({ context }) => `All slots complete for epoch ${context.epoch}`,
-      'SlotOrchestrator',
-    ),
+    removeMachineLog: ({ context }) => {
+      logRemoveMachine(context.slotActor?.id || '', 'SLOT_COMPLETED');
+    },
   },
 }).createMachine({
   id: 'SlotOrchestrator',
-  initial: 'initializing',
+  initial: 'spawningSlotProcessor',
   context: ({ input }) => {
     const { startSlot: _startSlot, endSlot } = getEpochSlots(input.epoch);
     const startSlot = Math.max(_startSlot, env.BEACON_LOOKBACK_SLOT);
@@ -112,51 +96,29 @@ export const slotOrchestratorMachine = setup({
       epoch: input.epoch,
       startSlot,
       endSlot,
-      currentSlot: null,
+      currentSlot: startSlot,
       slotActor: null,
     };
   },
   states: {
-    initializing: {
-      entry: 'log_findMinUnprocessedSlotInEpoch',
-      invoke: {
-        src: 'findMinUnprocessedSlotInEpoch',
-        input: ({ context }) => ({
-          startSlot: context.startSlot,
-          endSlot: context.endSlot,
-        }),
-        onDone: {
-          target: 'checkingSlotToProcess',
-          actions: assign({
-            currentSlot: ({ event }) => event.output,
-          }),
-        },
-        onError: {
-          target: 'initializing',
-        },
-      },
-    },
-
-    checkingSlotToProcess: {
-      always: [
-        {
-          guard: 'hasSlotToProcess',
-          target: 'spawningSlotProcessor',
-        },
-        {
-          target: 'allSlotsComplete',
-        },
-      ],
-    },
-
     spawningSlotProcessor: {
-      entry: ['spawn_slotProcessor', 'log_spawningSlotProcessor'],
+      entry: [
+        'spawn_slotProcessor',
+        pinoLog(
+          ({ context }) => `Spawning slot processor for epoch ${context.epoch}`,
+          'SlotOrchestrator',
+        ),
+      ],
       on: {
         SLOT_COMPLETED: {
           target: 'slotComplete',
           actions: [
-            'log_removeMachine',
-            'stop_stopSlotProcessor',
+            pinoLog(
+              ({ context }) => `Slot completed for epoch ${context.epoch}`,
+              'SlotOrchestrator',
+            ),
+            'removeMachineLog',
+            'stopSlotProcessor',
             'assign_resetActorAndIncrementSlot',
           ],
         },
@@ -164,7 +126,10 @@ export const slotOrchestratorMachine = setup({
     },
 
     slotComplete: {
-      entry: 'log_slotComplete',
+      entry: pinoLog(
+        ({ context }) => `Slot complete for epoch ${context.epoch}`,
+        'SlotOrchestrator',
+      ),
 
       always: [
         {

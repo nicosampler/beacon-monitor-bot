@@ -21,15 +21,44 @@ type CommitteeUpsert = {
 
 const prisma = getPrisma();
 
+// function logCommitteeInfo(
+//   logger: CustomLogger,
+//   fetchedCommittees: Array<{
+//     slot: string;
+//     index: string;
+//     validators: string[];
+//   }>,
+//   slotUpserts: number[],
+// ): void {
+//   // Filter committees to match the new slots
+//   const filteredCommittees = fetchedCommittees.filter((c) => slotUpserts.includes(+c.slot));
+
+//   const groupedCommittees = filteredCommittees.reduce(
+//     (acc, committee) => {
+//       if (!acc[committee.slot]) {
+//         acc[committee.slot] = [];
+//       }
+//       acc[committee.slot]!.push(+committee.index);
+//       return acc;
+//     },
+//     {} as Record<string, number[]>,
+//   );
+
+//   const logMessage = Object.entries(groupedCommittees)
+//     .map(([slot, indexes]) => `${slot}:${indexes.length}`)
+//     .join(',');
+
+//   logger.info(`New slots [${slotUpserts}] - Committees: ${logMessage || 'null'}`);
+// }
+
 // New function to handle parallel fetching
 export async function fetchCommittee(
-  logger: CustomLogger,
   epochToFetch: number,
   //lastSlot: number,
 ): Promise<void> {
   const committees = await beacon_getCommittees(epochToFetch);
   const preparedData = await prepareUpsertData(committees);
-  logCommitteeInfo(logger, committees, preparedData.newSlots);
+  //logCommitteeInfo(logger, committees, preparedData.newSlots);
   await saveCommittee(epochToFetch, preparedData.newSlots, preparedData.newCommittees);
 }
 
@@ -66,36 +95,6 @@ async function prepareUpsertData(committees: Committee[]) {
     newSlots,
     newCommittees,
   };
-}
-
-function logCommitteeInfo(
-  logger: CustomLogger,
-  fetchedCommittees: Array<{
-    slot: string;
-    index: string;
-    validators: string[];
-  }>,
-  slotUpserts: number[],
-): void {
-  // Filter committees to match the new slots
-  const filteredCommittees = fetchedCommittees.filter((c) => slotUpserts.includes(+c.slot));
-
-  const groupedCommittees = filteredCommittees.reduce(
-    (acc, committee) => {
-      if (!acc[committee.slot]) {
-        acc[committee.slot] = [];
-      }
-      acc[committee.slot]!.push(+committee.index);
-      return acc;
-    },
-    {} as Record<string, number[]>,
-  );
-
-  const logMessage = Object.entries(groupedCommittees)
-    .map(([slot, indexes]) => `${slot}:${indexes.length}`)
-    .join(',');
-
-  logger.info(`New slots [${slotUpserts}] - Committees: ${logMessage || 'null'}`);
 }
 
 async function saveCommittee(epoch: number, slots: number[], committees: CommitteeUpsert[]) {

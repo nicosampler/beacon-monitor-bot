@@ -8,7 +8,6 @@ import { saveValidatorsToDatabase as _saveValidatorsToDatabase } from '@/src/bea
 import { fetchValidatorsBalances as _fetchValidatorsBalances } from '@/src/beacon/feed/fetchValidatorsBalances.js';
 import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import { VALIDATOR_STATUS } from '@/src/constants/index.js';
-import createLogger from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 
 const prisma = getPrisma();
@@ -162,20 +161,9 @@ export const fetchAttestationsRewards = fromPromise(
 /**
  * Actor to fetch committees for an epoch
  */
-export const fetchCommittees = fromPromise(async ({ input }: { input: { epoch: number } }) => {
-  try {
-    const logger = createLogger('fetchCommittees', true);
-    logger.setContext(`epoch: ${input.epoch}`);
-
-    // Fetch committee for the epoch
-    await fetchCommittee(logger, input.epoch);
-
-    logger.info('Committees fetched successfully');
-  } catch (error) {
-    console.error('Error fetching committees:', error);
-    throw error;
-  }
-});
+export const fetchCommittees = fromPromise(async ({ input }: { input: { epoch: number } }) =>
+  fetchCommittee(input.epoch),
+);
 
 /**
  * Actor to fetch sync committees for an epoch

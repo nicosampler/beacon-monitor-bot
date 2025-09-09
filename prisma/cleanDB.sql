@@ -2,7 +2,7 @@ truncate "Epoch";
 truncate "Slot" cascade;
 truncate "Committee" cascade;
 truncate "SyncCommittee" cascade;
--- truncate "Validator" cascade;
+truncate "Validator" cascade;
 
 truncate "ExecutionRewards";
 
