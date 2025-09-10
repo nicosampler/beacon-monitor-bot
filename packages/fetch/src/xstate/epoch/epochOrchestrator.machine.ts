@@ -1,5 +1,5 @@
 import ms from 'ms';
-import { setup, assign, stopChild, ActorRefFrom, log } from 'xstate';
+import { setup, assign, stopChild, ActorRefFrom } from 'xstate';
 
 import { getMinEpochToProcess, type EpochToProcess } from './epoch.actors.js';
 import { epochProcessorMachine } from './epochProcessor.machine.js';
@@ -103,6 +103,7 @@ export const epochOrchestratorMachine = setup({
                 committeesFetched: context.epochData.committeesFetched,
                 slotsFetched: context.epochData.slotsFetched,
                 syncCommitteesFetched: context.epochData.syncCommitteesFetched,
+                validatorsActivationFetched: context.epochData.validatorsActivationFetched,
               },
             });
 

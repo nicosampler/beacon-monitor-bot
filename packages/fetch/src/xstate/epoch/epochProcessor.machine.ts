@@ -33,6 +33,7 @@ type ProcessEpochContext = {
   endSlot: number;
   epochDBSnapshot: {
     validatorsBalancesFetched: boolean;
+    validatorsActivationFetched: boolean;
     rewardsFetched: boolean;
     committeesFetched: boolean;
     slotsFetched: boolean;
@@ -67,6 +68,7 @@ export const epochProcessorMachine = setup({
       committeesFetched: boolean;
       slotsFetched: boolean;
       syncCommitteesFetched: boolean;
+      validatorsActivationFetched: boolean;
     };
   },
   actors: {
@@ -96,6 +98,8 @@ export const epochProcessorMachine = setup({
     needsCommitteesFetch: ({ context }) => !context.epochDBSnapshot.committeesFetched,
     hasValidatorsBalancesFetched: ({ context }) =>
       context.epochDBSnapshot.validatorsBalancesFetched,
+    hasValidatorsActivationFetched: ({ context }) =>
+      context.epochDBSnapshot.validatorsActivationFetched,
     canProcessSlots: ({ context }) => context.committeesReady && context.epochStarted,
   },
 }).createMachine({
@@ -113,6 +117,7 @@ export const epochProcessorMachine = setup({
         committeesFetched: input.committeesFetched,
         slotsFetched: input.slotsFetched,
         syncCommitteesFetched: input.syncCommitteesFetched,
+        validatorsActivationFetched: input.validatorsActivationFetched,
       },
       slotOrchestratorActor: null,
       committeesReady: false,
@@ -447,7 +452,7 @@ export const epochProcessorMachine = setup({
               },
             },
 
-            trackingTransitioningValidators: {
+            trackingValidatorsActivation: {
               description:
                 'Get all validators pending of activation and fetch their status to know if they have been activated.',
               initial: 'waitingForEpochStart',
@@ -459,8 +464,24 @@ export const epochProcessorMachine = setup({
                     'EpochProcessor:trackingTransitioningValidators',
                   ),
                   on: {
-                    EPOCH_STARTED: 'fetching',
+                    EPOCH_STARTED: 'checkingStatus',
                   },
+                },
+                checkingStatus: {
+                  always: [
+                    {
+                      guard: 'hasValidatorsActivationFetched',
+                      target: 'completed',
+                      actions: pinoLog(
+                        ({ context }) =>
+                          `Validators activation already tracked for epoch ${context.epoch} `,
+                        'EpochProcessor:trackingTransitioningValidators',
+                      ),
+                    },
+                    {
+                      target: 'fetching',
+                    },
+                  ],
                 },
                 fetching: {
                   entry: pinoLog(
@@ -470,7 +491,7 @@ export const epochProcessorMachine = setup({
                   invoke: {
                     src: 'trackingTransitioningValidators',
                     input: ({ context }) => ({ epoch: context.epoch }),
-                    onDone: 'completed',
+                    onDone: 'complete',
                   },
                 },
                 completed: {

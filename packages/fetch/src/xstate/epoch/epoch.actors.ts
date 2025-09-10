@@ -104,6 +104,7 @@ export interface EpochToProcess {
   committeesFetched: boolean;
   slotsFetched: boolean;
   syncCommitteesFetched: boolean;
+  validatorsActivationFetched: boolean;
 }
 
 /**
@@ -120,6 +121,7 @@ export const getMinEpochToProcess = fromPromise(async (): Promise<EpochToProcess
           { rewardsFetched: false },
           { committeesFetched: false },
           { slotsFetched: false },
+          { validatorsActivationFetched: false },
         ],
       },
       orderBy: { epoch: 'asc' },
@@ -130,6 +132,7 @@ export const getMinEpochToProcess = fromPromise(async (): Promise<EpochToProcess
         committeesFetched: true,
         slotsFetched: true,
         syncCommitteesFetched: true,
+        validatorsActivationFetched: true,
       },
     });
 
