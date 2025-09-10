@@ -168,12 +168,9 @@ export const slotProcessorMachine = setup({
   }),
 
   states: {
-    /*
-     * Getting the slot from the database
-     * If the slot is not in the database, we create it
-     * Then we assign the slot to the context
-     */
     gettingSlot: {
+      description:
+        'Getting the slot from the database. If the slot is not in the database, we create it. Then we assign the slot to the context.',
       entry: 'log_gettingSlot',
       invoke: {
         src: 'getSlot',
@@ -189,13 +186,9 @@ export const slotProcessorMachine = setup({
       },
     },
 
-    /*
-     * Analyzing the slot
-     * We check if the slot is already processed
-     * If it is, we transition to completed
-     * If it is not, we transition to checkingIfSlotIsReady
-     */
     analyzingSlot: {
+      description:
+        'Analyzing the slot. We check if the slot is already processed. If it is, we transition to completed. If it is not, we transition to checkingIfSlotIsReady.',
       always: [
         {
           guard: 'isSlotAlreadyProcessed',
@@ -207,13 +200,9 @@ export const slotProcessorMachine = setup({
       ],
     },
 
-    /*
-     * Checking if the slot is ready
-     * We can only fetch up current slot - env.BEACON_DELAY_SLOTS_TO_HEAD
-     * For example if BEACON_DELAY_SLOTS_TO_HEAD is 2, we can only fetch up to current slot - 2
-     * Also, is important to note that data for slot n comes at slot n+1.
-     */
     checkingIfSlotIsReady: {
+      description:
+        'Checking if the slot is ready. We can only fetch up current slot - env.BEACON_DELAY_SLOTS_TO_HEAD. For example if BEACON_DELAY_SLOTS_TO_HEAD is 2, we can only fetch up to current slot - 2. Also, is important to note that data for slot n comes at slot n+1.',
       invoke: {
         src: 'checkSlotReady',
         input: ({ context }) => ({ slot: context.slot }),
@@ -236,12 +225,9 @@ export const slotProcessorMachine = setup({
       },
     },
 
-    /*
-     * Fetching the beacon block data
-     * We fetch the beacon block data from the beacon node
-     * Then we assign the beacon block data to the context
-     */
     fetchingBeaconSlot: {
+      description:
+        'Fetching the beacon block data. We fetch the beacon block data from the beacon node. Then we assign the beacon block data to the context.',
       entry: 'log_fetchingBeaconBlock',
       invoke: {
         src: 'fetchBeaconBlock',
@@ -255,12 +241,9 @@ export const slotProcessorMachine = setup({
       },
     },
 
-    /*
-     * Processing the slot response to determine next action
-     * If the response is 'SLOT MISSED', mark slot as completed and transition to completed
-     * If the response has beacon data, transition to processingData
-     */
     processingBeaconSlot: {
+      description:
+        "Processing the slot response to determine next action. If the response is 'SLOT MISSED', mark slot as completed and transition to completed. If the response has beacon data, transition to processingData.",
       entry: 'log_processingSlotResponse',
       always: [
         {
@@ -274,16 +257,9 @@ export const slotProcessorMachine = setup({
       ],
     },
 
-    /*
-     * Getting all the slot data in parallel
-     * Execution rewards.
-     * Block and sync rewards.
-     * Attestations.
-     * Validator statuses.
-     * Withdrawals.
-     * We wait for all the data to be processed before marking the slot as completed
-     */
     processingData: {
+      description:
+        'Getting all the slot data in parallel. Execution rewards. Block and sync rewards. Attestations. Validator statuses. Withdrawals. We wait for all the data to be processed before marking the slot as completed.',
       type: 'parallel',
       onDone: 'markingSlotCompleted',
       states: {
@@ -590,11 +566,9 @@ export const slotProcessorMachine = setup({
       },
     },
 
-    /*
-     * Marking the slot as completed when it was missed
-     * This state handles slots that didn't produce a block
-     */
     markingSlotCompleted: {
+      description:
+        "Marking the slot as completed when it was missed. This state handles slots that didn't produce a block.",
       entry: 'log_markingSlotCompleted',
       invoke: {
         src: 'updateSlotProcessed',
