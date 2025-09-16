@@ -9,26 +9,31 @@ datasource db {
 
 model Epoch {
   epoch                       Int     @id
-  validatorsBalancesFetched   Boolean @default(false) // Whether the validators balances for this epoch have been fetched
-  validatorsActivationFetched Boolean @default(false) // Whether the validators info for this epoch have been fetched
-  rewardsFetched              Boolean @default(false) // Whether the rewards for this epoch have been fetched
-  committeesFetched           Boolean @default(false) // Whether the committees for this epoch have been fetched
-  slotsFetched                Boolean @default(false) // Whether the slots for this epoch have been fetched
-  syncCommitteesFetched       Boolean @default(false) // Whether the sync committees for this epoch have been fetched
+  validatorsBalancesFetched   Boolean @default(false)
+  validatorsActivationFetched Boolean @default(false)
+  rewardsFetched              Boolean @default(false)
+  committeesFetched           Boolean @default(false)
+  slotsFetched                Boolean @default(false)
+  syncCommitteesFetched       Boolean @default(false)
 }
 
 model Slot {
   slot                     Int         @id
-  processed                Boolean     @default(false) // Whether the slot has been processed
+  processed                Boolean     @default(false)
   committee                Committee[]
-  committeeValidatorCounts Json? // Stores the number of validators per committee index as an array: [350, 340, ...]
+  committeeValidatorCounts Json? // Stores the number of validators per committee index as an array: [350, 340, ...], required for attestation processing
 
-  //blockFetched                Boolean @default(false) // Whether the block for this slot have been fetched
-  attestationsProcessed        Boolean @default(false) // Whether the attestations for this slot have been fetched
-  blockAndSyncRewardsProcessed Boolean @default(false) // Whether the sync rewards for this slot have been fetched
-  executionRewardsProcessed    Boolean @default(false) // Whether the execution rewards for this slot have been fetched
-  validatorsStatusesProcessed  Boolean @default(false) // Whether the validators statuses for this slot have been processed
-  withdrawalsProcessed         Boolean @default(false) // Whether the withdrawals for this slot have been processed
+  attestationsProcessed        Boolean @default(false)
+  blockAndSyncRewardsProcessed Boolean @default(false)
+  executionRewardsProcessed    Boolean @default(false)
+  blockProcessed               Boolean @default(false)
+  // block data
+  withdrawalsRewardsProcessed  Json? // ["validatorIndex:amount", "validatorIndex:amount", ...]
+  clDeposits                   Json?
+  clVoluntaryExits             Json?
+  elDeposits                   Json?
+  elWithdrawals                Json?
+  elConsolidations             Json?
 
   @@index([processed, slot])
 }

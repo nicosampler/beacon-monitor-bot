@@ -378,6 +378,59 @@ export const updateAttestationsProcessed = fromPromise(
 );
 
 /**
+ * Actor to process withdrawals rewards from beacon block data
+ */
+export const processWithdrawalsRewards = fromPromise(
+  async ({
+    input,
+  }: {
+    input: {
+      slot: number;
+      withdrawals: Block['data']['message']['body']['execution_payload']['withdrawals'];
+    };
+  }) =>
+    prisma.slot.update({
+      where: {
+        slot: input.slot,
+      },
+      data: {
+        withdrawalsRewardsProcessed: input.withdrawals.map(
+          (withdrawal) => `${withdrawal.validator_index}:${withdrawal.amount}`,
+        ),
+      },
+    }),
+);
+
+/**
+ * Actor to process withdrawals rewards and return the data (for context updates)
+ */
+export const processWithdrawalsRewardsData = fromPromise(
+  async ({
+    input,
+  }: {
+    input: {
+      slot: number;
+      withdrawals: Block['data']['message']['body']['execution_payload']['withdrawals'];
+    };
+  }) => {
+    return input.withdrawals.map(
+      (withdrawal) => `${withdrawal.validator_index}:${withdrawal.amount}`,
+    );
+  },
+);
+
+/**
+ * Actor to update withdrawals processed status in database
+ */
+export const updateWithdrawalsProcessed = fromPromise(
+  async ({ input }: { input: CheckSlotProcessedInput }) =>
+    prisma.slot.update({
+      where: { slot: input.slot },
+      data: { withdrawalsRewardsProcessed: [] }, // Empty array indicates processed but no withdrawals
+    }),
+);
+
+/**
  * Actor to find the next unprocessed slot between startSlot and endSlot
  * If no slots are processed, returns startSlot
  * If all slots are processed, returns null
@@ -414,5 +467,97 @@ export const findMinUnprocessedSlotInEpoch = fromPromise(
       console.error('Error finding next unprocessed slot:', error);
       throw error;
     }
+  },
+);
+
+/**
+ * Mocked actor to process CL deposits from beacon block
+ */
+export const processClDeposits = fromPromise(
+  async ({ input }: { input: { slot: number; deposits: any[] } }) => {
+    // Mock implementation - return array of strings
+    console.log(
+      `Processing CL deposits for slot ${input.slot}, found ${input.deposits.length} deposits`,
+    );
+    return input.deposits.map((deposit, index) => `cl_deposit_${input.slot}_${index}`);
+  },
+);
+
+/**
+ * Mocked actor to process CL voluntary exits from beacon block
+ */
+export const processClVoluntaryExits = fromPromise(
+  async ({ input }: { input: { slot: number; voluntaryExits: any[] } }) => {
+    // Mock implementation - return array of strings
+    console.log(
+      `Processing CL voluntary exits for slot ${input.slot}, found ${input.voluntaryExits.length} exits`,
+    );
+    return input.voluntaryExits.map((exit, index) => `cl_voluntary_exit_${input.slot}_${index}`);
+  },
+);
+
+/**
+ * Mocked actor to process EL deposits from execution payload
+ */
+export const processElDeposits = fromPromise(
+  async ({ input }: { input: { slot: number; executionPayload: any } }) => {
+    // Mock implementation - return array of strings
+    console.log(`Processing EL deposits for slot ${input.slot}`);
+    return [`el_deposit_${input.slot}_0`, `el_deposit_${input.slot}_1`];
+  },
+);
+
+/**
+ * Mocked actor to process EL withdrawals from execution payload
+ */
+export const processElWithdrawals = fromPromise(
+  async ({ input }: { input: { slot: number; withdrawals: any[] } }) => {
+    // Mock implementation - return array of strings
+    console.log(
+      `Processing EL withdrawals for slot ${input.slot}, found ${input.withdrawals.length} withdrawals`,
+    );
+    return input.withdrawals.map((withdrawal, index) => `el_withdrawal_${input.slot}_${index}`);
+  },
+);
+
+/**
+ * Mocked actor to process EL consolidations from execution payload
+ */
+export const processElConsolidations = fromPromise(
+  async ({ input }: { input: { slot: number; executionPayload: any } }) => {
+    // Mock implementation - return array of strings
+    console.log(`Processing EL consolidations for slot ${input.slot}`);
+    return [`el_consolidation_${input.slot}_0`];
+  },
+);
+
+/**
+ * Actor to update slot with beacon data in database
+ */
+export const updateSlotWithBeaconData = fromPromise(
+  async ({ input }: { input: { slot: number; beaconBlockData: any } }) => {
+    const { slot, beaconBlockData } = input;
+
+    if (!beaconBlockData) {
+      throw new Error('Beacon block data is required');
+    }
+
+    // Update slot with processed status and beacon data
+    const updatedSlot = await prisma.slot.update({
+      where: { slot },
+      data: {
+        processed: true,
+        blockProcessed: true,
+        withdrawalsRewardsProcessed: beaconBlockData.withdrawalRewards || [],
+        clDeposits: beaconBlockData.clDeposits || [],
+        clVoluntaryExits: beaconBlockData.clVoluntaryExits || [],
+        elDeposits: beaconBlockData.elDeposits || [],
+        elWithdrawals: beaconBlockData.elWithdrawals || [],
+        elConsolidations: beaconBlockData.elConsolidations || [],
+      },
+    });
+
+    console.log(`Updated slot ${slot} with beacon data in database`);
+    return updatedSlot;
   },
 );

@@ -103,8 +103,22 @@ export type Block = {
         proposer_slashings: string[];
         attester_slashings: string[];
         attestations: Attestation[];
-        deposits: string[];
-        voluntary_exits: string[];
+        deposits: {
+          proof: string[];
+          data: {
+            pubkey: string;
+            withdrawal_credentials: string;
+            amount: string;
+            signature: string;
+          };
+        }[];
+        voluntary_exits: {
+          message: {
+            epoch: string;
+            validator_index: string;
+          };
+          signature: string;
+        }[];
         sync_aggregate: {
           sync_committee_bits: string;
           sync_committee_signature: string;
@@ -135,10 +149,24 @@ export type Block = {
         };
         bls_to_execution_changes: string[];
         blob_kzg_commitments: string[];
-        execution_requests: {
-          deposits: string[];
-          withdrawals: string[];
-          consolidations: string[];
+        execution_requests?: {
+          deposits: {
+            pubkey: string;
+            withdrawal_credentials: string;
+            amount: string;
+            signature: string;
+            index: string;
+          }[];
+          withdrawals: {
+            source_address: string;
+            validator_pubkey: string;
+            amount: string;
+          }[];
+          consolidations: {
+            source_address: string;
+            source_pubkey: string;
+            target_pubkey: string;
+          }[];
         };
       };
     };

@@ -17,6 +17,15 @@ import {
   checkAndGetCommitteeValidatorsAmounts,
   cleanupOldCommittees,
   updateAttestationsProcessed,
+  processWithdrawalsRewards,
+  processWithdrawalsRewardsData,
+  updateWithdrawalsProcessed,
+  processClDeposits,
+  processClVoluntaryExits,
+  processElDeposits,
+  processElWithdrawals,
+  processElConsolidations,
+  updateSlotWithBeaconData,
 } from './slot.actors.js';
 
 import { Block } from '@/src/beacon/types.js';
@@ -27,7 +36,15 @@ export interface SlotProcessorContext {
   epoch: number;
   slot: number;
   slotDb: Slot | null;
-  beaconBlockData?: Block | 'SLOT MISSED';
+  beaconBlockData?: {
+    rawData: Block | 'SLOT MISSED';
+    withdrawalRewards: string[];
+    clDeposits: string[];
+    clVoluntaryExits: string[];
+    elDeposits: string[];
+    elWithdrawals: string[];
+    elConsolidations: string[];
+  };
   syncCommittee: string[] | null;
   committeeValidatorCounts?: Record<number, number[]>;
 }
@@ -60,71 +77,6 @@ export const slotProcessorMachine = setup({
     context: SlotProcessorContext;
     input: SlotProcessorInput;
   },
-  actions: {
-    log_gettingSlot: pinoLog(
-      ({ context }) => `Getting slot ${context.slot}`,
-      'SlotProcessor:gettingSlot',
-    ),
-    error_slotNotFound: ({ context }) => {
-      throw new Error(`Slot ${context.slot} not found or has no data`);
-    },
-    log_waitingForSlotToStart: pinoLog(
-      ({ context }) => `Waiting for slot to start ${context.slot}`,
-      'SlotProcessor:waitingForSlotToStart',
-    ),
-    log_fetchingBeaconBlock: pinoLog(
-      ({ context }) => `Fetching beacon block ${context.slot}`,
-      'SlotProcessor:fetchingBeaconBlock',
-    ),
-    log_processingSlotResponse: pinoLog(
-      ({ context }) => `Processing slot response ${context.slot}`,
-      'SlotProcessor:processingSlotResponse',
-    ),
-    log_markingSlotCompleted: pinoLog(
-      ({ context }) => `Marking slot completed ${context.slot}`,
-      'SlotProcessor:markingSlotCompleted',
-    ),
-    log_slotCompleted: pinoLog(
-      ({ context }) => `Completed slot ${context.slot}`,
-      'SlotProcessor:slotCompleted',
-    ),
-    log_processingExecutionRewards: pinoLog(
-      ({ context }) => `fetching execution rewards for slot ${context.slot}`,
-      'SlotProcessor:executionRewards',
-    ),
-    log_completeExecutionRewards: pinoLog(
-      ({ context }) => `complete execution rewards for slot ${context.slot}`,
-      'SlotProcessor:executionRewards',
-    ),
-    log_waitingForSyncCommittee: pinoLog(
-      ({ context }) => `waiting for sync committee for slot ${context.slot}`,
-      'SlotProcessor:blockAndSyncRewards',
-    ),
-    log_blockAndSyncRewardsProcessing: pinoLog(
-      ({ context }) => `fetching block and sync rewards for slot ${context.slot}`,
-      'SlotProcessor:blockAndSyncRewards',
-    ),
-    log_completeBlockAndSyncRewards: pinoLog(
-      ({ context }) => `complete block and sync rewards for slot ${context.slot}`,
-      'SlotProcessor:blockAndSyncRewards',
-    ),
-    log_waitingForCommitteeValidatorsAmounts: pinoLog(
-      ({ context }) => `waiting for sync committee for slot ${context.slot}`,
-      'SlotProcessor:attestations',
-    ),
-    log_processingAttestations: pinoLog(
-      ({ context }) => `processing attestations for slot ${context.slot}`,
-      'SlotProcessor:attestations',
-    ),
-    log_updateAttestationsProcessed: pinoLog(
-      ({ context }) => `updating processed flag for slot ${context.slot}`,
-      'SlotProcessor:attestations',
-    ),
-    log_completeAttestations: pinoLog(
-      ({ context }) => `complete  slot ${context.slot}`,
-      'SlotProcessor:attestations',
-    ),
-  },
   actors: {
     getSlot,
     checkSlotReady,
@@ -140,13 +92,22 @@ export const slotProcessorMachine = setup({
     checkAndGetCommitteeValidatorsAmounts,
     cleanupOldCommittees,
     updateAttestationsProcessed,
+    processWithdrawalsRewards,
+    processWithdrawalsRewardsData,
+    updateWithdrawalsProcessed,
+    processClDeposits,
+    processClVoluntaryExits,
+    processElDeposits,
+    processElWithdrawals,
+    processElConsolidations,
+    updateSlotWithBeaconData,
   },
   guards: {
     isSlotNotFound: ({ context }) => context.slotDb === null,
     isSlotAlreadyProcessed: ({ context }) => context.slotDb?.processed === true,
     isSlotReady: ({ event }) => event.output?.isReady === true,
-    isSlotMissed: ({ context }) => context.beaconBlockData === 'SLOT MISSED',
-    isSlotNotMissed: ({ context }) => context.beaconBlockData !== 'SLOT MISSED',
+    isSlotMissed: ({ context }) => context.beaconBlockData?.rawData === 'SLOT MISSED',
+    isSlotNotMissed: ({ context }) => context.beaconBlockData?.rawData !== 'SLOT MISSED',
     areExecutionRewardsProcessed: ({ context }) =>
       context.slotDb?.executionRewardsProcessed === true,
     areBlockAndSyncRewardsProcessed: ({ context }) =>
@@ -156,6 +117,9 @@ export const slotProcessorMachine = setup({
     isLookbackSlot: ({ context }) => context.slot === env.BEACON_LOOKBACK_SLOT,
     allSlotsHaveCounts: ({ event }) => event.output?.allSlotsHaveCounts === true,
     canProcessAttestations: ({ event }) => event.output?.canProcessAttestations === true,
+    areWithdrawalsRewardsProcessed: ({ context }) =>
+      context.slotDb?.withdrawalsRewardsProcessed !== null,
+    isBeaconSlotAlreadyProcessed: ({ context }) => context.slotDb?.blockProcessed === true,
   },
 }).createMachine({
   id: 'SlotProcessor',
@@ -165,13 +129,14 @@ export const slotProcessorMachine = setup({
     slot: input.slot,
     slotDb: null,
     syncCommittee: null,
+    beaconBlockData: undefined,
   }),
 
   states: {
     gettingSlot: {
       description:
-        'Getting the slot from the database. If the slot is not in the database, we create it. Then we assign the slot to the context.',
-      entry: 'log_gettingSlot',
+        'Getting the slot from the database. If the slot is not in the database, is created. Then the slot is assigned to the context.',
+      entry: pinoLog(({ context }) => `Getting slot ${context.slot}`, 'SlotProcessor:gettingSlot'),
       invoke: {
         src: 'getSlot',
         input: ({ context }) => ({ slot: context.slot }),
@@ -187,8 +152,7 @@ export const slotProcessorMachine = setup({
     },
 
     analyzingSlot: {
-      description:
-        'Analyzing the slot. We check if the slot is already processed. If it is, we transition to completed. If it is not, we transition to checkingIfSlotIsReady.',
+      description: 'Checking if the slot is already processed.',
       always: [
         {
           guard: 'isSlotAlreadyProcessed',
@@ -202,14 +166,14 @@ export const slotProcessorMachine = setup({
 
     checkingIfSlotIsReady: {
       description:
-        'Checking if the slot is ready. We can only fetch up current slot - env.BEACON_DELAY_SLOTS_TO_HEAD. For example if BEACON_DELAY_SLOTS_TO_HEAD is 2, we can only fetch up to current slot - 2. Also, is important to note that data for slot n comes at slot n+1.',
+        'Checking if the slot is ready. We can only fetch up current slot - env.BEACON_DELAY_SLOTS_TO_HEAD. Is important to note that attestations for slot n comes at slot n+1.',
       invoke: {
         src: 'checkSlotReady',
         input: ({ context }) => ({ slot: context.slot }),
         onDone: [
           {
             guard: 'isSlotReady',
-            target: 'fetchingBeaconSlot',
+            target: 'processingSlot',
           },
           {
             target: 'waitingForSlotToStart',
@@ -219,51 +183,229 @@ export const slotProcessorMachine = setup({
     },
 
     waitingForSlotToStart: {
-      entry: 'log_waitingForSlotToStart',
+      entry: pinoLog(
+        ({ context }) => `Waiting for slot ${context.slot} to start`,
+        'SlotProcessor:waitingForSlotToStart',
+      ),
       after: {
         [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 3}ms`)]: 'checkingIfSlotIsReady',
       },
-    },
-
-    fetchingBeaconSlot: {
-      description:
-        'Fetching the beacon block data. We fetch the beacon block data from the beacon node. Then we assign the beacon block data to the context.',
-      entry: 'log_fetchingBeaconBlock',
-      invoke: {
-        src: 'fetchBeaconBlock',
-        input: ({ context }) => ({ slot: context.slot }),
-        onDone: {
-          target: 'processingBeaconSlot',
-          actions: assign({
-            beaconBlockData: ({ event }) => event.output,
-          }),
-        },
-      },
-    },
-
-    processingBeaconSlot: {
-      description:
-        "Processing the slot response to determine next action. If the response is 'SLOT MISSED', mark slot as completed and transition to completed. If the response has beacon data, transition to processingData.",
-      entry: 'log_processingSlotResponse',
-      always: [
-        {
-          guard: 'isSlotMissed',
-          target: 'markingSlotCompleted',
-        },
-        {
-          guard: 'isSlotNotMissed',
-          target: 'processingData',
-        },
-      ],
     },
 
     processingData: {
       description:
         'Getting all the slot data in parallel. Execution rewards. Block and sync rewards. Attestations. Validator statuses. Withdrawals. We wait for all the data to be processed before marking the slot as completed.',
       type: 'parallel',
-      onDone: 'markingSlotCompleted',
+      onDone: 'updatingSlotProcessed',
       states: {
+        beaconSlotData: {
+          description:
+            'Processing the beacon slot data. First check if already processed, then fetch data and process all types in parallel.',
+          initial: 'checking',
+          states: {
+            checking: {
+              description: 'Check if beacon slot data is already processed, if not fetch data',
+              always: [
+                {
+                  guard: 'isBeaconSlotAlreadyProcessed',
+                  target: 'complete',
+                },
+                {
+                  target: 'fetchingBeaconSlot',
+                },
+              ],
+            },
+            fetchingBeaconSlot: {
+              description:
+                'Fetching the beacon block data from the beacon node. Then we assign the response to the context which is used in the processing data states.',
+              entry: pinoLog(
+                ({ context }) => `Fetching beacon block ${context.slot}`,
+                'SlotProcessor:fetchingBeaconBlock',
+              ),
+              invoke: {
+                src: 'fetchBeaconBlock',
+                input: ({ context }) => ({ slot: context.slot }),
+                onDone: {
+                  target: 'checkingSlotStatus',
+                  actions: assign({
+                    beaconBlockData: ({ event }) => ({
+                      rawData: event.output,
+                      withdrawalRewards: [],
+                      clDeposits: [],
+                      clVoluntaryExits: [],
+                      elDeposits: [],
+                      elWithdrawals: [],
+                      elConsolidations: [],
+                    }),
+                  }),
+                },
+              },
+            },
+            checkingSlotStatus: {
+              always: [
+                {
+                  guard: 'isSlotMissed',
+                  target: 'markingSlotCompleted',
+                },
+                'processing',
+              ],
+            },
+            processing: {
+              description: 'Processing all beacon slot data',
+              type: 'parallel',
+              onDone: 'complete',
+              states: {
+                withdrawalRewards: {
+                  description: 'Processing withdrawal rewards from beacon block',
+                  invoke: {
+                    src: 'processWithdrawalsRewardsData',
+                    input: ({ context }) => {
+                      const _beaconBlockData = context.beaconBlockData?.rawData as Block;
+                      const withdrawals =
+                        _beaconBlockData?.data?.message?.body?.execution_payload?.withdrawals || [];
+
+                      return {
+                        slot: context.slot,
+                        withdrawals: withdrawals,
+                      };
+                    },
+                    onDone: {
+                      actions: assign({
+                        beaconBlockData: ({ context, event }) => ({
+                          ...context.beaconBlockData!,
+                          withdrawalRewards: event.output || [],
+                        }),
+                      }),
+                    },
+                  },
+                },
+                clDeposits: {
+                  description: 'Processing CL deposits from beacon block',
+                  invoke: {
+                    src: 'processClDeposits',
+                    input: ({ context }) => {
+                      const _beaconBlockData = context.beaconBlockData?.rawData as Block;
+                      return {
+                        slot: context.slot,
+                        deposits: _beaconBlockData?.data?.message?.body?.deposits || [],
+                      };
+                    },
+                    onDone: {
+                      actions: assign({
+                        beaconBlockData: ({ context, event }) => ({
+                          ...context.beaconBlockData!,
+                          clDeposits: event.output || [],
+                        }),
+                      }),
+                    },
+                  },
+                },
+                clVoluntaryExits: {
+                  description: 'Processing CL voluntary exits from beacon block',
+                  invoke: {
+                    src: 'processClVoluntaryExits',
+                    input: ({ context }) => {
+                      const _beaconBlockData = context.beaconBlockData?.rawData as Block;
+                      return {
+                        slot: context.slot,
+                        voluntaryExits:
+                          _beaconBlockData?.data?.message?.body?.voluntary_exits || [],
+                      };
+                    },
+                    onDone: {
+                      actions: assign({
+                        beaconBlockData: ({ context, event }) => ({
+                          ...context.beaconBlockData!,
+                          clVoluntaryExits: event.output || [],
+                        }),
+                      }),
+                    },
+                  },
+                },
+                elDeposits: {
+                  description: 'Processing EL deposits from execution payload',
+                  invoke: {
+                    src: 'processElDeposits',
+                    input: ({ context }) => {
+                      const _beaconBlockData = context.beaconBlockData?.rawData as Block;
+                      return {
+                        slot: context.slot,
+                        executionPayload: _beaconBlockData?.data?.message?.body?.execution_payload,
+                      };
+                    },
+                    onDone: {
+                      actions: assign({
+                        beaconBlockData: ({ context, event }) => ({
+                          ...context.beaconBlockData!,
+                          elDeposits: event.output || [],
+                        }),
+                      }),
+                    },
+                  },
+                },
+                elWithdrawals: {
+                  description: 'Processing EL withdrawals from execution payload',
+                  invoke: {
+                    src: 'processElWithdrawals',
+                    input: ({ context }) => {
+                      const _beaconBlockData = context.beaconBlockData?.rawData as Block;
+                      return {
+                        slot: context.slot,
+                        withdrawals:
+                          _beaconBlockData?.data?.message?.body?.execution_payload?.withdrawals ||
+                          [],
+                      };
+                    },
+                    onDone: {
+                      actions: assign({
+                        beaconBlockData: ({ context, event }) => ({
+                          ...context.beaconBlockData!,
+                          elWithdrawals: event.output || [],
+                        }),
+                      }),
+                    },
+                  },
+                },
+                elConsolidations: {
+                  description: 'Processing EL consolidations from execution payload',
+                  invoke: {
+                    src: 'processElConsolidations',
+                    input: ({ context }) => {
+                      const _beaconBlockData = context.beaconBlockData?.rawData as Block;
+                      return {
+                        slot: context.slot,
+                        executionPayload: _beaconBlockData?.data?.message?.body?.execution_payload,
+                      };
+                    },
+                    onDone: {
+                      actions: assign({
+                        beaconBlockData: ({ context, event }) => ({
+                          ...context.beaconBlockData!,
+                          elConsolidations: event.output || [],
+                        }),
+                      }),
+                    },
+                  },
+                },
+              },
+            },
+            markingSlotCompleted: {
+              description: 'Marking slot as completed when it was missed',
+              invoke: {
+                src: 'updateSlotProcessed',
+                input: ({ context }) => ({ slot: context.slot }),
+                onDone: 'complete',
+                onError: 'markingSlotCompleted',
+              },
+            },
+            complete: {
+              type: 'final',
+            },
+          },
+        },
+
         executionRewards: {
+          description: 'Checking the rewards for the slot proposer in the execution layer.',
           initial: 'checkingCompletion',
           states: {
             checkingCompletion: {
@@ -278,11 +420,14 @@ export const slotProcessorMachine = setup({
               ],
             },
             processing: {
-              entry: 'log_processingExecutionRewards',
+              entry: pinoLog(
+                ({ context }) => `fetching execution rewards for slot ${context.slot}`,
+                'SlotProcessor:executionRewards',
+              ),
               invoke: {
                 src: 'fetchELRewards',
                 input: ({ context }) => {
-                  const _beaconBlockData = context.beaconBlockData as Block;
+                  const _beaconBlockData = context.beaconBlockData?.rawData as Block;
                   return {
                     slot: context.slot,
                     block: Number(
@@ -306,12 +451,18 @@ export const slotProcessorMachine = setup({
             },
             complete: {
               type: 'final',
-              entry: 'log_completeExecutionRewards',
+              entry: pinoLog(
+                ({ context }) => `complete execution rewards for slot ${context.slot}`,
+                'SlotProcessor:executionRewards',
+              ),
             },
           },
         },
 
+        // TODO: split block and sync rewards into two states
         blockAndSyncRewards: {
+          description:
+            'Checking the rewards for the slot proposer and the rewards for the sync committee.',
           initial: 'checkingCompletion',
           states: {
             checkingCompletion: {
@@ -346,18 +497,24 @@ export const slotProcessorMachine = setup({
             },
 
             waitingForSyncCommittee: {
-              entry: 'log_waitingForSyncCommittee',
+              entry: pinoLog(
+                ({ context }) => `waiting for sync committee for slot ${context.slot}`,
+                'SlotProcessor:blockAndSyncRewards',
+              ),
               after: {
                 [ms('1s')]: 'syncCommitteeCheck',
               },
             },
 
             blockAndSyncRewardsProcessing: {
-              entry: 'log_blockAndSyncRewardsProcessing',
+              entry: pinoLog(
+                ({ context }) => `fetching block and sync rewards for slot ${context.slot}`,
+                'SlotProcessor:blockAndSyncRewards',
+              ),
               invoke: {
                 src: 'fetchBlockAndSyncRewards',
                 input: ({ context }) => {
-                  const _beaconBlockData = context.beaconBlockData as Block;
+                  const _beaconBlockData = context.beaconBlockData?.rawData as Block;
                   return {
                     slot: context.slot,
                     timestamp: Number(
@@ -380,7 +537,10 @@ export const slotProcessorMachine = setup({
 
             complete: {
               type: 'final',
-              entry: 'log_completeBlockAndSyncRewards',
+              entry: pinoLog(
+                ({ context }) => `complete block and sync rewards for slot ${context.slot}`,
+                'SlotProcessor:blockAndSyncRewards',
+              ),
             },
           },
         },
@@ -409,7 +569,7 @@ export const slotProcessorMachine = setup({
                 src: 'checkAndGetCommitteeValidatorsAmounts',
                 input: ({ context }) => ({
                   slot: context.slot,
-                  beaconBlockData: context.beaconBlockData as Block,
+                  beaconBlockData: context.beaconBlockData?.rawData as Block,
                 }),
                 onDone: [
                   {
@@ -428,17 +588,23 @@ export const slotProcessorMachine = setup({
               },
             },
             waitingForCommitteeValidatorsAmounts: {
-              entry: 'log_waitingForCommitteeValidatorsAmounts',
+              entry: pinoLog(
+                ({ context }) => `waiting for sync committee for slot ${context.slot}`,
+                'SlotProcessor:attestations',
+              ),
               after: {
                 [ms('1s')]: 'gettingCommitteeValidatorsAmounts',
               },
             },
             processingAttestations: {
-              entry: 'log_processingAttestations',
+              entry: pinoLog(
+                ({ context }) => `processing attestations for slot ${context.slot}`,
+                'SlotProcessor:attestations',
+              ),
               invoke: {
                 src: 'processAttestations',
                 input: ({ context }) => {
-                  const _beaconBlockData = context.beaconBlockData as Block;
+                  const _beaconBlockData = context.beaconBlockData?.rawData as Block;
 
                   return {
                     slotNumber: context.slot,
@@ -452,7 +618,10 @@ export const slotProcessorMachine = setup({
               },
             },
             updateAttestationsProcessed: {
-              entry: 'log_updateAttestationsProcessed',
+              entry: pinoLog(
+                ({ context }) => `updating processed flag for slot ${context.slot}`,
+                'SlotProcessor:attestations',
+              ),
               invoke: {
                 src: 'updateAttestationsProcessed',
                 input: ({ context }) => ({ slot: context.slot }),
@@ -465,111 +634,43 @@ export const slotProcessorMachine = setup({
               },
             },
             complete: {
-              entry: 'log_completeAttestations',
+              entry: pinoLog(
+                ({ context }) => `complete  slot ${context.slot}`,
+                'SlotProcessor:attestations',
+              ),
               type: 'final',
             },
           },
         },
 
-        // validatorStatuses: {
-        //   initial: 'validatorStatusesCheck',
-        //   // context para pasar los validadores y hacer fetch de sus estados.
-        //   states: {
-        //     validatorStatusesCheck: {
-        //       always: [
-        //         {
-        //           guard: ({ context }) => context.slotDb?.validatorsStatusesProcessed === true,
-        //           target: 'validatorStatusesComplete',
-        //         },
-        //         {
-        //           target: 'validatorStatusesProcessing',
-        //         },
-        //       ],
-        //     },
-        //     validatorStatusesProcessing: {
-        //       invoke: {
-        //         src: 'updateValidatorStatuses',
-        //         input: ({ context }) => ({
-        //           slot: context.slot,
-        //           epoch: context.epoch,
-        //           beaconBlockData:
-        //             context.beaconBlockData && context.beaconBlockData !== 'SLOT MISSED'
-        //               ? {
-        //                   slot: parseInt(context.beaconBlockData.data.message.slot),
-        //                   epoch: context.epoch,
-        //                   blockHash: context.beaconBlockData.data.message.body.eth1_data.block_hash,
-        //                   proposerIndex: parseInt(
-        //                     context.beaconBlockData.data.message.proposer_index,
-        //                   ),
-        //                 }
-        //               : undefined,
-        //         }),
-        //         onDone: {
-        //           target: 'validatorStatusesComplete',
-        //           actions: assign({}),
-        //         },
-        //         onError: {
-        //           target: 'validatorStatusesProcessing',
-        //         },
-        //       },
-        //     },
-
-        //     validatorStatusesComplete: { type: 'final' },
-        //   },
-        // },
-
         //withdrawal_credentials.slice(-40)
-        // withdrawals: {
-        //   initial: 'withdrawalsCheck',
-        //   states: {
-        //     withdrawalsCheck: {
-        //       always: [
-        //         {
-        //           guard: ({ context }) => context.slotDb?.withdrawalsProcessed === true,
-        //           target: 'withdrawalsComplete',
-        //         },
-        //         {
-        //           target: 'withdrawalsProcessing',
-        //         },
-        //       ],
-        //     },
-        //     withdrawalsProcessing: {
-        //       invoke: {
-        //         src: 'processWithdrawals',
-        //         input: ({ context }) => ({
-        //           slot: context.slot,
-        //           epoch: context.epoch,
-        //           beaconBlockData:
-        //             context.beaconBlockData && context.beaconBlockData !== 'SLOT MISSED'
-        //               ? {
-        //                   slot: parseInt(context.beaconBlockData.data.message.slot),
-        //                   epoch: context.epoch,
-        //                   blockHash: context.beaconBlockData.data.message.body.eth1_data.block_hash,
-        //                   proposerIndex: parseInt(
-        //                     context.beaconBlockData.data.message.proposer_index,
-        //                   ),
-        //                 }
-        //               : undefined,
-        //         }),
-        //         onDone: {
-        //           target: 'withdrawalsComplete',
-        //           actions: assign({}),
-        //         },
-        //         onError: {
-        //           target: 'withdrawalsProcessing',
-        //         },
-        //       },
-        //     },
-        //     withdrawalsComplete: { type: 'final' },
-        //   },
-        // },
+      },
+    },
+
+    updatingSlotProcessed: {
+      description: 'Updating slot processed status and beacon data in database',
+      entry: pinoLog(
+        ({ context }) => `Updating slot processed status for slot ${context.slot}`,
+        'SlotProcessor:updatingSlotProcessed',
+      ),
+      invoke: {
+        src: 'updateSlotWithBeaconData',
+        input: ({ context }) => ({
+          slot: context.slot,
+          beaconBlockData: context.beaconBlockData,
+        }),
+        onDone: 'markingSlotCompleted',
+        onError: 'updatingSlotProcessed',
       },
     },
 
     markingSlotCompleted: {
       description:
         "Marking the slot as completed when it was missed. This state handles slots that didn't produce a block.",
-      entry: 'log_markingSlotCompleted',
+      entry: pinoLog(
+        ({ context }) => `Marking slot completed ${context.slot}`,
+        'SlotProcessor:markingSlotCompleted',
+      ),
       invoke: {
         src: 'updateSlotProcessed',
         input: ({ context }) => ({ slot: context.slot }),
@@ -583,7 +684,10 @@ export const slotProcessorMachine = setup({
     },
 
     completed: {
-      entry: [sendParent({ type: 'SLOT_COMPLETED' }), 'log_slotCompleted'],
+      entry: [
+        sendParent({ type: 'SLOT_COMPLETED' }),
+        pinoLog(({ context }) => `Completed slot ${context.slot}`, 'SlotProcessor:slotCompleted'),
+      ],
       type: 'final',
     },
   },
