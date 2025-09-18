@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "vitest",
-    "dev": "dotenv -e ../../.env npx tsx src/index.ts",
+    "dev:gnosis": "dotenv -e ../../.env.dev.gnosis npx tsx src/index.ts",
+    "dev:ethereum": "dotenv -e ../../.env.dev.ethereum npx tsx src/index.ts",
     "dev:test": "dotenv -e ../../.env.local npx tsx src/test.ts",
     "start": "NODE_OPTIONS='--import tsx' tsx src/index.ts",
     "show-logs": "tail -n 50 -f logs/$(date +\"%d-%m-%Y\").log",

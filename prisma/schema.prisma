@@ -18,17 +18,18 @@ model Epoch {
 }
 
 model Slot {
-  slot                     Int         @id
-  processed                Boolean     @default(false)
-  committee                Committee[]
-  committeeValidatorCounts Json? // Stores the number of validators per committee index as an array: [350, 340, ...], required for attestation processing
+  slot        Int     @id
+  blockNumber Int?
+  processed   Boolean @default(false)
 
-  attestationsProcessed        Boolean @default(false)
-  blockAndSyncRewardsProcessed Boolean @default(false)
-  executionRewardsProcessed    Boolean @default(false)
-  blockProcessed               Boolean @default(false)
-  // block data
-  withdrawalsRewardsProcessed  Json? // ["validatorIndex:amount", "validatorIndex:amount", ...]
+  committee                    Committee[]
+  attestationsProcessed        Boolean     @default(false)
+  committeeValidatorCounts     Json? // Stores the number of validators per committee index as an array: [350, 340, ...], required for attestation processing
+  blockAndSyncRewardsProcessed Boolean     @default(false)
+  executionRewardsProcessed    Boolean     @default(false)
+  beaconBlockProcessed         Boolean     @default(false)
+  // beacon block data extracted from the beacon block
+  withdrawalsRewards           Json? // ["validatorIndex:amount", "validatorIndex:amount", ...]
   clDeposits                   Json?
   clVoluntaryExits             Json?
   elDeposits                   Json?

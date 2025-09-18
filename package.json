@@ -6,7 +6,8 @@
   "scripts": {
     "start": "pnpm -r run start",
     "dev:bot": "pnpm --filter bot run dev",
-    "dev:fetch": "pnpm --filter fetch run dev",
+    "dev:fetch:gnosis": "pnpm --filter fetch run dev:gnosis",
+    "dev:fetch:ethereum": "pnpm --filter fetch run dev:ethereum",
     "xstate-logs": "pnpm --filter fetch run xstate-logs",
     "dev:api": "pnpm --filter api run dev",
     "lint": "pnpm -r run lint",
@@ -19,7 +20,7 @@
     "env.dev.ethereum": "cp .env.dev.ethereum .env",
     "env.prod.gnosis": "cp .env.prod.gnosis .env",
     "env.prod.ethereum": "cp .env.prod.ethereum .env",
-    "clean-db": "tsx cleanDatabase.ts"
+    "clean-db": "pnpm dotenv -e .env.dev.ethereum tsx cleanDatabase.ts"
   },
   "dependencies": {
     "@prisma/client": "5.15.0",
@@ -32,6 +33,7 @@
     "@types/node": "^22.17.2",
     "@typescript-eslint/eslint-plugin": "^8.5.0",
     "@typescript-eslint/parser": "^8.5.0",
+    "dotenv-cli": "^10.0.0",
     "eslint": "^9.7.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",

@@ -394,7 +394,7 @@ export const processWithdrawalsRewards = fromPromise(
         slot: input.slot,
       },
       data: {
-        withdrawalsRewardsProcessed: input.withdrawals.map(
+        withdrawalsRewards: input.withdrawals.map(
           (withdrawal) => `${withdrawal.validator_index}:${withdrawal.amount}`,
         ),
       },
@@ -426,7 +426,7 @@ export const updateWithdrawalsProcessed = fromPromise(
   async ({ input }: { input: CheckSlotProcessedInput }) =>
     prisma.slot.update({
       where: { slot: input.slot },
-      data: { withdrawalsRewardsProcessed: [] }, // Empty array indicates processed but no withdrawals
+      data: { withdrawalsRewards: [] }, // Empty array indicates processed but no withdrawals
     }),
 );
 
@@ -546,9 +546,7 @@ export const updateSlotWithBeaconData = fromPromise(
     const updatedSlot = await prisma.slot.update({
       where: { slot },
       data: {
-        processed: true,
-        blockProcessed: true,
-        withdrawalsRewardsProcessed: beaconBlockData.withdrawalRewards || [],
+        withdrawalsRewards: beaconBlockData.withdrawalRewards || [],
         clDeposits: beaconBlockData.clDeposits || [],
         clVoluntaryExits: beaconBlockData.clVoluntaryExits || [],
         elDeposits: beaconBlockData.elDeposits || [],

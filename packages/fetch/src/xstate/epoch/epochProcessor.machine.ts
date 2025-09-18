@@ -471,7 +471,7 @@ export const epochProcessorMachine = setup({
                   always: [
                     {
                       guard: 'hasValidatorsActivationFetched',
-                      target: 'completed',
+                      target: 'complete',
                       actions: pinoLog(
                         ({ context }) =>
                           `Validators activation already tracked for epoch ${context.epoch} `,
@@ -494,7 +494,7 @@ export const epochProcessorMachine = setup({
                     onDone: 'complete',
                   },
                 },
-                completed: {
+                complete: {
                   type: 'final',
                   entry: pinoLog(
                     ({ context }) =>
