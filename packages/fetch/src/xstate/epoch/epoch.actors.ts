@@ -12,7 +12,7 @@ import { getPrisma } from '@/src/lib/prisma.js';
 
 const prisma = getPrisma();
 
-export const getLastCreatedEpochOrNull = fromPromise(async () => {
+export const getLastCreatedEpoch = fromPromise(async () => {
   try {
     const lastEpoch = await prisma.epoch.findFirst({
       orderBy: { epoch: 'desc' },
@@ -25,7 +25,7 @@ export const getLastCreatedEpochOrNull = fromPromise(async () => {
   }
 });
 
-export const computeNextEpochBatch = fromPromise(
+export const getEpochsToCreate = fromPromise(
   async ({ input }: { input: { lastEpoch: number | null } }) => {
     const MAX_UNPROCESSED_EPOCHS = 5;
 

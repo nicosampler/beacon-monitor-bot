@@ -3,8 +3,8 @@ import { setup, assign } from 'xstate';
 
 import { env } from '@/src/env.js';
 import {
-  getLastCreatedEpochOrNull,
-  computeNextEpochBatch,
+  getLastCreatedEpoch,
+  getEpochsToCreate,
   enqueueEpochs,
 } from '@/src/xstate/epoch/epoch.actors.js';
 
@@ -16,19 +16,19 @@ export const epochCreationMachine = setup({
     },
   },
   actors: {
-    getLastCreatedEpochOrNull,
-    computeNextEpochBatch,
+    getLastCreatedEpoch,
+    getEpochsToCreate,
     enqueueEpochs,
   },
 }).createMachine({
   id: 'EpochCreator',
-  initial: 'poll',
+  initial: 'initialize',
+  description: 'The epoch creator is a state machine that is responsible for creating epochs.',
   context: {
     lastEpoch: 0,
     epochsToCreate: [],
   },
   states: {
-    poll: { always: 'initialize' },
     initialize: {
       entry: assign({
         lastEpoch: 0,
@@ -38,7 +38,7 @@ export const epochCreationMachine = setup({
     },
     readLastCreated: {
       invoke: {
-        src: 'getLastCreatedEpochOrNull',
+        src: 'getLastCreatedEpoch',
         onDone: {
           target: 'getEpochsToCreate',
           actions: assign({ lastEpoch: ({ event }) => event.output }),
@@ -48,7 +48,7 @@ export const epochCreationMachine = setup({
     },
     getEpochsToCreate: {
       invoke: {
-        src: 'computeNextEpochBatch',
+        src: 'getEpochsToCreate',
         input: ({ context }) => ({ lastEpoch: context.lastEpoch }),
         onDone: {
           target: 'createEpochs',
@@ -59,7 +59,7 @@ export const epochCreationMachine = setup({
     },
     createEpochs: {
       invoke: {
-        src: enqueueEpochs,
+        src: 'enqueueEpochs',
         input: ({ context }) => ({ epochsToCreate: context.epochsToCreate }),
         onDone: 'sleep',
         onError: 'sleep',
@@ -67,7 +67,7 @@ export const epochCreationMachine = setup({
     },
     sleep: {
       after: {
-        [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS}s`)]: 'poll',
+        [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS}s`)]: 'initialize',
       },
     },
   },
