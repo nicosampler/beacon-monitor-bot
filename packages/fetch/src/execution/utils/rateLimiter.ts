@@ -1,6 +1,6 @@
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
 
-import { env } from '@/src/env.js';
+import { env } from '@/src/lib/env.js';
 
 // Create a rate limiter per second
 const limiterPerSecond = new RateLimiterMemory({

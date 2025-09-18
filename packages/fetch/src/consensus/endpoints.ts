@@ -14,11 +14,11 @@ import {
   EndpointOptions,
   GetSyncCommittees,
   Block,
-} from '@/src/beacon/types.js';
-import { instance } from '@/src/beacon/utils/instance.js';
-import { getEpochSlots } from '@/src/beacon/utils/misc.js';
-import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
-import { env } from '@/src/env.js';
+} from '@/src/consensus/types.js';
+import { instance } from '@/src/consensus/utils/instance.js';
+import { getEpochSlots } from '@/src/consensus/utils/misc.js';
+import { getSlotNumberFromTimestamp } from '@/src/consensus/utils/time.js';
+import { env } from '@/src/lib/env.js';
 
 // Helper function to check for missed slot errors
 function _isSlotMissedError(error: unknown): boolean {

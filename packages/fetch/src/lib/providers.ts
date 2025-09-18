@@ -1,7 +1,7 @@
 import { createPublicClient, http } from 'viem';
 import { gnosis } from 'viem/chains';
 
-import { env } from '@/src/env.js';
+import { env } from '@/src/lib/env.js';
 
 // Private instance variable
 let instance: ReturnType<typeof createPublicClient> | null = null;

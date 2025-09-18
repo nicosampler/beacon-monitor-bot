@@ -2,7 +2,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { AxiosResponse } from 'axios';
 import ms from 'ms';
 
-import { env } from '@/src/env.js';
+import { env } from '@/src/lib/env.js';
 import { Blockscout_Blocks, Etherscan_BlockReward } from '@/src/execution/types.js';
 import { instance } from '@/src/execution/utils/instance.js';
 

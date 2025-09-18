@@ -28,8 +28,8 @@ import {
   updateSlotWithBeaconData,
 } from './slot.actors.js';
 
-import { Block } from '@/src/beacon/types.js';
-import { env } from '@/src/env.js';
+import { Block } from '@/src/consensus/types.js';
+import { env } from '@/src/lib/env.js';
 import { pinoLog } from '@/src/xstate/pinoLog.js';
 
 export interface SlotProcessorContext {

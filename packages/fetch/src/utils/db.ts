@@ -2,8 +2,8 @@ import { Prisma, LastSummaryUpdate } from '@prisma/client';
 import memoizee from 'memoizee';
 import ms from 'ms';
 
-import { VALIDATOR_STATUS } from '@/src/constants/index.js';
-import { env } from '@/src/env.js';
+import { VALIDATOR_STATUS } from '@/src/consensus/constants.js';
+import { env } from '@/src/lib/env.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 const prisma = getPrisma();
 
@@ -84,7 +84,7 @@ export const db_getLastProcessedEpoch = async () =>
     where: {
       rewardsFetched: true,
       validatorsBalancesFetched: true,
-      validatorsInfoFetched: true,
+      validatorsActivationFetched: true,
     },
     orderBy: { epoch: 'desc' },
     select: { epoch: true },

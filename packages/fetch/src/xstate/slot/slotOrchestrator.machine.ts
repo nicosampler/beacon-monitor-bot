@@ -1,7 +1,7 @@
 import { setup, assign, stopChild, sendParent, ActorRefFrom } from 'xstate';
 
-import { getEpochSlots } from '@/src/beacon/utils/misc.js';
-import { env } from '@/src/env.js';
+import { getEpochSlots } from '@/src/consensus/utils/misc.js';
+import { env } from '@/src/lib/env.js';
 import { logActor, logRemoveMachine } from '@/src/xstate/multiMachineLogger.js';
 import { pinoLog } from '@/src/xstate/pinoLog.js';
 import { findMinUnprocessedSlotInEpoch } from '@/src/xstate/slot/slot.actors.js';

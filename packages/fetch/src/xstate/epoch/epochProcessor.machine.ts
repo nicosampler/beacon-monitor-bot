@@ -3,8 +3,8 @@ import { setup, assign, sendParent, stopChild, raise, ActorRefFrom } from 'xstat
 
 import { slotOrchestratorMachine, SlotsCompletedEvent } from '../slot/slotOrchestrator.machine.js';
 
-import { getEpochSlots } from '@/src/beacon/utils/misc.js';
-import { env } from '@/src/env.js';
+import { getEpochSlots } from '@/src/consensus/utils/misc.js';
+import { env } from '@/src/lib/env.js';
 import {
   fetchAttestationsRewards,
   fetchValidatorsBalances,

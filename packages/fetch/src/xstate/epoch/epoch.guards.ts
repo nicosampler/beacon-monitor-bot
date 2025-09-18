@@ -1,10 +1,10 @@
-import { getEpochFromSlot } from '@/src/beacon/utils/misc.js';
+import { getEpochFromSlot } from '@/src/consensus/utils/misc.js';
 import {
   getEpochNumberFromTimestamp,
   getSlotNumberFromTimestamp,
-} from '@/src/beacon/utils/time.js';
-import { getSyncCommitteePeriodStartEpoch } from '@/src/beacon/utils/time.js';
-import { env } from '@/src/env.js';
+} from '@/src/consensus/utils/time.js';
+import { getSyncCommitteePeriodStartEpoch } from '@/src/consensus/utils/time.js';
+import { env } from '@/src/lib/env.js';
 
 export const isFirstEpochOfSyncCommitteePeriod = ({
   context,

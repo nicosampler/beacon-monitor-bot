@@ -1,4 +1,4 @@
-import { env } from '@/src/env.js';
+import { env } from '@/src/lib/env.js';
 
 const GENESIS_TIMESTAMP = env.BEACON_GENESIS_TIMESTAMP;
 const SLOT_DURATION_MS = env.BEACON_SLOT_DURATION_IN_SECONDS * 1000;

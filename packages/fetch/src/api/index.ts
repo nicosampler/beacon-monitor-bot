@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { env } from '../env.js';
+import { env } from '../lib/env.js';
 
 // Create and export axios instance with base configuration
 export const api = axios.create({

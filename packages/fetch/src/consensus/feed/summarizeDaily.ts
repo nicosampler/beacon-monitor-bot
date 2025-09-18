@@ -2,9 +2,9 @@ import { Prisma } from '@prisma/client';
 import { addDays } from 'date-fns';
 import ms from 'ms';
 
-import { getEpochFromSlot } from '@/src/beacon/utils/misc.js';
-import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
-import { env } from '@/src/env.js';
+import { getEpochFromSlot } from '@/src/consensus/utils/misc.js';
+import { getSlotNumberFromTimestamp } from '@/src/consensus/utils/time.js';
+import { env } from '@/src/lib/env.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import {

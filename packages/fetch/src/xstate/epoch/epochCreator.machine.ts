@@ -1,7 +1,7 @@
 import ms from 'ms';
 import { setup, assign } from 'xstate';
 
-import { env } from '@/src/env.js';
+import { env } from '@/src/lib/env.js';
 import {
   getLastCreatedEpoch,
   getEpochsToCreate,

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import Pino, { DestinationStream, pino } from 'pino';
 
-import { env } from '@/src/env.js';
+import { env } from '@/src/lib/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

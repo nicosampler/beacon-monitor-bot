@@ -4,7 +4,7 @@ import { setup, assign, stopChild, ActorRefFrom } from 'xstate';
 import { getMinEpochToProcess, type EpochToProcess } from './epoch.actors.js';
 import { epochProcessorMachine } from './epochProcessor.machine.js';
 
-import { env } from '@/src/env.js';
+import { env } from '@/src/lib/env.js';
 import type { CustomLogger } from '@/src/lib/pino.js';
 import { logMachine, logActor } from '@/src/xstate/multiMachineLogger.js';
 import { pinoLog } from '@/src/xstate/pinoLog.js';

@@ -2,7 +2,7 @@ import axios, { InternalAxiosRequestConfig } from 'axios';
 import { setupCache } from 'axios-cache-interceptor';
 import ms from 'ms';
 
-import { limitRequests } from '@/src/beacon/utils/rateLimiter.js';
+import { limitRequests } from '@/src/consensus/utils/rateLimiter.js';
 import { logRequest, logResponse } from '@/src/lib/httpPino.js';
 
 const _instance = axios.create();

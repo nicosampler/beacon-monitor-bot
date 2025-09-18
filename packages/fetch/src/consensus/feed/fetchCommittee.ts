@@ -1,8 +1,8 @@
 import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
-import { beacon_getCommittees } from '@/src/beacon/endpoints.js';
-import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
+import { beacon_getCommittees } from '@/src/consensus/endpoints.js';
+import { getOldestLookbackSlot } from '@/src/consensus/utils/misc.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 

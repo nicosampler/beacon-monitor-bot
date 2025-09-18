@@ -1,6 +1,6 @@
 import ms from 'ms';
 
-import { env } from '@/src/env.js';
+import { env } from '@/src/lib/env.js';
 import { scheduleCleanupCommittee } from '@/src/scheduler/tasks/cleanupCommittee.js';
 import { scheduleFetchExecutionRewards } from '@/src/scheduler/tasks/executionRewards.js';
 import { scheduleFetchAttestations } from '@/src/scheduler/tasks/fetchAttestations.js';

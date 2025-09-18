@@ -1,9 +1,9 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/beacon/feed/fetchBlockAndSyncRewards.js';
-import { getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
-import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
-import { env } from '@/src/env.js';
+import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/consensus/feed/fetchBlockAndSyncRewards.js';
+import { getOldestLookbackSlot } from '@/src/consensus/utils/misc.js';
+import { getSlotNumberFromTimestamp } from '@/src/consensus/utils/time.js';
+import { env } from '@/src/lib/env.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';

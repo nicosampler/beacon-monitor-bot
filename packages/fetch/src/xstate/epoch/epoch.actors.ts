@@ -1,13 +1,13 @@
 import { fromPromise } from 'xstate';
 
-import { beacon_getValidators } from '@/src/beacon/endpoints.js';
-import { fetchAttestationsRewards as _fetchAttestationsRewards } from '@/src/beacon/feed/fetchAttestationsRewards.js';
-import { fetchCommittee } from '@/src/beacon/feed/fetchCommittee.js';
-import { fetchSyncCommittees as _fetchSyncCommittees } from '@/src/beacon/feed/fetchSyncCommittee.js';
-import { saveValidatorsToDatabase as _saveValidatorsToDatabase } from '@/src/beacon/feed/fetchValidators.js';
-import { fetchValidatorsBalances as _fetchValidatorsBalances } from '@/src/beacon/feed/fetchValidatorsBalances.js';
-import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
-import { VALIDATOR_STATUS } from '@/src/constants/index.js';
+import { VALIDATOR_STATUS } from '@/src/consensus/constants.js';
+import { beacon_getValidators } from '@/src/consensus/endpoints.js';
+import { fetchAttestationsRewards as _fetchAttestationsRewards } from '@/src/consensus/feed/fetchAttestationsRewards.js';
+import { fetchCommittee } from '@/src/consensus/feed/fetchCommittee.js';
+import { fetchSyncCommittees as _fetchSyncCommittees } from '@/src/consensus/feed/fetchSyncCommittee.js';
+import { saveValidatorsToDatabase as _saveValidatorsToDatabase } from '@/src/consensus/feed/fetchValidators.js';
+import { fetchValidatorsBalances as _fetchValidatorsBalances } from '@/src/consensus/feed/fetchValidatorsBalances.js';
+import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/consensus/utils/misc.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 
 const prisma = getPrisma();

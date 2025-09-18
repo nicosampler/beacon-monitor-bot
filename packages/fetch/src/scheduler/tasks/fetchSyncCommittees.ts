@@ -1,12 +1,12 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { beacon_getSyncCommittees } from '@/src/beacon/endpoints.js';
-import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
+import { beacon_getSyncCommittees } from '@/src/consensus/endpoints.js';
+import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/consensus/utils/misc.js';
 import {
   getEpochNumberFromTimestamp,
   getSyncCommitteePeriodStartEpoch,
-} from '@/src/beacon/utils/time.js';
-import { env } from '@/src/env.js';
+} from '@/src/consensus/utils/time.js';
+import { env } from '@/src/lib/env.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';

@@ -1,4 +1,4 @@
-import { getSlotNumberFromTimestamp } from '@/src/beacon/utils/time.js';
+import { getSlotNumberFromTimestamp } from '@/src/consensus/utils/time.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 

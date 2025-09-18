@@ -2,12 +2,12 @@ import { Prisma } from '@prisma/client';
 import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
-import { calculateSlotRange } from '@/src/beacon/utils/misc.js';
+import { calculateSlotRange } from '@/src/consensus/utils/misc.js';
 import {
   getEpochNumberFromTimestamp,
   getTimestampFromSlotNumber,
-} from '@/src/beacon/utils/time.js';
-import { env } from '@/src/env.js';
+} from '@/src/consensus/utils/time.js';
+import { env } from '@/src/lib/env.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
