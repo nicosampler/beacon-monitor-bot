@@ -22,12 +22,6 @@ export type EndpointOptions = {
   priority?: UrlPriority;
 
   /**
-   * Whether to attempt fallback to the other URL if the first one fails
-   * @default true
-   */
-  attemptFallback?: boolean;
-
-  /**
    * Number of retries for the request
    * @default 0
    */

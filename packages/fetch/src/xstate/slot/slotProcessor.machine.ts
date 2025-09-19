@@ -28,7 +28,7 @@ import {
   updateSlotWithBeaconData,
 } from './slot.actors.js';
 
-import { Block } from '@/src/consensus/types.js';
+import { Block } from '@/src/services/consensus/types.js';
 import { env } from '@/src/lib/env.js';
 import { pinoLog } from '@/src/xstate/pinoLog.js';
 

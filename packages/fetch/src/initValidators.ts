@@ -1,6 +1,6 @@
-import { fetchValidators } from '@/src/consensus/feed/fetchValidators.js';
 import createLogger from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
+import { fetchValidators } from '@/src/services/consensus/feed/fetchValidators.js';
 
 const prisma = getPrisma();
 

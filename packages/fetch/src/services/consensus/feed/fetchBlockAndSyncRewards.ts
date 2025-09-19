@@ -3,8 +3,8 @@ import ms from 'ms';
 import {
   beacon_getBlockRewards,
   beacon_getSyncCommitteeRewards,
-} from '@/src/consensus/endpoints.js';
-import { SyncCommitteeRewards, type BlockRewards } from '@/src/consensus/types.js';
+} from '@/src/services/consensus/endpoints.js';
+import { SyncCommitteeRewards, type BlockRewards } from '@/src/services/consensus/types.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
 

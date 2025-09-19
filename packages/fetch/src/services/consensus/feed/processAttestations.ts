@@ -2,13 +2,13 @@ import { Prisma } from '@prisma/client';
 import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
-import { Attestation } from '@/src/consensus/types.js';
+import { Attestation } from '@/src/services/consensus/types.js';
 import {
   convertBitsToString,
   convertBitsToStringForCommitteeBits,
   convertHexStringToByteArray,
-} from '@/src/consensus/utils/bitlist.js';
-import { getOldestLookbackSlot } from '@/src/consensus/utils/misc.js';
+} from '@/src/services/consensus/utils/bitlist.js';
+import { getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 
 interface CommitteeUpdate {

@@ -1,6 +1,6 @@
 import createLogger from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
-import { initValidators } from '@/src/consensus/initValidators.js';
+import { initValidators } from '@/src/initValidators.js';
 import initXstateMachines from '@/src/xstate/index.js';
 import { getMultiMachineLogger } from '@/src/xstate/multiMachineLogger.js';
 

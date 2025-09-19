@@ -2,8 +2,8 @@ import { Decimal } from '@prisma/client/runtime/library';
 import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
-import { VALIDATOR_STATUS } from '@/src/consensus/constants.js';
-import { beacon_getValidators } from '@/src/consensus/endpoints.js';
+import { VALIDATOR_STATUS } from '@/src/services/consensus/constants.js';
+import { beacon_getValidators } from '@/src/services/consensus/endpoints.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 
 const prisma = getPrisma();

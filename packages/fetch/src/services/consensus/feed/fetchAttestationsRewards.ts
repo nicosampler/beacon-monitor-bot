@@ -2,9 +2,9 @@ import { Prisma } from '@prisma/client';
 import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
-import { beacon_getAttestationRewards } from '@/src/consensus/endpoints.js';
-import { AttestationRewards } from '@/src/consensus/types.js';
-import { getTimestampFromEpochNumber } from '@/src/consensus/utils/time.js';
+import { beacon_getAttestationRewards } from '@/src/services/consensus/endpoints.js';
+import { AttestationRewards } from '@/src/services/consensus/types.js';
+import { getTimestampFromEpochNumber } from '@/src/services/consensus/utils/time.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
 import { db_getAttestingValidatorsIds, db_getValidatorsBalances } from '@/src/utils/db.js';

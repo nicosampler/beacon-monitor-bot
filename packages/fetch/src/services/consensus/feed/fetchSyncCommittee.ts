@@ -1,5 +1,5 @@
-import { beacon_getSyncCommittees } from '@/src/consensus/endpoints.js';
-import { getSyncCommitteePeriodStartEpoch } from '@/src/consensus/utils/time.js';
+import { beacon_getSyncCommittees } from '@/src/services/consensus/endpoints.js';
+import { getSyncCommitteePeriodStartEpoch } from '@/src/services/consensus/utils/time.js';
 import { env } from '@/src/lib/env.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 

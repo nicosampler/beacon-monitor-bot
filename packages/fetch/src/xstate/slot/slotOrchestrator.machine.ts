@@ -1,6 +1,6 @@
 import { setup, assign, stopChild, sendParent, ActorRefFrom } from 'xstate';
 
-import { getEpochSlots } from '@/src/consensus/utils/misc.js';
+import { getEpochSlots } from '@/src/services/consensus/utils/misc.js';
 import { env } from '@/src/lib/env.js';
 import { logActor, logRemoveMachine } from '@/src/xstate/multiMachineLogger.js';
 import { pinoLog } from '@/src/xstate/pinoLog.js';

@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { canSummarize } from '../summarizeDaily.js';
 
-import * as beaconUtils from '@/src/consensus/utils/misc.js';
-import * as timeUtils from '@/src/consensus/utils/time.js';
+import * as beaconUtils from '@/src/services/consensus/utils/misc.js';
+import * as timeUtils from '@/src/services/consensus/utils/time.js';
 import * as db from '@/src/utils/db.js';
 
 // Mock all dependencies

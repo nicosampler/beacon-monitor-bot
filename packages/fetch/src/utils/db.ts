@@ -2,7 +2,7 @@ import { Prisma, LastSummaryUpdate } from '@prisma/client';
 import memoizee from 'memoizee';
 import ms from 'ms';
 
-import { VALIDATOR_STATUS } from '@/src/consensus/constants.js';
+import { VALIDATOR_STATUS } from '@/src/services/consensus/constants.js';
 import { env } from '@/src/lib/env.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 const prisma = getPrisma();

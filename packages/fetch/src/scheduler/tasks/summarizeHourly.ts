@@ -1,9 +1,9 @@
 import { addHours, subHours } from 'date-fns';
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { summarizeHourly } from '@/src/consensus/feed/summarizeHourly.js';
-import { getOldestLookbackSlot } from '@/src/consensus/utils/misc.js';
-import { getTimestampFromSlotNumber } from '@/src/consensus/utils/time.js';
+import { summarizeHourly } from '@/src/services/consensus/feed/summarizeHourly.js';
+import { getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
+import { getTimestampFromSlotNumber } from '@/src/services/consensus/utils/time.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';

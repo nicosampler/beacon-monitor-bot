@@ -1,6 +1,6 @@
 // 1 because the current slot might be in progress
 
-import { ValidatorStatus } from '@/src/consensus/types.js';
+import { ValidatorStatus } from '@/src/services/consensus/types.js';
 
 export const VALIDATOR_STATUS = {
   pending_initialized: 0,

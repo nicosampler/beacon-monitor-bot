@@ -14,10 +14,10 @@ import {
   EndpointOptions,
   GetSyncCommittees,
   Block,
-} from '@/src/consensus/types.js';
-import { instance } from '@/src/consensus/utils/instance.js';
-import { getEpochSlots } from '@/src/consensus/utils/misc.js';
-import { getSlotNumberFromTimestamp } from '@/src/consensus/utils/time.js';
+} from '@/src/services/consensus/types.js';
+import { instance } from '@/src/services/consensus/utils/instance.js';
+import { getEpochSlots } from '@/src/services/consensus/utils/misc.js';
+import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
 import { env } from '@/src/lib/env.js';
 
 // Helper function to check for missed slot errors

@@ -1,8 +1,8 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { processAttestations as _fetchAttestations } from '@/src/consensus/feed/processAttestations.js';
-import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/consensus/utils/misc.js';
-import { getSlotNumberFromTimestamp } from '@/src/consensus/utils/time.js';
+import { processAttestations as _fetchAttestations } from '@/src/services/consensus/feed/processAttestations.js';
+import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
+import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
 import { env } from '@/src/lib/env.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
