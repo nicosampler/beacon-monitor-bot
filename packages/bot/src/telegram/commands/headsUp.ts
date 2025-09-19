@@ -35,7 +35,11 @@ export async function headsUp(conversation: HeadsUpConversation, ctx: MyContext)
     // Send the message to all users
     const inlineKeyboard = new InlineKeyboard().text('Dismiss', 'remove_message');
 
-    const users = await prisma.user.findMany();
+    const users = await prisma.user.findMany({
+      where: {
+        hasBlockedBot: false,
+      },
+    });
     users.forEach(async (user) => {
       try {
         await sendMessage(user.userId.toString(), announcementMessage, {
