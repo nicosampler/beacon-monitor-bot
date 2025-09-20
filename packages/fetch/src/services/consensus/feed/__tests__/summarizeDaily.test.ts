@@ -1,20 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Mock all dependencies
+vi.mock('@/src/utils/db.js', () => ({
+  db_hasBeaconRewardsFetched: vi.fn(),
+  db_hasBlockAndSyncRewardsFetched: vi.fn(),
+  db_countRemainingHoursAfterDate: vi.fn(),
+}));
+
+vi.mock('@/src/services/consensus/utils/misc.js', () => ({
+  getEpochFromSlot: vi.fn(),
+}));
+
+vi.mock('@/src/services/consensus/utils/time.js', () => ({
+  getSlotNumberFromTimestamp: vi.fn(),
+}));
+
 import { canSummarize } from '../summarizeDaily.js';
 
 import * as beaconUtils from '@/src/services/consensus/utils/misc.js';
 import * as timeUtils from '@/src/services/consensus/utils/time.js';
 import * as db from '@/src/utils/db.js';
-
-// Mock all dependencies
-vi.mock('@/src/utils/db.js');
-vi.mock('@/src/beacon/utils/misc.js');
-vi.mock('@/src/beacon/utils/time.js');
-vi.mock('@/src/env.js', () => ({
-  env: {
-    BEACON_SLOTS_PER_EPOCH: 32,
-  },
-}));
 
 describe('summarizeDaily', () => {
   beforeEach(() => {

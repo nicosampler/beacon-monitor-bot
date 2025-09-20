@@ -1,7 +1,7 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 
-import { limitRequests } from '@/src/execution/utils/rateLimiter.js';
 import { logRequest, logResponse } from '@/src/lib/httpPino.js';
+import { limitRequests } from '@/src/services/execution/utils/rateLimiter.js';
 
 export const instance = axios.create();
 

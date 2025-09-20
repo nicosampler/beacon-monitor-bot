@@ -1,7 +1,5 @@
-import ms from 'ms';
 import { setup, assign } from 'xstate';
 
-import { env } from '@/src/lib/env.js';
 import {
   getLastCreatedEpoch,
   getEpochsToCreate,
@@ -13,6 +11,10 @@ export const epochCreationMachine = setup({
     context: {} as {
       lastEpoch: number | null;
       epochsToCreate: number[];
+      slotDuration: number;
+    },
+    input: {} as {
+      slotDuration: number;
     },
   },
   actors: {
@@ -20,22 +22,21 @@ export const epochCreationMachine = setup({
     getEpochsToCreate,
     enqueueEpochs,
   },
+  delays: {
+    slotDuration: ({ context }) => {
+      return context.slotDuration * 1000;
+    },
+  },
 }).createMachine({
   id: 'EpochCreator',
-  initial: 'initialize',
+  initial: 'readLastCreated',
   description: 'The epoch creator is a state machine that is responsible for creating epochs.',
-  context: {
+  context: ({ input }) => ({
     lastEpoch: 0,
     epochsToCreate: [],
-  },
+    slotDuration: input.slotDuration,
+  }),
   states: {
-    initialize: {
-      entry: assign({
-        lastEpoch: 0,
-        epochsToCreate: [],
-      }),
-      always: 'readLastCreated',
-    },
     readLastCreated: {
       invoke: {
         src: 'getLastCreatedEpoch',
@@ -67,7 +68,13 @@ export const epochCreationMachine = setup({
     },
     sleep: {
       after: {
-        [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS}s`)]: 'initialize',
+        slotDuration: {
+          target: 'readLastCreated',
+          actions: assign({
+            lastEpoch: 0,
+            epochsToCreate: [],
+          }),
+        },
       },
     },
   },

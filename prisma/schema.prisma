@@ -35,6 +35,8 @@ model Slot {
   elDeposits                   Json?
   elWithdrawals                Json?
   elConsolidations             Json?
+  //proposer_slashings
+  //attester_slashings
 
   @@index([processed, slot])
 }

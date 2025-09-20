@@ -1,14 +1,13 @@
 import { fromPromise } from 'xstate';
 
+import { getPrisma } from '@/src/lib/prisma.js';
 import { VALIDATOR_STATUS } from '@/src/services/consensus/constants.js';
 import { beacon_getValidators } from '@/src/services/consensus/endpoints.js';
 import { fetchAttestationsRewards as _fetchAttestationsRewards } from '@/src/services/consensus/feed/fetchAttestationsRewards.js';
 import { fetchCommittee } from '@/src/services/consensus/feed/fetchCommittee.js';
 import { fetchSyncCommittees as _fetchSyncCommittees } from '@/src/services/consensus/feed/fetchSyncCommittee.js';
-import { saveValidatorsToDatabase as _saveValidatorsToDatabase } from '@/src/services/consensus/feed/fetchValidators.js';
 import { fetchValidatorsBalances as _fetchValidatorsBalances } from '@/src/services/consensus/feed/fetchValidatorsBalances.js';
 import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
-import { getPrisma } from '@/src/lib/prisma.js';
 
 const prisma = getPrisma();
 
@@ -235,7 +234,7 @@ export const updateSyncCommitteesFetched = fromPromise(
 
 /**
  * Unified actor to track transitioning validators
- * Fetches pending validators from DB, gets their data from beacon chain, and saves to DB
+ * Fetches pending validators from DB, gets their data from beacon chain, and updates them directly
  */
 export const trackingTransitioningValidators = fromPromise(async () => {
   const pendingValidators = await prisma.validator.findMany({
@@ -254,7 +253,24 @@ export const trackingTransitioningValidators = fromPromise(async () => {
   const validatorIds = pendingValidators.map((v) => String(v.id));
   const validatorsData = await beacon_getValidators('head', validatorIds, null);
 
-  await _saveValidatorsToDatabase(validatorsData);
+  // Update validators directly in a transaction
+  await prisma.$transaction(async (tx) => {
+    for (const data of validatorsData) {
+      const withdrawalAddress = data.validator.withdrawal_credentials.startsWith('0x')
+        ? '0x' + data.validator.withdrawal_credentials.slice(-40)
+        : null;
+
+      await tx.validator.update({
+        where: { id: +data.index },
+        data: {
+          withdrawalAddress,
+          status: VALIDATOR_STATUS[data.status],
+          balance: data.balance,
+          effectiveBalance: data.validator.effective_balance,
+        },
+      });
+    }
+  });
 
   return { success: true, processedCount: validatorsData.length };
 });

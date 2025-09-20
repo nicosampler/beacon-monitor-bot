@@ -4,7 +4,6 @@ import { setup, assign, sendParent, stopChild, raise, ActorRefFrom } from 'xstat
 import { slotOrchestratorMachine, SlotsCompletedEvent } from '../slot/slotOrchestrator.machine.js';
 
 import { getEpochSlots } from '@/src/services/consensus/utils/misc.js';
-import { env } from '@/src/lib/env.js';
 import {
   fetchAttestationsRewards,
   fetchValidatorsBalances,
@@ -43,6 +42,8 @@ type ProcessEpochContext = {
   // Flags for multi-event waiting
   committeesReady: boolean;
   epochStarted: boolean;
+  slotDuration: number;
+  lookbackSlot: number;
 };
 
 type ProcessEpochEvents =
@@ -69,6 +70,8 @@ export const epochProcessorMachine = setup({
       slotsFetched: boolean;
       syncCommitteesFetched: boolean;
       validatorsActivationFetched: boolean;
+      slotDuration: number;
+      lookbackSlot: number;
     };
   },
   actors: {
@@ -102,6 +105,9 @@ export const epochProcessorMachine = setup({
       context.epochDBSnapshot.validatorsActivationFetched,
     canProcessSlots: ({ context }) => context.committeesReady && context.epochStarted,
   },
+  delays: {
+    slotDurationHalf: ({ context }) => context.slotDuration / 2,
+  },
 }).createMachine({
   id: 'EpochProcessor',
   initial: 'checkingCanProcess',
@@ -122,6 +128,8 @@ export const epochProcessorMachine = setup({
       slotOrchestratorActor: null,
       committeesReady: false,
       epochStarted: false,
+      slotDuration: ms(`${input.slotDuration}s`),
+      lookbackSlot: input.lookbackSlot,
     } satisfies ProcessEpochContext;
   },
   states: {
@@ -148,7 +156,7 @@ export const epochProcessorMachine = setup({
         'EpochProcessor',
       ),
       after: {
-        [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'checkingCanProcess',
+        slotDurationHalf: 'checkingCanProcess',
       },
     },
     epochProcessing: {
@@ -190,7 +198,7 @@ export const epochProcessorMachine = setup({
             },
             delaying: {
               after: {
-                [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'waiting',
+                slotDurationHalf: 'waiting',
               },
             },
             epochStarted: {
@@ -404,6 +412,8 @@ export const epochProcessorMachine = setup({
                           id: orchestratorId,
                           input: {
                             epoch: context.epoch,
+                            lookbackSlot: context.lookbackSlot,
+                            slotDuration: context.slotDuration,
                           },
                         });
 
@@ -591,7 +601,7 @@ export const epochProcessorMachine = setup({
                 },
                 waitingForEpochEndDelaying: {
                   after: {
-                    [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 2}s`)]: 'waitingForEpochToEnd',
+                    slotDurationHalf: 'waitingForEpochToEnd',
                   },
                 },
                 fetching: {

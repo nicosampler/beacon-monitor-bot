@@ -1,5 +1,6 @@
 import { createActor } from 'xstate';
 
+import { env } from '@/src/lib/env.js';
 import { epochCreationMachine } from '@/src/xstate/epoch/epochCreator.machine.js';
 import { epochOrchestratorMachine } from '@/src/xstate/epoch/epochOrchestrator.machine.js';
 import { epochProcessorMachine } from '@/src/xstate/epoch/epochProcessor.machine.js';
@@ -10,7 +11,11 @@ export const ProcessEpoch = epochProcessorMachine;
 export const EpochOrchestrator = epochOrchestratorMachine;
 
 export const getCreateEpochActor = () => {
-  const actor = createActor(Epoch);
+  const actor = createActor(Epoch, {
+    input: {
+      slotDuration: env.BEACON_SLOT_DURATION_IN_SECONDS,
+    },
+  });
 
   actor.subscribe((snapshot) => {
     const { context } = snapshot;
@@ -28,7 +33,12 @@ export const getCreateEpochActor = () => {
 };
 
 export const getEpochOrchestratorActor = () => {
-  const actor = createActor(EpochOrchestrator);
+  const actor = createActor(EpochOrchestrator, {
+    input: {
+      slotDuration: env.BEACON_SLOT_DURATION_IN_SECONDS,
+      lookbackSlot: env.BEACON_LOOKBACK_SLOT,
+    },
+  });
 
   actor.subscribe((snapshot) => {
     const { context } = snapshot;

@@ -29,7 +29,6 @@ import {
 } from './slot.actors.js';
 
 import { Block } from '@/src/services/consensus/types.js';
-import { env } from '@/src/lib/env.js';
 import { pinoLog } from '@/src/xstate/pinoLog.js';
 
 export interface SlotProcessorContext {
@@ -47,11 +46,15 @@ export interface SlotProcessorContext {
   };
   syncCommittee: string[] | null;
   committeeValidatorCounts?: Record<number, number[]>;
+  slotDuration: number;
+  lookbackSlot: number;
 }
 
 export interface SlotProcessorInput {
   epoch: number;
   slot: number;
+  slotDuration: number;
+  lookbackSlot: number;
 }
 
 /**
@@ -114,11 +117,14 @@ export const slotProcessorMachine = setup({
       context.slotDb?.blockAndSyncRewardsProcessed === true,
     hasSyncCommittee: ({ event }) => event.output?.syncCommittee !== null,
     areAttestationsProcessed: ({ context }) => context.slotDb?.attestationsProcessed === true,
-    isLookbackSlot: ({ context }) => context.slot === env.BEACON_LOOKBACK_SLOT,
+    isLookbackSlot: ({ context }) => context.slot === context.lookbackSlot,
     allSlotsHaveCounts: ({ event }) => event.output?.allSlotsHaveCounts === true,
     canProcessAttestations: ({ event }) => event.output?.canProcessAttestations === true,
     isBeaconBlockAlreadyProcessed: ({ context }) => context.slotDb?.beaconBlockProcessed === true,
     hasBeaconBlockData: ({ context }) => context.beaconBlockData?.rawData !== null,
+  },
+  delays: {
+    slotDurationThird: ({ context }) => context.slotDuration / 3,
   },
 }).createMachine({
   id: 'SlotProcessor',
@@ -137,6 +143,8 @@ export const slotProcessorMachine = setup({
       elWithdrawals: [],
       elConsolidations: [],
     },
+    slotDuration: ms(`${input.slotDuration}s`),
+    lookbackSlot: input.lookbackSlot,
   }),
 
   states: {
@@ -195,7 +203,7 @@ export const slotProcessorMachine = setup({
         'SlotProcessor:waitingForSlotToStart',
       ),
       after: {
-        [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS / 3}ms`)]: 'checkingIfSlotIsReady',
+        slotDurationThird: 'checkingIfSlotIsReady',
       },
     },
 
@@ -489,6 +497,7 @@ export const slotProcessorMachine = setup({
               },
             },
             complete: {
+              // guardar en la BD todos los arrays.
               type: 'final',
             },
           },

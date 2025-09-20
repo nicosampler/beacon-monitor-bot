@@ -1,8 +1,6 @@
 import { createEnv } from '@t3-oss/env-core';
 import { z } from 'zod';
 
-const _env = process.env;
-
 export const env = createEnv({
   clientPrefix: 'IF_NOT_PROVIDED_IT_FAILS',
   client: {},
@@ -90,7 +88,7 @@ export const env = createEnv({
     COINGECKO_TOKEN_NAME: z.string(),
   },
   runtimeEnv: {
-    ..._env,
+    ...process.env,
   },
   emptyStringAsUndefined: true,
 });

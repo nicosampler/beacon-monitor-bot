@@ -4,7 +4,6 @@ import { setup, assign, stopChild, ActorRefFrom } from 'xstate';
 import { getMinEpochToProcess, type EpochToProcess } from './epoch.actors.js';
 import { epochProcessorMachine } from './epochProcessor.machine.js';
 
-import { env } from '@/src/lib/env.js';
 import type { CustomLogger } from '@/src/lib/pino.js';
 import { logMachine, logActor } from '@/src/xstate/multiMachineLogger.js';
 import { pinoLog } from '@/src/xstate/pinoLog.js';
@@ -13,9 +12,16 @@ export interface EpochOrchestratorContext {
   epochData: EpochToProcess | null;
   epochActor: ActorRefFrom<typeof epochProcessorMachine> | null;
   logger?: CustomLogger;
+  slotDuration: number;
+  lookbackSlot: number;
 }
 
 export type EpochOrchestratorEvents = { type: 'EPOCH_COMPLETED'; machineId: string };
+
+export interface EpochOrchestratorInput {
+  slotDuration: number;
+  lookbackSlot: number;
+}
 
 /**
  * @fileoverview The epoch orchestrator is a state machine that is responsible for orchestrating the processing of epochs.
@@ -32,6 +38,7 @@ export const epochOrchestratorMachine = setup({
   types: {} as {
     context: EpochOrchestratorContext;
     events: EpochOrchestratorEvents;
+    input: EpochOrchestratorInput;
   },
   actors: {
     getMinEpochToProcess,
@@ -40,13 +47,18 @@ export const epochOrchestratorMachine = setup({
   guards: {
     hasEpochData: ({ event }: { event: any }) => event.output !== null,
   },
+  delays: {
+    slotDuration: ({ context }) => ms(`${context.slotDuration}s`),
+  },
 }).createMachine({
   id: 'EpochOrchestrator',
   initial: 'gettingMinEpoch',
-  context: {
+  context: ({ input }) => ({
     epochData: null,
     epochActor: null,
-  },
+    slotDuration: input.slotDuration,
+    lookbackSlot: input.lookbackSlot,
+  }),
   states: {
     gettingMinEpoch: {
       invoke: {
@@ -104,6 +116,8 @@ export const epochOrchestratorMachine = setup({
                 slotsFetched: context.epochData.slotsFetched,
                 syncCommitteesFetched: context.epochData.syncCommitteesFetched,
                 validatorsActivationFetched: context.epochData.validatorsActivationFetched,
+                slotDuration: context.slotDuration,
+                lookbackSlot: context.lookbackSlot,
               },
             });
 
@@ -145,7 +159,7 @@ export const epochOrchestratorMachine = setup({
     noEpochsToProcess: {
       entry: pinoLog('No epochs to process, waiting for next check', 'EpochOrchestrator'),
       after: {
-        [ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS}s`)]: 'gettingMinEpoch',
+        slotDuration: 'gettingMinEpoch',
       },
     },
   },

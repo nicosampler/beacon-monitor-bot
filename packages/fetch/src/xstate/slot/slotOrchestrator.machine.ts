@@ -1,7 +1,6 @@
 import { setup, assign, stopChild, sendParent, ActorRefFrom } from 'xstate';
 
 import { getEpochSlots } from '@/src/services/consensus/utils/misc.js';
-import { env } from '@/src/lib/env.js';
 import { logActor, logRemoveMachine } from '@/src/xstate/multiMachineLogger.js';
 import { pinoLog } from '@/src/xstate/pinoLog.js';
 import { findMinUnprocessedSlotInEpoch } from '@/src/xstate/slot/slot.actors.js';
@@ -13,6 +12,14 @@ export interface SlotOrchestratorContext {
   endSlot: number;
   currentSlot: number;
   slotActor: ActorRefFrom<typeof slotProcessorMachine> | null;
+  lookbackSlot: number;
+  slotDuration: number;
+}
+
+export interface SlotOrchestratorInput {
+  epoch: number;
+  lookbackSlot: number;
+  slotDuration: number;
 }
 
 // Extract the SLOTS_COMPLETED event type for reuse in other machines
@@ -22,10 +29,6 @@ export type SlotOrchestratorEvents =
   | SlotsCompletedEvent
   | { type: 'SLOT_COMPLETED' }
   | { type: 'NEXT_SLOT_FOUND'; nextSlot: number };
-
-export interface SlotOrchestratorInput {
-  epoch: number;
-}
 
 /**
  * @fileoverview The slot orchestrator is a state machine that is responsible for orchestrating the processing of slots within an epoch.
@@ -67,6 +70,8 @@ export const slotOrchestratorMachine = setup({
           input: {
             epoch: context.epoch,
             slot: context.currentSlot,
+            slotDuration: context.slotDuration,
+            lookbackSlot: context.lookbackSlot,
           },
         });
 
@@ -90,7 +95,7 @@ export const slotOrchestratorMachine = setup({
   initial: 'spawningSlotProcessor',
   context: ({ input }) => {
     const { startSlot: _startSlot, endSlot } = getEpochSlots(input.epoch);
-    const startSlot = Math.max(_startSlot, env.BEACON_LOOKBACK_SLOT);
+    const startSlot = Math.max(_startSlot, input.lookbackSlot);
 
     return {
       epoch: input.epoch,
@@ -98,6 +103,8 @@ export const slotOrchestratorMachine = setup({
       endSlot,
       currentSlot: startSlot,
       slotActor: null,
+      lookbackSlot: input.lookbackSlot,
+      slotDuration: input.slotDuration,
     };
   },
   states: {

@@ -3,8 +3,8 @@ import { AxiosResponse } from 'axios';
 import ms from 'ms';
 
 import { env } from '@/src/lib/env.js';
-import { Blockscout_Blocks, Etherscan_BlockReward } from '@/src/execution/types.js';
-import { instance } from '@/src/execution/utils/instance.js';
+import { Blockscout_Blocks, Etherscan_BlockReward } from '@/src/services/execution/types.js';
+import { instance } from '@/src/services/execution/utils/instance.js';
 
 export type BlockResponse = {
   address: string;

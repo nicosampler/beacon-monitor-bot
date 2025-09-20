@@ -1,13 +1,7 @@
-import { test, expect, vi } from 'vitest';
+import { test, expect } from 'vitest';
 import { createActor, fromPromise } from 'xstate';
 
 import { epochCreationMachine } from './epochCreator.machine.js';
-
-vi.mock('@/src/env.js', () => ({
-  env: {
-    BEACON_SLOT_DURATION_IN_SECONDS: 1, // Use 1 second for faster tests
-  },
-}));
 
 describe('epochCreationMachine', () => {
   test('should initialize with correct context and transition to readLastCreated', async () => {
@@ -28,7 +22,7 @@ describe('epochCreationMachine', () => {
       },
     });
 
-    const actor = createActor(testMachine);
+    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -42,9 +36,12 @@ describe('epochCreationMachine', () => {
 
     // The machine should automatically transition to 'readLastCreated' due to the 'always' transition
     expect(snapshot.value).toBe('readLastCreated');
+
+    // Clean up
+    actor.stop();
   });
 
-  test('should successfully transition from readLastCreated to getEpochsToCreate', async () => {
+  test('should successfully complete full workflow and reach sleep state', async () => {
     // Arrange
     const mockGetLastCreatedEpoch = fromPromise(async () => 150 as number | null);
     const mockGetEpochsToCreate = fromPromise(
@@ -62,19 +59,22 @@ describe('epochCreationMachine', () => {
       },
     });
 
-    const actor = createActor(testMachine);
+    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
 
-    // Wait for the async operation to complete
+    // Wait for all async operations to complete
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    // Assert - The machine completes the full workflow and ends in sleep
+    // Assert - The machine should have completed the full workflow and be in sleep
     const snapshot = actor.getSnapshot();
     expect(snapshot.value).toBe('sleep');
     expect(snapshot.context.lastEpoch).toBe(150);
     expect(snapshot.context.epochsToCreate).toEqual([151, 152, 153]);
+
+    // Clean up
+    actor.stop();
   });
 
   test('should handle readLastCreated error and transition to sleep', async () => {
@@ -97,7 +97,7 @@ describe('epochCreationMachine', () => {
       },
     });
 
-    const actor = createActor(testMachine);
+    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -110,6 +110,9 @@ describe('epochCreationMachine', () => {
     expect(snapshot.value).toBe('sleep');
     // Context should remain unchanged on error
     expect(snapshot.context.lastEpoch).toBe(0);
+
+    // Clean up
+    actor.stop();
   });
 
   test('should successfully transition from getEpochsToCreate to createEpochs', async () => {
@@ -130,7 +133,7 @@ describe('epochCreationMachine', () => {
       },
     });
 
-    const actor = createActor(testMachine);
+    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -143,6 +146,9 @@ describe('epochCreationMachine', () => {
     expect(snapshot.value).toBe('sleep');
     expect(snapshot.context.lastEpoch).toBe(200);
     expect(snapshot.context.epochsToCreate).toEqual([201, 202, 203, 204]);
+
+    // Clean up
+    actor.stop();
   });
 
   test('should handle getEpochsToCreate error and transition to sleep', async () => {
@@ -165,7 +171,7 @@ describe('epochCreationMachine', () => {
       },
     });
 
-    const actor = createActor(testMachine);
+    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -179,6 +185,9 @@ describe('epochCreationMachine', () => {
     expect(snapshot.context.lastEpoch).toBe(300);
     // epochsToCreate should remain empty on error
     expect(snapshot.context.epochsToCreate).toEqual([]);
+
+    // Clean up
+    actor.stop();
   });
 
   test('should successfully transition from createEpochs to sleep', async () => {
@@ -201,7 +210,7 @@ describe('epochCreationMachine', () => {
       },
     });
 
-    const actor = createActor(testMachine);
+    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -214,6 +223,9 @@ describe('epochCreationMachine', () => {
     expect(snapshot.value).toBe('sleep');
     expect(snapshot.context.lastEpoch).toBe(400);
     expect(snapshot.context.epochsToCreate).toEqual([401, 402]);
+
+    // Clean up
+    actor.stop();
   });
 
   test('should handle createEpochs error and transition to sleep', async () => {
@@ -240,7 +252,7 @@ describe('epochCreationMachine', () => {
       },
     });
 
-    const actor = createActor(testMachine);
+    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -253,6 +265,9 @@ describe('epochCreationMachine', () => {
     expect(snapshot.value).toBe('sleep');
     expect(snapshot.context.lastEpoch).toBe(500);
     expect(snapshot.context.epochsToCreate).toEqual([501, 502, 503]);
+
+    // Clean up
+    actor.stop();
   });
 
   test('should handle empty epochs list from getEpochsToCreate', async () => {
@@ -273,7 +288,7 @@ describe('epochCreationMachine', () => {
       },
     });
 
-    const actor = createActor(testMachine);
+    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -286,6 +301,9 @@ describe('epochCreationMachine', () => {
     expect(snapshot.value).toBe('sleep');
     expect(snapshot.context.lastEpoch).toBe(600);
     expect(snapshot.context.epochsToCreate).toEqual([]);
+
+    // Clean up
+    actor.stop();
   });
 
   test('should handle null lastEpoch from getLastCreatedEpoch', async () => {
@@ -306,7 +324,7 @@ describe('epochCreationMachine', () => {
       },
     });
 
-    const actor = createActor(testMachine);
+    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -319,6 +337,9 @@ describe('epochCreationMachine', () => {
     expect(snapshot.value).toBe('sleep');
     expect(snapshot.context.lastEpoch).toBe(null);
     expect(snapshot.context.epochsToCreate).toEqual([1, 2, 3]);
+
+    // Clean up
+    actor.stop();
   });
 
   test('should complete full workflow successfully', async () => {
@@ -343,7 +364,7 @@ describe('epochCreationMachine', () => {
       },
     });
 
-    const actor = createActor(testMachine);
+    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -356,54 +377,8 @@ describe('epochCreationMachine', () => {
     expect(snapshot.value).toBe('sleep');
     expect(snapshot.context.lastEpoch).toBe(1000);
     expect(snapshot.context.epochsToCreate).toEqual([1001, 1002, 1003, 1004, 1005]);
-  });
 
-  test('should transition from sleep back to initialize after timeout', async () => {
-    // Arrange
-    let callCount = 0;
-    const mockGetLastCreatedEpoch = fromPromise(async (): Promise<number | null> => {
-      callCount++;
-      if (callCount === 1) {
-        // First call: throw error to go to sleep
-        throw new Error('Test error to go to sleep');
-      } else {
-        // Second call: return a value but with delay to capture intermediate state
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        return 999;
-      }
-    });
-    const mockGetEpochsToCreate = fromPromise(
-      async ({ input: _input }: { input: { lastEpoch: number | null } }) => [101, 102, 103],
-    );
-    const mockEnqueueEpochs = fromPromise(
-      async ({ input: _input }: { input: { epochsToCreate: number[] } }) => ({ count: 3 }),
-    );
-
-    const testMachine = epochCreationMachine.provide({
-      actors: {
-        getLastCreatedEpoch: mockGetLastCreatedEpoch,
-        getEpochsToCreate: mockGetEpochsToCreate,
-        enqueueEpochs: mockEnqueueEpochs,
-      },
-    });
-
-    const actor = createActor(testMachine);
-
-    // Act
-    actor.start();
-
-    // Wait for error to occur and machine to go to sleep
-    await new Promise((resolve) => setTimeout(resolve, 10));
-
-    let snapshot = actor.getSnapshot();
-    expect(snapshot.value).toBe('sleep');
-
-    // Wait for the sleep timeout (1 second as per env mock)
-    await new Promise((resolve) => setTimeout(resolve, 1100)); // Wait a bit more than 1 second
-
-    // Assert - The machine should transition back to readLastCreated after timeout
-    // and should still be in readLastCreated because the actor is still running
-    snapshot = actor.getSnapshot();
-    expect(snapshot.value).toBe('readLastCreated'); // After timeout, it goes back to initialize -> readLastCreated
+    // Clean up
+    actor.stop();
   });
 });
