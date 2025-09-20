@@ -20,7 +20,8 @@
     "env.dev.ethereum": "cp .env.dev.ethereum .env",
     "env.prod.gnosis": "cp .env.prod.gnosis .env",
     "env.prod.ethereum": "cp .env.prod.ethereum .env",
-    "clean-db": "pnpm dotenv -e .env.dev.ethereum tsx cleanDatabase.ts"
+    "clean-db": "pnpm dotenv -e .env.dev.ethereum tsx cleanDatabase.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@prisma/client": "5.15.0",
@@ -38,11 +39,22 @@
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^5.2.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.6",
     "pnpm": "^9.2.0",
     "prettier": "^3.2.5",
     "prisma": "5.15.0",
     "tsx": "^4.7.1",
     "typescript": "^5.4.5",
     "typescript-eslint": "^8.5.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   }
 }
