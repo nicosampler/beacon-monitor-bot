@@ -6,7 +6,6 @@ import { scheduleFetchExecutionRewards } from '@/src/scheduler/tasks/executionRe
 import { scheduleFetchAttestations } from '@/src/scheduler/tasks/fetchAttestations.js';
 import { scheduleFetchBlockAndSyncRewards } from '@/src/scheduler/tasks/fetchBlockAndSyncRewards.js';
 import { scheduleFetchCommittee } from '@/src/scheduler/tasks/fetchCommittee.js';
-import { scheduleFetchEpochInfo } from '@/src/scheduler/tasks/fetchEpochInfo.js';
 import { scheduleFetchSyncCommittees } from '@/src/scheduler/tasks/fetchSyncCommittees.js';
 import { schedulePrune } from '@/src/scheduler/tasks/prune.js';
 import { scheduleSummarizeDaily } from '@/src/scheduler/tasks/summarizeDaily.js';
@@ -57,13 +56,13 @@ export function scheduleTasks() {
     runImmediately: true,
     preventOverrun: true,
   });
-  scheduleFetchEpochInfo({
-    id: 'FetchEpochInfo',
-    logsEnabled: true,
-    intervalMs: isEthereum ? ms('1m') : ms('20s'),
-    runImmediately: true,
-    preventOverrun: true,
-  });
+  // scheduleFetchEpochInfo({
+  //   id: 'FetchEpochInfo',
+  //   logsEnabled: true,
+  //   intervalMs: isEthereum ? ms('1m') : ms('20s'),
+  //   runImmediately: true,
+  //   preventOverrun: true,
+  // });
   scheduleSummarizeHourly({
     id: 'SummarizeHourly',
     logsEnabled: false,

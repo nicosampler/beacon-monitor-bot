@@ -1,9 +1,9 @@
 // import { Decimal } from '@prisma/client/runtime/library';
 // import ms from 'ms';
 
-import { getBlock } from '@/src/execution/endpoints.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
+import { getBlock } from '@/src/services/execution/endpoints.js';
 
 const prisma = getPrisma();
 

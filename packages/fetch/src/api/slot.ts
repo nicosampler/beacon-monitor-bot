@@ -1,12 +1,10 @@
 import axios from 'axios';
 
-import { SlotInfoResponse } from '../apiTypes.js';
-
 import { api } from './index.js';
 
-export async function geSlotsInfo(): Promise<SlotInfoResponse> {
+export async function geSlotsInfo() {
   try {
-    const response = await api.get<SlotInfoResponse>(`/api/slot/info`);
+    const response = await api.get(`/api/slot/info`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
