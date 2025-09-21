@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
+import { getPrisma } from '@/src/lib/prisma.js';
 import { Attestation } from '@/src/services/consensus/types.js';
 import {
   convertBitsToString,
@@ -9,7 +10,6 @@ import {
   convertHexStringToByteArray,
 } from '@/src/services/consensus/utils/bitlist.js';
 import { getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
-import { getPrisma } from '@/src/lib/prisma.js';
 
 interface CommitteeUpdate {
   slot: number;

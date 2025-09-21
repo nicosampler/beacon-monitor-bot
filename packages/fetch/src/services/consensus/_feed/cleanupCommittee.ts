@@ -1,6 +1,6 @@
-import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
+import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
 
 const prisma = getPrisma();
 

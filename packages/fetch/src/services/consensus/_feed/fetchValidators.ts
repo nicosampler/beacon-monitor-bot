@@ -3,8 +3,8 @@ import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
 import { getPrisma } from '@/src/lib/prisma.js';
+import { beacon_getValidators } from '@/src/services/consensus/_feed/endpoints.js';
 import { VALIDATOR_STATUS } from '@/src/services/consensus/constants.js';
-import { beacon_getValidators } from '@/src/services/consensus/endpoints.js';
 
 const prisma = getPrisma();
 

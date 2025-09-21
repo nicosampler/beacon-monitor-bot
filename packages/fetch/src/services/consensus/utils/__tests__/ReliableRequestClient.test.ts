@@ -1,7 +1,7 @@
 import ms from 'ms';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { TestReliableClient } from '@/src/services/consensus/__tests__/reliableClient.js';
+import { TestReliableClient } from '@/src/services/consensus/utils/__tests__/reliableClient.js';
 
 // Mock fetch globally
 global.fetch = vi.fn();

@@ -2,9 +2,9 @@ import { fromPromise } from 'xstate';
 
 import { env } from '@/src/lib/env.js';
 import { getPrisma } from '@/src/lib/prisma.js';
-import { beacon_blocks } from '@/src/services/consensus/endpoints.js';
-import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/services/consensus/feed/fetchBlockAndSyncRewards.js';
-import { processAttestations as _processAttestations } from '@/src/services/consensus/feed/processAttestations.js';
+import { beacon_blocks } from '@/src/services/consensus/_feed/endpoints.js';
+import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/services/consensus/_feed/fetchBlockAndSyncRewards.js';
+import { processAttestations as _processAttestations } from '@/src/services/consensus/_feed/processAttestations.js';
 import { Attestation, Block } from '@/src/services/consensus/types.js';
 import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
 import { getBlock } from '@/src/services/execution/endpoints.js';

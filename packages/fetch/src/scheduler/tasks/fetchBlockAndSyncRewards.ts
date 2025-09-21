@@ -1,12 +1,12 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/services/consensus/feed/fetchBlockAndSyncRewards.js';
-import { getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
-import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
 import { env } from '@/src/lib/env.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
+import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/services/consensus/_feed/fetchBlockAndSyncRewards.js';
+import { getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
+import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
 import {
   db_areValidatorsFetched,
   db_getLastSlotWithSyncRewards,

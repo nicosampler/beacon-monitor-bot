@@ -1,8 +1,8 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, AxiosInstance } from 'axios';
 import memoizee from 'memoizee';
 import ms from 'ms';
 
-import { env } from '@/src/lib/env.js';
+import { logRequest, logResponse } from '@/src/lib/httpPino.js';
 import {
   AttestationRewards,
   BlockRewards,
@@ -14,26 +14,44 @@ import {
   GetSyncCommittees,
   Block,
 } from '@/src/services/consensus/types.js';
-import { instance } from '@/src/services/consensus/utils/instance.js';
 import { getEpochSlots } from '@/src/services/consensus/utils/misc.js';
 import { ReliableRequestClient } from '@/src/services/consensus/utils/reliableRequestClient.js';
 import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
+
+/**
+ * Configuration interface for BeaconClient
+ */
+export interface BeaconClientConfig {
+  fullNodeUrl: string;
+  fullNodeConcurrency: number;
+  fullNodeRetries: number;
+  archiveNodeUrl: string;
+  archiveNodeConcurrency: number;
+  archiveNodeRetries: number;
+  baseDelay: number;
+}
 
 /**
  * Enhanced BeaconClient class that manages all beacon chain endpoints
  * with concurrency control, exponential backoff, and fallback strategies
  */
 export class BeaconClient extends ReliableRequestClient {
-  constructor() {
+  private readonly axiosInstance: AxiosInstance;
+
+  constructor(config: BeaconClientConfig) {
     super({
-      fullNodeUrl: env.BEACON_API_URL,
-      fullNodeConcurrency: env.BEACON_API_REQUEST_PER_SECOND,
-      fullNodeRetries: 10,
-      archiveNodeUrl: env.BEACON_API_BKP_URL,
-      archiveNodeConcurrency: env.BEACON_API_REQUEST_PER_SECOND,
-      archiveNodeRetries: 30,
-      baseDelay: ms('1s'),
+      fullNodeUrl: config.fullNodeUrl,
+      fullNodeConcurrency: config.fullNodeConcurrency,
+      fullNodeRetries: config.fullNodeRetries,
+      archiveNodeUrl: config.archiveNodeUrl,
+      archiveNodeConcurrency: config.archiveNodeConcurrency,
+      archiveNodeRetries: config.archiveNodeRetries,
+      baseDelay: config.baseDelay,
     });
+
+    this.axiosInstance = axios.create();
+    this.axiosInstance.interceptors.request.use(logRequest);
+    this.axiosInstance.interceptors.response.use(logResponse);
   }
 
   /**
@@ -74,7 +92,7 @@ export class BeaconClient extends ReliableRequestClient {
   async getCommittees(epoch: number, stateId = 'head'): Promise<GetCommittees['data']> {
     return this.makeReliableRequest(
       async (url) => {
-        const res = await instance.get<GetCommittees>(
+        const res = await this.axiosInstance.get<GetCommittees>(
           `${url}/eth/v1/beacon/states/${stateId}/committees?epoch=${epoch}`,
         );
         return res.data.data;
@@ -90,7 +108,7 @@ export class BeaconClient extends ReliableRequestClient {
     const { startSlot } = getEpochSlots(epoch);
 
     return this.makeReliableRequest(async (url) => {
-      const res = await instance.get<GetSyncCommittees>(
+      const res = await this.axiosInstance.get<GetSyncCommittees>(
         `${url}/eth/v1/beacon/states/${startSlot}/sync_committees?epoch=${epoch}`,
       );
       return res.data.data;
@@ -103,7 +121,7 @@ export class BeaconClient extends ReliableRequestClient {
   async getBlock(slot: number): Promise<Block | 'SLOT MISSED'> {
     return this.makeReliableRequest<Block | 'SLOT MISSED'>(
       async (url) => {
-        const res = await instance.get<Block>(`${url}/eth/v2/beacon/blocks/${slot}`);
+        const res = await this.axiosInstance.get<Block>(`${url}/eth/v2/beacon/blocks/${slot}`);
         return res.data;
       },
       'archive',
@@ -126,7 +144,7 @@ export class BeaconClient extends ReliableRequestClient {
 
     return this.makeReliableRequest<AttestationsResponse | 'SLOT MISSED'>(
       async (url) => {
-        const res = await instance.get<GetAttestations>(
+        const res = await this.axiosInstance.get<GetAttestations>(
           `${url}/eth/v1/beacon/blocks/${slot}/attestations`,
         );
         return res.data.data;
@@ -148,7 +166,7 @@ export class BeaconClient extends ReliableRequestClient {
     }
 
     return this.makeReliableRequest(async (url) => {
-      const res = await instance.post<GetValidatorsBalances>(
+      const res = await this.axiosInstance.post<GetValidatorsBalances>(
         `${url}/eth/v1/beacon/states/${stateId}/validator_balances`,
         validatorIds,
       );
@@ -165,7 +183,7 @@ export class BeaconClient extends ReliableRequestClient {
     statuses: string[] | null,
   ): Promise<GetValidators['data']> {
     return this.makeReliableRequest(async (url) => {
-      const res = await instance.post<GetValidators>(
+      const res = await this.axiosInstance.post<GetValidators>(
         `${url}/eth/v1/beacon/states/${stateId}/validators`,
         {
           ids: validatorIds,
@@ -181,7 +199,7 @@ export class BeaconClient extends ReliableRequestClient {
    */
   async getAttestationRewards(epoch: number, validatorIds: number[]): Promise<AttestationRewards> {
     return this.makeReliableRequest(async (url) => {
-      const res = await instance.post<AttestationRewards>(
+      const res = await this.axiosInstance.post<AttestationRewards>(
         `${url}/eth/v1/beacon/rewards/attestations/${epoch}`,
         validatorIds.map((id) => id.toString()),
       );
@@ -196,7 +214,7 @@ export class BeaconClient extends ReliableRequestClient {
     async (slot: number): Promise<BlockRewards | 'SLOT MISSED'> => {
       return this.makeReliableRequest<BlockRewards | 'SLOT MISSED'>(
         async (url) => {
-          const res = await instance.get<BlockRewards>(
+          const res = await this.axiosInstance.get<BlockRewards>(
             `${url}/eth/v1/beacon/rewards/blocks/${slot}`,
           );
           return res.data;
@@ -219,7 +237,7 @@ export class BeaconClient extends ReliableRequestClient {
     async (slot: number, validatorIds: string[]): Promise<SyncCommitteeRewards | 'SLOT MISSED'> => {
       return this.makeReliableRequest<SyncCommitteeRewards | 'SLOT MISSED'>(
         async (url) => {
-          const res = await instance.post<SyncCommitteeRewards>(
+          const res = await this.axiosInstance.post<SyncCommitteeRewards>(
             `${url}/eth/v1/beacon/rewards/sync_committee/${slot}`,
             validatorIds,
           );

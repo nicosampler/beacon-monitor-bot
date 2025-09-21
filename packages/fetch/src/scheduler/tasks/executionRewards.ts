@@ -1,12 +1,12 @@
 import { differenceInSeconds } from 'date-fns';
 import { SimpleIntervalJob, AsyncTask } from 'toad-scheduler';
 
-import { fetchExecutionRewards } from '@/src/services/consensus/feed/fetchExecutionRewards.js';
 import { env } from '@/src/lib/env.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
+import { fetchExecutionRewards } from '@/src/services/consensus/_feed/fetchExecutionRewards.js';
 
 const prisma = getPrisma();
 

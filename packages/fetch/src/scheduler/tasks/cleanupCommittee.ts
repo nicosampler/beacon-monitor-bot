@@ -1,9 +1,9 @@
 import { SimpleIntervalJob, AsyncTask } from 'toad-scheduler';
 
-import { cleanupCommittee } from '@/src/services/consensus/feed/cleanupCommittee.js';
 import createLogger from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
+import { cleanupCommittee } from '@/src/services/consensus/_feed/cleanupCommittee.js';
 
 export function scheduleCleanupCommittee({
   id,

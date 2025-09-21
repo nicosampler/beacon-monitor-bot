@@ -3,7 +3,6 @@ import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
-import { fetchCommittee } from '@/src/services/consensus/feed/fetchCommittee.js';
 import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
 import {

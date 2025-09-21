@@ -3,6 +3,7 @@ import memoizee from 'memoizee';
 import ms from 'ms';
 import pRetry from 'p-retry';
 
+import { env } from '@/src/lib/env.js';
 import {
   AttestationRewards,
   BlockRewards,
@@ -18,7 +19,6 @@ import {
 import { instance } from '@/src/services/consensus/utils/instance.js';
 import { getEpochSlots } from '@/src/services/consensus/utils/misc.js';
 import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
-import { env } from '@/src/lib/env.js';
 
 // Helper function to check for missed slot errors
 function _isSlotMissedError(error: unknown): boolean {

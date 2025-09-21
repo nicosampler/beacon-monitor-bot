@@ -1,8 +1,8 @@
 // import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-// import { fetchAttestationsRewards } from '@/src/consensus/feed/fetchAttestationsRewards.js'; // Assuming this function exists
-// import { fetchValidators } from '@/src/consensus/feed/fetchValidators.js';
-// import { fetchValidatorsBalances } from '@/src/consensus/feed/fetchValidatorsBalances.js';
+// import { fetchAttestationsRewards } from '@/src/consensus/_feed/fetchAttestationsRewards.js'; // Assuming this function exists
+// import { fetchValidators } from '@/src/consensus/_feed/fetchValidators.js';
+// import { fetchValidatorsBalances } from '@/src/consensus/_feed/fetchValidatorsBalances.js';
 // import { getEpochSlots, getOldestLookbackSlot } from '@/src/consensus/utils/misc.js';
 // import {
 //   getEpochNumberFromTimestamp,

@@ -1,16 +1,16 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { beacon_getSyncCommittees } from '@/src/services/consensus/endpoints.js';
-import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
-import {
-  getEpochNumberFromTimestamp,
-  getSyncCommitteePeriodStartEpoch,
-} from '@/src/services/consensus/utils/time.js';
 import { env } from '@/src/lib/env.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
+import { beacon_getSyncCommittees } from '@/src/services/consensus/_feed/endpoints.js';
+import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
+import {
+  getEpochNumberFromTimestamp,
+  getSyncCommitteePeriodStartEpoch,
+} from '@/src/services/consensus/utils/time.js';
 import { db_getLastProcessedSyncCommittee } from '@/src/utils/db.js';
 
 const prisma = getPrisma();

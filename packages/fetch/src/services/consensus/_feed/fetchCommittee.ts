@@ -1,10 +1,10 @@
 import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
-import { beacon_getCommittees } from '@/src/services/consensus/endpoints.js';
-import { getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
+import { beacon_getCommittees } from '@/src/services/consensus/_feed/endpoints.js';
+import { getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
 
 type Committee = {
   slot: string;
