@@ -4,8 +4,10 @@ import ms from 'ms';
 import { env } from '@/src/lib/env.js';
 import createLogger from '@/src/lib/pino.js';
 import { BeaconClient } from '@/src/services/consensus/beacon.js';
+import { EpochController } from '@/src/services/consensus/controllers/epoch.js';
 import { ValidatorsController } from '@/src/services/consensus/controllers/validators.js';
-import { ValidatorsStorage } from '@/src/services/consensus/storage/validatorsStorage.js';
+import { EpochStorage } from '@/src/services/consensus/storage/epoch.js';
+import { ValidatorsStorage } from '@/src/services/consensus/storage/validators.js';
 import initXstateMachines from '@/src/xstate/index.js';
 import { getMultiMachineLogger } from '@/src/xstate/multiMachineLogger.js';
 
@@ -24,6 +26,7 @@ const prisma = new PrismaClient({
 async function main() {
   await prisma.$connect();
 
+  // Initialize dependencies
   const beaconClient = new BeaconClient({
     fullNodeUrl: env.BEACON_API_URL,
     fullNodeConcurrency: env.BEACON_API_REQUEST_PER_SECOND,
@@ -37,10 +40,13 @@ async function main() {
   const validatorsStorage = new ValidatorsStorage(prisma);
   const validatorsController = new ValidatorsController(beaconClient, validatorsStorage);
 
-  // Initialize validators if table is empty
+  const epochStorage = new EpochStorage(prisma);
+  const epochController = new EpochController(beaconClient, epochStorage);
+
+  // Start indexing the beacon chain
   await validatorsController.initValidators();
 
-  await initXstateMachines();
+  await initXstateMachines(epochController, env.BEACON_SLOT_DURATION_IN_SECONDS);
 
   // Handle graceful shutdown
   process.on('SIGINT', () => {

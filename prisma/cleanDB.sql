@@ -3,10 +3,10 @@ truncate "Slot" cascade;
 truncate "Committee" cascade;
 truncate "SyncCommittee" cascade;
 
-truncate "_UserToValidator" cascade;
-truncate "_UserToWithdrawalAddress" cascade;
-truncate "_FeeRewardAddressToUser" cascade;
-truncate "Validator" cascade;
+-- truncate "_UserToValidator" cascade;
+-- truncate "_UserToWithdrawalAddress" cascade;
+-- truncate "_FeeRewardAddressToUser" cascade;
+-- truncate "Validator" cascade;
 
 truncate "ExecutionRewards";
 

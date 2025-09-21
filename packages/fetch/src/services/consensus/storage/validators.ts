@@ -1,5 +1,5 @@
 import { PrismaClient, Validator } from '@prisma/client';
-import { chunk } from 'lodash';
+import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
 export class ValidatorsStorage {

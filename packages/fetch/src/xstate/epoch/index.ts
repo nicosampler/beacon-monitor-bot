@@ -1,6 +1,7 @@
 import { createActor } from 'xstate';
 
 import { env } from '@/src/lib/env.js';
+import { EpochController } from '@/src/services/consensus/controllers/epoch.js';
 import { epochCreationMachine } from '@/src/xstate/epoch/epochCreator.machine.js';
 import { epochOrchestratorMachine } from '@/src/xstate/epoch/epochOrchestrator.machine.js';
 import { epochProcessorMachine } from '@/src/xstate/epoch/epochProcessor.machine.js';
@@ -10,10 +11,11 @@ export const Epoch = epochCreationMachine;
 export const ProcessEpoch = epochProcessorMachine;
 export const EpochOrchestrator = epochOrchestratorMachine;
 
-export const getCreateEpochActor = () => {
+export const getCreateEpochActor = (epochController: EpochController, slotDuration: number) => {
   const actor = createActor(Epoch, {
     input: {
-      slotDuration: env.BEACON_SLOT_DURATION_IN_SECONDS,
+      slotDuration,
+      epochController,
     },
   });
 

@@ -7,92 +7,25 @@ import { fetchCommittee } from '@/src/services/consensus/_feed/fetchCommittee.js
 import { fetchSyncCommittees as _fetchSyncCommittees } from '@/src/services/consensus/_feed/fetchSyncCommittee.js';
 import { fetchValidatorsBalances as _fetchValidatorsBalances } from '@/src/services/consensus/_feed/fetchValidatorsBalances.js';
 import { VALIDATOR_STATUS } from '@/src/services/consensus/constants.js';
-import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
+import { EpochController } from '@/src/services/consensus/controllers/epoch.js';
 
 const prisma = getPrisma();
 
-export const getLastCreatedEpoch = fromPromise(async () => {
-  try {
-    const lastEpoch = await prisma.epoch.findFirst({
-      orderBy: { epoch: 'desc' },
-      select: { epoch: true },
-    });
-    return lastEpoch?.epoch ?? null;
-  } catch (error) {
-    console.error('Error fetching last created epoch:', error);
-    throw error;
-  }
-});
-
-export const getEpochsToCreate = fromPromise(
-  async ({ input }: { input: { lastEpoch: number | null } }) => {
-    const MAX_UNPROCESSED_EPOCHS = 5;
-
-    try {
-      // Get count of unprocessed epochs
-      const unprocessedCount = await prisma.epoch.count({
-        where: {
-          OR: [
-            { rewardsFetched: false },
-            { validatorsBalancesFetched: false },
-            { committeesFetched: false },
-            { slotsFetched: false },
-            { syncCommitteesFetched: false },
-          ],
-        },
-      });
-
-      // If we already have 5 or more unprocessed epochs, don't create new ones
-      if (unprocessedCount >= MAX_UNPROCESSED_EPOCHS) {
-        return [];
-      }
-
-      // Calculate how many epochs we need to create
-      const epochsNeeded = MAX_UNPROCESSED_EPOCHS - unprocessedCount;
-
-      // Get the starting epoch for creation
-      const lookbackEpoch = getEpochFromSlot(getOldestLookbackSlot());
-      const lastEpoch = input.lastEpoch;
-      const startEpoch = lastEpoch ? lastEpoch + 1 : lookbackEpoch;
-
-      // Create array of epochs to create
-      const epochsToCreate = [];
-      for (let i = 0; i < epochsNeeded; i++) {
-        epochsToCreate.push(startEpoch + i);
-      }
-
-      return epochsToCreate;
-    } catch (error) {
-      console.error('Error computing next epoch batch:', error);
-      throw error;
-    }
+export const getLastCreatedEpoch = fromPromise(
+  async ({ input }: { input: { epochController: EpochController } }) => {
+    return input.epochController.getLastCreated();
   },
 );
 
-export const enqueueEpochs = fromPromise(
-  async ({ input }: { input: { epochsToCreate: number[] } }) => {
-    try {
-      const epochsToCreate = input.epochsToCreate;
+export const getEpochsToCreate = fromPromise(
+  async ({ input }: { input: { epochController: EpochController; lastEpoch: number | null } }) => {
+    return input.epochController.getEpochsToCreate(input.lastEpoch);
+  },
+);
 
-      const epochsData = epochsToCreate.map((epoch: number) => ({
-        epoch: epoch,
-        validatorsBalancesFetched: false,
-        rewardsFetched: false,
-        committeesFetched: false,
-        slotsFetched: false,
-        syncCommitteesFetched: false,
-      }));
-
-      await prisma.epoch.createMany({
-        data: epochsData,
-        skipDuplicates: true,
-      });
-
-      return { count: epochsToCreate.length };
-    } catch (error) {
-      console.error('Error enqueuing epochs:', error);
-      throw error;
-    }
+export const createEpochs = fromPromise(
+  async ({ input }: { input: { epochController: EpochController; epochsToCreate: number[] } }) => {
+    return input.epochController.createEpochs(input.epochsToCreate);
   },
 );
 

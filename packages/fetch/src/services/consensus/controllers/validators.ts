@@ -1,9 +1,9 @@
 import { Decimal } from '@prisma/client/runtime/library';
-import { chunk } from 'lodash';
+import chunk from 'lodash/chunk.js';
 
 import { BeaconClient } from '@/src/services/consensus/beacon.js';
 import { VALIDATOR_STATUS } from '@/src/services/consensus/constants.js';
-import { ValidatorsStorage } from '@/src/services/consensus/storage/validatorsStorage.js';
+import { ValidatorsStorage } from '@/src/services/consensus/storage/validators.js';
 
 export class ValidatorsController {
   constructor(

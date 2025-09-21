@@ -1,7 +1,8 @@
+import { EpochController } from '@/src/services/consensus/controllers/epoch.js';
 import { getCreateEpochActor, getEpochOrchestratorActor } from '@/src/xstate/epoch/index.js';
 
-export default function initXstateMachines() {
-  getCreateEpochActor().start();
+export default function initXstateMachines(epochController: EpochController, slotDuration: number) {
+  getCreateEpochActor(epochController, slotDuration).start();
   getEpochOrchestratorActor().start();
 
   // committeeCleanup: {

@@ -1,26 +1,29 @@
 import { setup, assign } from 'xstate';
 
+import { EpochController } from '@/src/services/consensus/controllers/epoch.js';
 import {
   getLastCreatedEpoch,
   getEpochsToCreate,
-  enqueueEpochs,
+  createEpochs,
 } from '@/src/xstate/epoch/epoch.actors.js';
 
 export const epochCreationMachine = setup({
   types: {
     context: {} as {
+      epochController: EpochController;
       lastEpoch: number | null;
       epochsToCreate: number[];
       slotDuration: number;
     },
     input: {} as {
       slotDuration: number;
+      epochController: EpochController;
     },
   },
   actors: {
     getLastCreatedEpoch,
     getEpochsToCreate,
-    enqueueEpochs,
+    createEpochs,
   },
   delays: {
     slotDuration: ({ context }) => {
@@ -32,6 +35,7 @@ export const epochCreationMachine = setup({
   initial: 'readLastCreated',
   description: 'The epoch creator is a state machine that is responsible for creating epochs.',
   context: ({ input }) => ({
+    epochController: input.epochController,
     lastEpoch: 0,
     epochsToCreate: [],
     slotDuration: input.slotDuration,
@@ -40,6 +44,7 @@ export const epochCreationMachine = setup({
     readLastCreated: {
       invoke: {
         src: 'getLastCreatedEpoch',
+        input: ({ context }) => ({ epochController: context.epochController }),
         onDone: {
           target: 'getEpochsToCreate',
           actions: assign({ lastEpoch: ({ event }) => event.output }),
@@ -50,7 +55,10 @@ export const epochCreationMachine = setup({
     getEpochsToCreate: {
       invoke: {
         src: 'getEpochsToCreate',
-        input: ({ context }) => ({ lastEpoch: context.lastEpoch }),
+        input: ({ context }) => ({
+          epochController: context.epochController,
+          lastEpoch: context.lastEpoch,
+        }),
         onDone: {
           target: 'createEpochs',
           actions: assign({ epochsToCreate: ({ event }) => event.output }),
@@ -60,8 +68,11 @@ export const epochCreationMachine = setup({
     },
     createEpochs: {
       invoke: {
-        src: 'enqueueEpochs',
-        input: ({ context }) => ({ epochsToCreate: context.epochsToCreate }),
+        src: 'createEpochs',
+        input: ({ context }) => ({
+          epochController: context.epochController,
+          epochsToCreate: context.epochsToCreate,
+        }),
         onDone: 'sleep',
         onError: 'sleep',
       },
