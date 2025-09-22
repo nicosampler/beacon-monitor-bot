@@ -1,27 +1,14 @@
+import { Epoch } from '@prisma/client';
 import ms from 'ms';
 import { setup, assign, stopChild, ActorRefFrom } from 'xstate';
 
-import { getMinEpochToProcess, type EpochToProcess } from './epoch.actors.js';
+import { getMinEpochToProcess } from './epoch.actors.js';
 import { epochProcessorMachine } from './epochProcessor.machine.js';
 
 import type { CustomLogger } from '@/src/lib/pino.js';
-import { logMachine, logActor } from '@/src/xstate/multiMachineLogger.js';
+import { EpochController } from '@/src/services/consensus/controllers/epoch.js';
+import { logActor } from '@/src/xstate/multiMachineLogger.js';
 import { pinoLog } from '@/src/xstate/pinoLog.js';
-
-export interface EpochOrchestratorContext {
-  epochData: EpochToProcess | null;
-  epochActor: ActorRefFrom<typeof epochProcessorMachine> | null;
-  logger?: CustomLogger;
-  slotDuration: number;
-  lookbackSlot: number;
-}
-
-export type EpochOrchestratorEvents = { type: 'EPOCH_COMPLETED'; machineId: string };
-
-export interface EpochOrchestratorInput {
-  slotDuration: number;
-  lookbackSlot: number;
-}
 
 /**
  * @fileoverview The epoch orchestrator is a state machine that is responsible for orchestrating the processing of epochs.
@@ -36,19 +23,33 @@ export interface EpochOrchestratorInput {
 
 export const epochOrchestratorMachine = setup({
   types: {} as {
-    context: EpochOrchestratorContext;
-    events: EpochOrchestratorEvents;
-    input: EpochOrchestratorInput;
+    context: {
+      epochData: Epoch | null;
+      epochActor: ActorRefFrom<typeof epochProcessorMachine> | null;
+      logger?: CustomLogger;
+      slotDuration: number;
+      lookbackSlot: number;
+      epochController: EpochController;
+    };
+    events: { type: 'EPOCH_COMPLETED'; machineId: string };
+    input: {
+      slotDuration: number;
+      lookbackSlot: number;
+      epochController: EpochController;
+    };
   },
   actors: {
     getMinEpochToProcess,
-    epochProcessor: epochProcessorMachine,
+    epochProcessorMachine,
   },
   guards: {
-    hasEpochData: ({ event }: { event: any }) => event.output !== null,
+    hasEpochDataInContext: ({ context }) => {
+      return context.epochData !== null;
+    },
   },
   delays: {
     slotDuration: ({ context }) => ms(`${context.slotDuration}s`),
+    noMinEpochDelay: ({ context }) => ms(`${context.slotDuration / 3}s`),
   },
 }).createMachine({
   id: 'EpochOrchestrator',
@@ -58,43 +59,51 @@ export const epochOrchestratorMachine = setup({
     epochActor: null,
     slotDuration: input.slotDuration,
     lookbackSlot: input.lookbackSlot,
+    epochController: input.epochController,
   }),
   states: {
     gettingMinEpoch: {
       invoke: {
         src: 'getMinEpochToProcess',
-        onDone: [
-          {
-            guard: 'hasEpochData',
-            target: 'spawningEpochProcessor',
-            actions: [
-              assign({
-                epochData: ({ event }) => event.output,
-              }),
-              pinoLog(
-                ({ event }) => `Start processing epoch ${event.output?.epoch}`,
-                'EpochOrchestrator',
-              ),
-            ],
-          },
-          {
-            target: 'noEpochsToProcess',
-          },
-        ],
-        onError: [
-          {
-            target: 'retryGettingEpoch',
-            actions: pinoLog(
-              ({ event }) => `Error getting min epoch to process: ${event.error}`,
+        input: ({ context }) => ({ epochController: context.epochController }),
+        onDone: {
+          target: 'checkingIfCanSpawnEpochProcessor',
+          actions: [
+            assign({
+              epochData: ({ event }) => event.output,
+            }),
+            pinoLog(
+              ({ event }) => `Start processing epoch ${event.output?.epoch}`,
               'EpochOrchestrator',
-              'error',
             ),
+          ],
+        },
+        onError: {
+          target: 'noMinEpochToProcess',
+          actions: pinoLog(
+            ({ event }) => `Error getting min epoch to process: ${event.error}`,
+            'EpochOrchestrator',
+            'error',
+          ),
+        },
+      },
+    },
+
+    checkingIfCanSpawnEpochProcessor: {
+      after: {
+        0: [
+          {
+            guard: 'hasEpochDataInContext',
+            target: 'processingEpoch',
+          },
+          {
+            target: 'noMinEpochToProcess',
           },
         ],
       },
     },
 
-    spawningEpochProcessor: {
+    processingEpoch: {
       entry: [
         assign({
           epochActor: ({ context, spawn }) => {
@@ -103,10 +112,7 @@ export const epochOrchestratorMachine = setup({
             const { epoch } = context.epochData;
             const epochId = `epochProcessor:${epoch}`;
 
-            // Register the spawned epoch processor machine
-            logMachine(epochId, 'Spawning', { epoch });
-
-            const actor = spawn('epochProcessor', {
+            const actor = spawn('epochProcessorMachine', {
               id: epochId,
               input: {
                 epoch,
@@ -127,7 +133,7 @@ export const epochOrchestratorMachine = setup({
           },
         }),
         pinoLog(
-          ({ context }) => `Spawning epoch processor for epoch ${context.epochData?.epoch}`,
+          ({ context }) => `Processing epoch ${context.epochData?.epoch}`,
           'EpochOrchestrator',
         ),
       ],
@@ -149,17 +155,10 @@ export const epochOrchestratorMachine = setup({
       },
     },
 
-    retryGettingEpoch: {
-      entry: pinoLog(`Retrying getting min epoch to process`, 'EpochOrchestrator'),
+    noMinEpochToProcess: {
+      entry: pinoLog(`No min epoch to process, waiting for next check`, 'EpochOrchestrator'),
       after: {
-        [ms('1s')]: 'gettingMinEpoch',
-      },
-    },
-
-    noEpochsToProcess: {
-      entry: pinoLog('No epochs to process, waiting for next check', 'EpochOrchestrator'),
-      after: {
-        slotDuration: 'gettingMinEpoch',
+        noMinEpochDelay: 'gettingMinEpoch',
       },
     },
   },

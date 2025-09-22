@@ -43,4 +43,8 @@ export class EpochController {
   async createEpochs(epochsToCreate: number[]) {
     return this.epochStorage.createEpochs(epochsToCreate);
   }
+
+  async getMinEpochToProcess() {
+    return this.epochStorage.getMinEpochToProcess();
+  }
 }

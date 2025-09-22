@@ -4,15 +4,10 @@ import { env } from '@/src/lib/env.js';
 import { EpochController } from '@/src/services/consensus/controllers/epoch.js';
 import { epochCreationMachine } from '@/src/xstate/epoch/epochCreator.machine.js';
 import { epochOrchestratorMachine } from '@/src/xstate/epoch/epochOrchestrator.machine.js';
-import { epochProcessorMachine } from '@/src/xstate/epoch/epochProcessor.machine.js';
 import { logMachine } from '@/src/xstate/multiMachineLogger.js';
 
-export const Epoch = epochCreationMachine;
-export const ProcessEpoch = epochProcessorMachine;
-export const EpochOrchestrator = epochOrchestratorMachine;
-
 export const getCreateEpochActor = (epochController: EpochController, slotDuration: number) => {
-  const actor = createActor(Epoch, {
+  const actor = createActor(epochCreationMachine, {
     input: {
       slotDuration,
       epochController,
@@ -34,11 +29,15 @@ export const getCreateEpochActor = (epochController: EpochController, slotDurati
   return actor;
 };
 
-export const getEpochOrchestratorActor = () => {
-  const actor = createActor(EpochOrchestrator, {
+export const getEpochOrchestratorActor = (
+  epochController: EpochController,
+  slotDuration: number,
+) => {
+  const actor = createActor(epochOrchestratorMachine, {
     input: {
-      slotDuration: env.BEACON_SLOT_DURATION_IN_SECONDS,
+      slotDuration,
       lookbackSlot: env.BEACON_LOOKBACK_SLOT,
+      epochController,
     },
   });
 

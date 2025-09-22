@@ -39,4 +39,27 @@ export class EpochStorage {
       skipDuplicates: true,
     });
   }
+
+  async getMinEpochToProcess() {
+    const nextEpoch = await this.prisma.epoch.findFirst({
+      where: {
+        OR: [
+          { validatorsBalancesFetched: false },
+          { rewardsFetched: false },
+          { committeesFetched: false },
+          { slotsFetched: false },
+          { validatorsActivationFetched: false },
+        ],
+      },
+      orderBy: { epoch: 'asc' },
+    });
+
+    if (!nextEpoch) {
+      return null;
+    }
+
+    return {
+      ...nextEpoch,
+    };
+  }
 }

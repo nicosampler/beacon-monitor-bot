@@ -3,7 +3,8 @@ import { getCreateEpochActor, getEpochOrchestratorActor } from '@/src/xstate/epo
 
 export default function initXstateMachines(epochController: EpochController, slotDuration: number) {
   getCreateEpochActor(epochController, slotDuration).start();
-  getEpochOrchestratorActor().start();
+
+  getEpochOrchestratorActor(epochController, slotDuration).start();
 
   // committeeCleanup: {
   //   invoke: {

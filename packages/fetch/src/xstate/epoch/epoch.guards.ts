@@ -1,10 +1,10 @@
+import { env } from '@/src/lib/env.js';
 import { getEpochFromSlot } from '@/src/services/consensus/utils/misc.js';
 import {
   getEpochNumberFromTimestamp,
   getSlotNumberFromTimestamp,
 } from '@/src/services/consensus/utils/time.js';
 import { getSyncCommitteePeriodStartEpoch } from '@/src/services/consensus/utils/time.js';
-import { env } from '@/src/lib/env.js';
 
 export const isFirstEpochOfSyncCommitteePeriod = ({
   context,

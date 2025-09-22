@@ -405,8 +405,6 @@ export const epochProcessorMachine = setup({
                     assign({
                       slotOrchestratorActor: ({ context, spawn }) => {
                         const orchestratorId = `slotOrchestrator:${context.epoch}`;
-                        // Register the spawned slot orchestrator machine
-                        logMachine(orchestratorId, 'Spawning', { epoch: context.epoch });
 
                         const actor = spawn('slotOrchestratorMachine', {
                           id: orchestratorId,
@@ -644,3 +642,5 @@ export const epochProcessorMachine = setup({
     },
   },
 });
+
+export type EpochProcessorMachine = typeof epochProcessorMachine;

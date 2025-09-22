@@ -29,57 +29,15 @@ export const createEpochs = fromPromise(
   },
 );
 
-export interface EpochToProcess {
-  epoch: number;
-  validatorsBalancesFetched: boolean;
-  rewardsFetched: boolean;
-  committeesFetched: boolean;
-  slotsFetched: boolean;
-  syncCommitteesFetched: boolean;
-  validatorsActivationFetched: boolean;
-}
-
 /**
  * Finds the minimum unprocessed epoch that needs processing
  * Returns a single epoch with its current state
  */
-export const getMinEpochToProcess = fromPromise(async (): Promise<EpochToProcess | null> => {
-  try {
-    // Find the minimum epoch where any of the completion flags is false
-    const nextEpoch = await prisma.epoch.findFirst({
-      where: {
-        OR: [
-          { validatorsBalancesFetched: false },
-          { rewardsFetched: false },
-          { committeesFetched: false },
-          { slotsFetched: false },
-          { validatorsActivationFetched: false },
-        ],
-      },
-      orderBy: { epoch: 'asc' },
-      select: {
-        epoch: true,
-        validatorsBalancesFetched: true,
-        rewardsFetched: true,
-        committeesFetched: true,
-        slotsFetched: true,
-        syncCommitteesFetched: true,
-        validatorsActivationFetched: true,
-      },
-    });
-
-    if (!nextEpoch) {
-      return null;
-    }
-
-    return {
-      ...nextEpoch,
-    };
-  } catch (error) {
-    console.error('Error getting min epoch to process:', error);
-    throw error;
-  }
-});
+export const getMinEpochToProcess = fromPromise(
+  async ({ input }: { input: { epochController: EpochController } }) => {
+    return input.epochController.getMinEpochToProcess();
+  },
+);
 
 export const fetchValidatorsBalances = fromPromise(
   async ({ input }: { input: { startSlot: number } }) => {
