@@ -1,28 +1,43 @@
 import { test, expect } from 'vitest';
-import { createActor, fromPromise } from 'xstate';
+import { createActor } from 'xstate';
 
 import { epochCreationMachine } from './epochCreator.machine.js';
+
+import { EpochController } from '@/src/services/consensus/controllers/epoch.js';
+
+// Type for mock EpochController with only the methods we need
+type MockEpochController = {
+  getLastCreated: () => Promise<number | null>;
+  getEpochsToCreate: () => Promise<number[]>;
+  createEpochs: () => Promise<void>;
+  getMinEpochToProcess: () => Promise<unknown>;
+};
 
 describe('epochCreationMachine', () => {
   test('should initialize with correct context and transition to readLastCreated', async () => {
     // Arrange
-    const mockGetLastCreatedEpoch = fromPromise(async () => 100 as number | null);
-    const mockGetEpochsToCreate = fromPromise(
-      async (_: { input: { lastEpoch: number | null } }) => [101, 102, 103],
-    );
-    const mockEnqueueEpochs = fromPromise(async (_: { input: { epochsToCreate: number[] } }) => ({
-      count: 3,
-    }));
+    const mockEpochController: MockEpochController = {
+      async getLastCreated() {
+        return 100;
+      },
+      async getEpochsToCreate() {
+        return [101, 102, 103];
+      },
+      async createEpochs() {
+        return;
+      },
+      async getMinEpochToProcess() {
+        return null;
+      },
+    };
 
-    const testMachine = epochCreationMachine.provide({
-      actors: {
-        getLastCreatedEpoch: mockGetLastCreatedEpoch,
-        getEpochsToCreate: mockGetEpochsToCreate,
-        enqueueEpochs: mockEnqueueEpochs,
+    const testMachine = epochCreationMachine;
+    const actor = createActor(testMachine, {
+      input: {
+        slotDuration: 1,
+        epochController: mockEpochController as unknown as EpochController,
       },
     });
-
-    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -43,23 +58,28 @@ describe('epochCreationMachine', () => {
 
   test('should successfully complete full workflow and reach sleep state', async () => {
     // Arrange
-    const mockGetLastCreatedEpoch = fromPromise(async () => 150 as number | null);
-    const mockGetEpochsToCreate = fromPromise(
-      async ({ input: _input }: { input: { lastEpoch: number | null } }) => [151, 152, 153],
-    );
-    const mockEnqueueEpochs = fromPromise(
-      async ({ input: _input }: { input: { epochsToCreate: number[] } }) => ({ count: 3 }),
-    );
+    const mockEpochController: MockEpochController = {
+      async getLastCreated() {
+        return 150;
+      },
+      async getEpochsToCreate() {
+        return [151, 152, 153];
+      },
+      async createEpochs() {
+        return;
+      },
+      async getMinEpochToProcess() {
+        return null;
+      },
+    };
 
-    const testMachine = epochCreationMachine.provide({
-      actors: {
-        getLastCreatedEpoch: mockGetLastCreatedEpoch,
-        getEpochsToCreate: mockGetEpochsToCreate,
-        enqueueEpochs: mockEnqueueEpochs,
+    const testMachine = epochCreationMachine;
+    const actor = createActor(testMachine, {
+      input: {
+        slotDuration: 1,
+        epochController: mockEpochController as unknown as EpochController,
       },
     });
-
-    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -79,25 +99,28 @@ describe('epochCreationMachine', () => {
 
   test('should handle readLastCreated error and transition to sleep', async () => {
     // Arrange
-    const mockGetLastCreatedEpoch = fromPromise(async (): Promise<number | null> => {
-      throw new Error('Database connection failed');
-    });
-    const mockGetEpochsToCreate = fromPromise(
-      async ({ input: _input }: { input: { lastEpoch: number | null } }) => [101, 102, 103],
-    );
-    const mockEnqueueEpochs = fromPromise(
-      async ({ input: _input }: { input: { epochsToCreate: number[] } }) => ({ count: 3 }),
-    );
+    const mockEpochController: MockEpochController = {
+      async getLastCreated() {
+        throw new Error('Database connection failed');
+      },
+      async getEpochsToCreate() {
+        return [101, 102, 103];
+      },
+      async createEpochs() {
+        return;
+      },
+      async getMinEpochToProcess() {
+        return null;
+      },
+    };
 
-    const testMachine = epochCreationMachine.provide({
-      actors: {
-        getLastCreatedEpoch: mockGetLastCreatedEpoch,
-        getEpochsToCreate: mockGetEpochsToCreate,
-        enqueueEpochs: mockEnqueueEpochs,
+    const testMachine = epochCreationMachine;
+    const actor = createActor(testMachine, {
+      input: {
+        slotDuration: 1,
+        epochController: mockEpochController as unknown as EpochController,
       },
     });
-
-    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -117,23 +140,28 @@ describe('epochCreationMachine', () => {
 
   test('should successfully transition from getEpochsToCreate to createEpochs', async () => {
     // Arrange
-    const mockGetLastCreatedEpoch = fromPromise(async () => 200 as number | null);
-    const mockGetEpochsToCreate = fromPromise(
-      async ({ input: _input }: { input: { lastEpoch: number | null } }) => [201, 202, 203, 204],
-    );
-    const mockEnqueueEpochs = fromPromise(
-      async ({ input: _input }: { input: { epochsToCreate: number[] } }) => ({ count: 4 }),
-    );
+    const mockEpochController: MockEpochController = {
+      async getLastCreated() {
+        return 200;
+      },
+      async getEpochsToCreate() {
+        return [201, 202, 203, 204];
+      },
+      async createEpochs() {
+        return;
+      },
+      async getMinEpochToProcess() {
+        return null;
+      },
+    };
 
-    const testMachine = epochCreationMachine.provide({
-      actors: {
-        getLastCreatedEpoch: mockGetLastCreatedEpoch,
-        getEpochsToCreate: mockGetEpochsToCreate,
-        enqueueEpochs: mockEnqueueEpochs,
+    const testMachine = epochCreationMachine;
+    const actor = createActor(testMachine, {
+      input: {
+        slotDuration: 1,
+        epochController: mockEpochController as unknown as EpochController,
       },
     });
-
-    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -153,25 +181,28 @@ describe('epochCreationMachine', () => {
 
   test('should handle getEpochsToCreate error and transition to sleep', async () => {
     // Arrange
-    const mockGetLastCreatedEpoch = fromPromise(async () => 300 as number | null);
-    const mockGetEpochsToCreate = fromPromise(
-      async ({ input: _input }: { input: { lastEpoch: number | null } }): Promise<number[]> => {
+    const mockEpochController: MockEpochController = {
+      async getLastCreated() {
+        return 300;
+      },
+      async getEpochsToCreate() {
         throw new Error('Failed to compute epochs');
       },
-    );
-    const mockEnqueueEpochs = fromPromise(
-      async ({ input: _input }: { input: { epochsToCreate: number[] } }) => ({ count: 3 }),
-    );
+      async createEpochs() {
+        return;
+      },
+      async getMinEpochToProcess() {
+        return null;
+      },
+    };
 
-    const testMachine = epochCreationMachine.provide({
-      actors: {
-        getLastCreatedEpoch: mockGetLastCreatedEpoch,
-        getEpochsToCreate: mockGetEpochsToCreate,
-        enqueueEpochs: mockEnqueueEpochs,
+    const testMachine = epochCreationMachine;
+    const actor = createActor(testMachine, {
+      input: {
+        slotDuration: 1,
+        epochController: mockEpochController as unknown as EpochController,
       },
     });
-
-    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -192,25 +223,28 @@ describe('epochCreationMachine', () => {
 
   test('should successfully transition from createEpochs to sleep', async () => {
     // Arrange
-    const mockGetLastCreatedEpoch = fromPromise(async () => 400 as number | null);
-    const mockGetEpochsToCreate = fromPromise(
-      async ({ input: _input }: { input: { lastEpoch: number | null } }) => [401, 402],
-    );
-    const mockEnqueueEpochs = fromPromise(
-      async ({ input }: { input: { epochsToCreate: number[] } }) => ({
-        count: input.epochsToCreate.length,
-      }),
-    );
+    const mockEpochController: MockEpochController = {
+      async getLastCreated() {
+        return 400;
+      },
+      async getEpochsToCreate() {
+        return [401, 402];
+      },
+      async createEpochs() {
+        return;
+      },
+      async getMinEpochToProcess() {
+        return null;
+      },
+    };
 
-    const testMachine = epochCreationMachine.provide({
-      actors: {
-        getLastCreatedEpoch: mockGetLastCreatedEpoch,
-        getEpochsToCreate: mockGetEpochsToCreate,
-        enqueueEpochs: mockEnqueueEpochs,
+    const testMachine = epochCreationMachine;
+    const actor = createActor(testMachine, {
+      input: {
+        slotDuration: 1,
+        epochController: mockEpochController as unknown as EpochController,
       },
     });
-
-    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -230,29 +264,28 @@ describe('epochCreationMachine', () => {
 
   test('should handle createEpochs error and transition to sleep', async () => {
     // Arrange
-    const mockGetLastCreatedEpoch = fromPromise(async () => 500 as number | null);
-    const mockGetEpochsToCreate = fromPromise(
-      async ({ input: _input }: { input: { lastEpoch: number | null } }) => [501, 502, 503],
-    );
-    const mockEnqueueEpochs = fromPromise(
-      async ({
-        input: _input,
-      }: {
-        input: { epochsToCreate: number[] };
-      }): Promise<{ count: number }> => {
+    const mockEpochController: MockEpochController = {
+      async getLastCreated() {
+        return 500;
+      },
+      async getEpochsToCreate() {
+        return [501, 502, 503];
+      },
+      async createEpochs() {
         throw new Error('Failed to enqueue epochs');
       },
-    );
+      async getMinEpochToProcess() {
+        return null;
+      },
+    };
 
-    const testMachine = epochCreationMachine.provide({
-      actors: {
-        getLastCreatedEpoch: mockGetLastCreatedEpoch,
-        getEpochsToCreate: mockGetEpochsToCreate,
-        enqueueEpochs: mockEnqueueEpochs,
+    const testMachine = epochCreationMachine;
+    const actor = createActor(testMachine, {
+      input: {
+        slotDuration: 1,
+        epochController: mockEpochController as unknown as EpochController,
       },
     });
-
-    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -272,23 +305,28 @@ describe('epochCreationMachine', () => {
 
   test('should handle empty epochs list from getEpochsToCreate', async () => {
     // Arrange
-    const mockGetLastCreatedEpoch = fromPromise(async () => 600 as number | null);
-    const mockGetEpochsToCreate = fromPromise(
-      async ({ input: _input }: { input: { lastEpoch: number | null } }) => [] as number[], // Empty array
-    );
-    const mockEnqueueEpochs = fromPromise(
-      async ({ input: _input }: { input: { epochsToCreate: number[] } }) => ({ count: 0 }),
-    );
+    const mockEpochController: MockEpochController = {
+      async getLastCreated() {
+        return 600;
+      },
+      async getEpochsToCreate() {
+        return []; // Empty array
+      },
+      async createEpochs() {
+        return;
+      },
+      async getMinEpochToProcess() {
+        return null;
+      },
+    };
 
-    const testMachine = epochCreationMachine.provide({
-      actors: {
-        getLastCreatedEpoch: mockGetLastCreatedEpoch,
-        getEpochsToCreate: mockGetEpochsToCreate,
-        enqueueEpochs: mockEnqueueEpochs,
+    const testMachine = epochCreationMachine;
+    const actor = createActor(testMachine, {
+      input: {
+        slotDuration: 1,
+        epochController: mockEpochController as unknown as EpochController,
       },
     });
-
-    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -308,23 +346,28 @@ describe('epochCreationMachine', () => {
 
   test('should handle null lastEpoch from getLastCreatedEpoch', async () => {
     // Arrange
-    const mockGetLastCreatedEpoch = fromPromise(async () => null as number | null); // No previous epoch
-    const mockGetEpochsToCreate = fromPromise(
-      async ({ input: _input }: { input: { lastEpoch: number | null } }) => [1, 2, 3],
-    );
-    const mockEnqueueEpochs = fromPromise(
-      async ({ input: _input }: { input: { epochsToCreate: number[] } }) => ({ count: 3 }),
-    );
+    const mockEpochController: MockEpochController = {
+      async getLastCreated() {
+        return null; // No previous epoch
+      },
+      async getEpochsToCreate() {
+        return [1, 2, 3];
+      },
+      async createEpochs() {
+        return;
+      },
+      async getMinEpochToProcess() {
+        return null;
+      },
+    };
 
-    const testMachine = epochCreationMachine.provide({
-      actors: {
-        getLastCreatedEpoch: mockGetLastCreatedEpoch,
-        getEpochsToCreate: mockGetEpochsToCreate,
-        enqueueEpochs: mockEnqueueEpochs,
+    const testMachine = epochCreationMachine;
+    const actor = createActor(testMachine, {
+      input: {
+        slotDuration: 1,
+        epochController: mockEpochController as unknown as EpochController,
       },
     });
-
-    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
@@ -344,27 +387,28 @@ describe('epochCreationMachine', () => {
 
   test('should complete full workflow successfully', async () => {
     // Arrange
-    const mockGetLastCreatedEpoch = fromPromise(async () => 1000 as number | null);
-    const mockGetEpochsToCreate = fromPromise(
-      async ({ input: _input }: { input: { lastEpoch: number | null } }) => [
-        1001, 1002, 1003, 1004, 1005,
-      ],
-    );
-    const mockEnqueueEpochs = fromPromise(
-      async ({ input }: { input: { epochsToCreate: number[] } }) => ({
-        count: input.epochsToCreate.length,
-      }),
-    );
+    const mockEpochController: MockEpochController = {
+      async getLastCreated() {
+        return 1000;
+      },
+      async getEpochsToCreate() {
+        return [1001, 1002, 1003, 1004, 1005];
+      },
+      async createEpochs() {
+        return;
+      },
+      async getMinEpochToProcess() {
+        return null;
+      },
+    };
 
-    const testMachine = epochCreationMachine.provide({
-      actors: {
-        getLastCreatedEpoch: mockGetLastCreatedEpoch,
-        getEpochsToCreate: mockGetEpochsToCreate,
-        enqueueEpochs: mockEnqueueEpochs,
+    const testMachine = epochCreationMachine;
+    const actor = createActor(testMachine, {
+      input: {
+        slotDuration: 1,
+        epochController: mockEpochController as unknown as EpochController,
       },
     });
-
-    const actor = createActor(testMachine, { input: { slotDuration: 1 } });
 
     // Act
     actor.start();
