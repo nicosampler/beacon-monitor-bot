@@ -3,7 +3,12 @@ import { setup, assign, sendParent, stopChild, raise, ActorRefFrom } from 'xstat
 
 import { slotOrchestratorMachine, SlotsCompletedEvent } from '../slot/slotOrchestrator.machine.js';
 
-import { getEpochSlots } from '@/src/services/consensus/utils/misc.js';
+import { getEpochFromSlot, getEpochSlots } from '@/src/services/consensus/utils/misc.js';
+import {
+  getEpochNumberFromTimestamp,
+  getSlotNumberFromTimestamp,
+  getSyncCommitteePeriodStartEpoch,
+} from '@/src/services/consensus/utils/time.js';
 import {
   fetchAttestationsRewards,
   fetchValidatorsBalances,
@@ -14,16 +19,7 @@ import {
   updateSyncCommitteesFetched,
   trackingTransitioningValidators,
 } from '@/src/xstate/epoch/epoch.actors.js';
-import {
-  canProcessEpoch,
-  canFetchCommittees,
-  canFetchSyncCommittees,
-  hasEpochEnded,
-  isFirstEpochOfSyncCommitteePeriod,
-  isLookbackEpoch,
-  hasEpochAlreadyStarted,
-} from '@/src/xstate/epoch/epoch.guards.js';
-import { logMachine, logActor } from '@/src/xstate/multiMachineLogger.js';
+import { logActor } from '@/src/xstate/multiMachineLogger.js';
 import { pinoLog } from '@/src/xstate/pinoLog.js';
 
 type ProcessEpochContext = {
@@ -86,14 +82,37 @@ export const epochProcessorMachine = setup({
     trackingTransitioningValidators,
   },
   guards: {
-    canProcessEpoch,
-    canFetchCommittees,
-    canFetchSyncCommittees,
-    hasEpochEnded,
-    isFirstEpochOfSyncCommitteePeriod,
-    isLookbackEpoch,
-    hasEpochAlreadyStarted,
-    isSyncCommitteeFetched: (_context: unknown, params: { isFetched: boolean }): boolean => {
+    canProcessEpoch: ({ context }): boolean => {
+      const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
+      // We need to wait for the epoch to start
+      return context.epoch <= currentEpoch + 1;
+    },
+    canFetchCommittees: ({ context }): boolean => {
+      const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
+      // We can fetch up to 1 epoch in advance
+      return context.epoch < currentEpoch + 1;
+    },
+    canFetchSyncCommittees: ({ context }): boolean => {
+      const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
+      // We can fetch up to 1 epoch in advance
+      return context.epoch <= currentEpoch + 1;
+    },
+    hasEpochEnded: ({ context }): boolean => {
+      const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+      return currentSlot > context.endSlot;
+    },
+    isFirstEpochOfSyncCommitteePeriod: ({ context }): boolean => {
+      return context.epoch === getSyncCommitteePeriodStartEpoch(context.epoch);
+    },
+    isLookbackEpoch: ({ context }): boolean => {
+      const lookbackEpoch = getEpochFromSlot(context.lookbackSlot);
+      return context.epoch === lookbackEpoch;
+    },
+    hasEpochAlreadyStarted: ({ context }): boolean => {
+      const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+      return currentSlot >= context.startSlot;
+    },
+    isSyncCommitteeFetched: (_context, params: { isFetched: boolean }): boolean => {
       return params.isFetched === true;
     },
     hasSlotsProcessed: ({ context }) => context.epochDBSnapshot.slotsFetched,
