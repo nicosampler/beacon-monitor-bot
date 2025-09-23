@@ -6,7 +6,7 @@ import { env } from '@/src/lib/env.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { getEpochFromSlot } from '@/src/services/consensus/utils/misc.js';
-import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
+import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.deprecated.js';
 import {
   updateLastSummaryUpdate,
   db_hasBeaconRewardsFetched,

@@ -7,7 +7,7 @@ import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
 import { processAttestations as _fetchAttestations } from '@/src/services/consensus/_feed/processAttestations.js';
 import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
-import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
+import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.deprecated.js';
 import { db_getLastSlotWithAttestations, db_hasEpochCommittees } from '@/src/utils/db.js';
 
 const prisma = getPrisma();

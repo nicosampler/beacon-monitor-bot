@@ -3,12 +3,7 @@ import { setup, assign, sendParent, stopChild, raise, ActorRefFrom } from 'xstat
 
 import { slotOrchestratorMachine, SlotsCompletedEvent } from '../slot/slotOrchestrator.machine.js';
 
-import { getEpochFromSlot, getEpochSlots } from '@/src/services/consensus/utils/misc.js';
-import {
-  getEpochNumberFromTimestamp,
-  getSlotNumberFromTimestamp,
-  getSyncCommitteePeriodStartEpoch,
-} from '@/src/services/consensus/utils/time.js';
+import { BeaconTime } from '@/src/services/consensus/utils/time.js';
 import {
   fetchAttestationsRewards,
   fetchValidatorsBalances,
@@ -22,42 +17,41 @@ import {
 import { logActor } from '@/src/xstate/multiMachineLogger.js';
 import { pinoLog } from '@/src/xstate/pinoLog.js';
 
-type ProcessEpochContext = {
-  epoch: number;
-  startSlot: number;
-  endSlot: number;
-  epochDBSnapshot: {
-    validatorsBalancesFetched: boolean;
-    validatorsActivationFetched: boolean;
-    rewardsFetched: boolean;
-    committeesFetched: boolean;
-    slotsFetched: boolean;
-    syncCommitteesFetched: boolean;
-  };
-  slotOrchestratorActor?: ActorRefFrom<typeof slotOrchestratorMachine> | null;
-  // Flags for multi-event waiting
-  committeesReady: boolean;
-  epochStarted: boolean;
-  slotDuration: number;
-  lookbackSlot: number;
-};
-
-type ProcessEpochEvents =
-  | {
-      type: 'COMMITTEES_FETCHED';
-    }
-  | {
-      type: 'VALIDATORS_BALANCES_FETCHED';
-    }
-  | {
-      type: 'EPOCH_STARTED';
-    }
-  | SlotsCompletedEvent;
-
 export const epochProcessorMachine = setup({
   types: {} as {
-    context: ProcessEpochContext;
-    events: ProcessEpochEvents;
+    context: {
+      beaconTime: BeaconTime;
+      epoch: number;
+      startSlot: number;
+      endSlot: number;
+      slotDuration: number;
+      lookbackSlot: number;
+
+      epochDBSnapshot: {
+        validatorsBalancesFetched: boolean;
+        validatorsActivationFetched: boolean;
+        rewardsFetched: boolean;
+        committeesFetched: boolean;
+        slotsFetched: boolean;
+        syncCommitteesFetched: boolean;
+      };
+
+      slotOrchestratorActor?: ActorRefFrom<typeof slotOrchestratorMachine> | null;
+
+      committeesReady: boolean;
+      epochStarted: boolean;
+    };
+    events:
+      | {
+          type: 'COMMITTEES_FETCHED';
+        }
+      | {
+          type: 'VALIDATORS_BALANCES_FETCHED';
+        }
+      | {
+          type: 'EPOCH_STARTED';
+        }
+      | SlotsCompletedEvent;
     input: {
       epoch: number;
       validatorsBalancesFetched: boolean;
@@ -68,6 +62,7 @@ export const epochProcessorMachine = setup({
       validatorsActivationFetched: boolean;
       slotDuration: number;
       lookbackSlot: number;
+      beaconTime: BeaconTime;
     };
   },
   actors: {
@@ -83,33 +78,33 @@ export const epochProcessorMachine = setup({
   },
   guards: {
     canProcessEpoch: ({ context }): boolean => {
-      const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
+      const currentEpoch = context.beaconTime.getEpochNumberFromTimestamp(new Date().getTime());
       // We need to wait for the epoch to start
       return context.epoch <= currentEpoch + 1;
     },
     canFetchCommittees: ({ context }): boolean => {
-      const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
+      const currentEpoch = context.beaconTime.getEpochNumberFromTimestamp(new Date().getTime());
       // We can fetch up to 1 epoch in advance
       return context.epoch < currentEpoch + 1;
     },
     canFetchSyncCommittees: ({ context }): boolean => {
-      const currentEpoch = getEpochNumberFromTimestamp(new Date().getTime());
+      const currentEpoch = context.beaconTime.getEpochNumberFromTimestamp(new Date().getTime());
       // We can fetch up to 1 epoch in advance
       return context.epoch <= currentEpoch + 1;
     },
     hasEpochEnded: ({ context }): boolean => {
-      const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+      const currentSlot = context.beaconTime.getSlotNumberFromTimestamp(new Date().getTime());
       return currentSlot > context.endSlot;
     },
     isFirstEpochOfSyncCommitteePeriod: ({ context }): boolean => {
-      return context.epoch === getSyncCommitteePeriodStartEpoch(context.epoch);
+      return context.epoch === context.beaconTime.getSyncCommitteePeriodStartEpoch(context.epoch);
     },
     isLookbackEpoch: ({ context }): boolean => {
-      const lookbackEpoch = getEpochFromSlot(context.lookbackSlot);
+      const lookbackEpoch = context.beaconTime.getEpochFromSlot(context.lookbackSlot);
       return context.epoch === lookbackEpoch;
     },
     hasEpochAlreadyStarted: ({ context }): boolean => {
-      const currentSlot = getSlotNumberFromTimestamp(new Date().getTime());
+      const currentSlot = context.beaconTime.getSlotNumberFromTimestamp(new Date().getTime());
       return currentSlot >= context.startSlot;
     },
     isSyncCommitteeFetched: (_context, params: { isFetched: boolean }): boolean => {
@@ -131,7 +126,7 @@ export const epochProcessorMachine = setup({
   id: 'EpochProcessor',
   initial: 'checkingCanProcess',
   context: ({ input }) => {
-    const { startSlot, endSlot } = getEpochSlots(input.epoch);
+    const { startSlot, endSlot } = input.beaconTime.getEpochSlots(input.epoch);
     return {
       epoch: input.epoch,
       startSlot: startSlot,
@@ -149,7 +144,8 @@ export const epochProcessorMachine = setup({
       epochStarted: false,
       slotDuration: ms(`${input.slotDuration}s`),
       lookbackSlot: input.lookbackSlot,
-    } satisfies ProcessEpochContext;
+      beaconTime: input.beaconTime,
+    };
   },
   states: {
     checkingCanProcess: {

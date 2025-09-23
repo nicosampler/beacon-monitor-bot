@@ -9,7 +9,7 @@ import { calculateSlotRange } from '@/src/services/consensus/utils/misc.js';
 import {
   getEpochNumberFromTimestamp,
   getTimestampFromSlotNumber,
-} from '@/src/services/consensus/utils/time.js';
+} from '@/src/services/consensus/utils/time.deprecated.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
 import { updateLastSummaryUpdate } from '@/src/utils/db.js';
 

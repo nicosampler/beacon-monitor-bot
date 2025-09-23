@@ -16,7 +16,7 @@ import {
 } from '@/src/services/consensus/types.js';
 import { getEpochSlots } from '@/src/services/consensus/utils/misc.js';
 import { ReliableRequestClient } from '@/src/services/consensus/utils/reliableRequestClient.js';
-import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
+import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.deprecated.js';
 
 /**
  * Configuration interface for BeaconClient

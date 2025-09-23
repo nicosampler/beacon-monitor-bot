@@ -1,7 +1,7 @@
 import { env } from '@/src/lib/env.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { beacon_getSyncCommittees } from '@/src/services/consensus/_feed/endpoints.js';
-import { getSyncCommitteePeriodStartEpoch } from '@/src/services/consensus/utils/time.js';
+import { getSyncCommitteePeriodStartEpoch } from '@/src/services/consensus/utils/time.deprecated.js';
 
 const prisma = getPrisma();
 

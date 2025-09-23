@@ -6,7 +6,7 @@ import { beacon_blocks } from '@/src/services/consensus/_feed/endpoints.js';
 import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/services/consensus/_feed/fetchBlockAndSyncRewards.js';
 import { processAttestations as _processAttestations } from '@/src/services/consensus/_feed/processAttestations.js';
 import { Attestation, Block } from '@/src/services/consensus/types.js';
-import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
+import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.deprecated.js';
 import { getBlock } from '@/src/services/execution/endpoints.js';
 import {
   db_getSyncCommitteeValidators,

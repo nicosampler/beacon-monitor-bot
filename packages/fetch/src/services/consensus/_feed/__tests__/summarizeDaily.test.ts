@@ -18,7 +18,7 @@ vi.mock('@/src/services/consensus/utils/time.js', () => ({
 import { canSummarize } from '../summarizeDaily.js';
 
 import * as beaconUtils from '@/src/services/consensus/utils/misc.js';
-import * as timeUtils from '@/src/services/consensus/utils/time.js';
+import * as timeUtils from '@/src/services/consensus/utils/time.deprecated.js';
 import * as db from '@/src/utils/db.js';
 
 describe('summarizeDaily', () => {

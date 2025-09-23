@@ -7,7 +7,7 @@ import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
 import { summarizeHourly } from '@/src/services/consensus/_feed/summarizeHourly.js';
 import { getOldestLookbackSlot } from '@/src/services/consensus/utils/misc.js';
-import { getTimestampFromSlotNumber } from '@/src/services/consensus/utils/time.js';
+import { getTimestampFromSlotNumber } from '@/src/services/consensus/utils/time.deprecated.js';
 
 const prisma = getPrisma();
 

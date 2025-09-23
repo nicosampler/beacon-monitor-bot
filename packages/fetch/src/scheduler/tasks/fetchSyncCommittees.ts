@@ -10,7 +10,7 @@ import { getEpochFromSlot, getOldestLookbackSlot } from '@/src/services/consensu
 import {
   getEpochNumberFromTimestamp,
   getSyncCommitteePeriodStartEpoch,
-} from '@/src/services/consensus/utils/time.js';
+} from '@/src/services/consensus/utils/time.deprecated.js';
 import { db_getLastProcessedSyncCommittee } from '@/src/utils/db.js';
 
 const prisma = getPrisma();

@@ -1,10 +1,15 @@
 import { EpochController } from '@/src/services/consensus/controllers/epoch.js';
+import { BeaconTime } from '@/src/services/consensus/utils/time.js';
 import { getCreateEpochActor, getEpochOrchestratorActor } from '@/src/xstate/epoch/index.js';
 
-export default function initXstateMachines(epochController: EpochController, slotDuration: number) {
+export default function initXstateMachines(
+  epochController: EpochController,
+  beaconTime: BeaconTime,
+  slotDuration: number,
+) {
   getCreateEpochActor(epochController, slotDuration).start();
 
-  getEpochOrchestratorActor(epochController, slotDuration).start();
+  getEpochOrchestratorActor(epochController, beaconTime, slotDuration).start();
 
   // committeeCleanup: {
   //   invoke: {

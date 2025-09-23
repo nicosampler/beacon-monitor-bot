@@ -5,7 +5,7 @@ import ms from 'ms';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { beacon_getAttestationRewards } from '@/src/services/consensus/_feed/endpoints.js';
 import { AttestationRewards } from '@/src/services/consensus/types.js';
-import { getTimestampFromEpochNumber } from '@/src/services/consensus/utils/time.js';
+import { getTimestampFromEpochNumber } from '@/src/services/consensus/utils/time.deprecated.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
 import { db_getAttestingValidatorsIds, db_getValidatorsBalances } from '@/src/utils/db.js';
 

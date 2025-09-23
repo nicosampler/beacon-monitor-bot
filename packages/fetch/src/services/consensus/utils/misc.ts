@@ -1,5 +1,5 @@
 import { env } from '@/src/lib/env.js';
-import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.js';
+import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.deprecated.js';
 
 export function getOldestLookbackSlot() {
   return env.BEACON_LOOKBACK_SLOT;

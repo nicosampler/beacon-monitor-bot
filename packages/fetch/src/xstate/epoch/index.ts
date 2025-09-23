@@ -2,6 +2,7 @@ import { createActor } from 'xstate';
 
 import { env } from '@/src/lib/env.js';
 import { EpochController } from '@/src/services/consensus/controllers/epoch.js';
+import { BeaconTime } from '@/src/services/consensus/utils/time.js';
 import { epochCreationMachine } from '@/src/xstate/epoch/epochCreator.machine.js';
 import { epochOrchestratorMachine } from '@/src/xstate/epoch/epochOrchestrator.machine.js';
 import { logMachine } from '@/src/xstate/multiMachineLogger.js';
@@ -31,6 +32,7 @@ export const getCreateEpochActor = (epochController: EpochController, slotDurati
 
 export const getEpochOrchestratorActor = (
   epochController: EpochController,
+  beaconTime: BeaconTime,
   slotDuration: number,
 ) => {
   const actor = createActor(epochOrchestratorMachine, {
@@ -38,6 +40,7 @@ export const getEpochOrchestratorActor = (
       slotDuration,
       lookbackSlot: env.BEACON_LOOKBACK_SLOT,
       epochController,
+      beaconTime,
     },
   });
 
