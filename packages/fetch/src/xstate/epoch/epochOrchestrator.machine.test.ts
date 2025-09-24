@@ -3,6 +3,7 @@ import { createActor, createMachine, sendParent } from 'xstate';
 
 import { createControllablePromise } from '@/src/__tests__/utils.js';
 import { EpochController } from '@/src/services/consensus/controllers/epoch.js';
+import { BeaconTime } from '@/src/services/consensus/utils/time.js';
 
 const mockEpochController = {
   getLastCreated: vi.fn(),
@@ -10,6 +11,17 @@ const mockEpochController = {
   createEpochs: vi.fn(),
   getMinEpochToProcess: vi.fn(),
 } as unknown as EpochController;
+
+// Mock BeaconTime instance for testing
+const GENESIS_TIMESTAMP = 1606824000000; // Example genesis timestamp
+const SLOT_DURATION_MS = 100; // 100ms per slot for fast tests
+const SLOTS_PER_EPOCH = 32;
+const mockBeaconTime = new BeaconTime({
+  genesisTimestamp: GENESIS_TIMESTAMP,
+  slotDurationMs: SLOT_DURATION_MS,
+  slotsPerEpoch: SLOTS_PER_EPOCH,
+  epochsPerSyncCommitteePeriod: 256, // 256 epochs per sync committee period
+});
 
 // Mock the logging functions - simple mocks that do nothing
 const mockLogActor = vi.fn();
@@ -78,6 +90,7 @@ describe('epochOrchestratorMachine', () => {
         slotDuration: 0.1, // 100ms for faster tests
         lookbackSlot: 32,
         epochController: mockEpochController,
+        beaconTime: mockBeaconTime,
       },
     });
 
@@ -127,6 +140,7 @@ describe('epochOrchestratorMachine', () => {
         slotDuration: 0.1, // 100ms for faster tests
         lookbackSlot: 32,
         epochController: mockEpochController,
+        beaconTime: mockBeaconTime,
       },
     });
 
@@ -190,6 +204,7 @@ describe('epochOrchestratorMachine', () => {
         slotDuration: 0.1, // 100ms for faster tests
         lookbackSlot: 32,
         epochController: mockEpochController,
+        beaconTime: mockBeaconTime,
       },
     });
 
@@ -266,6 +281,7 @@ describe('epochOrchestratorMachine', () => {
         slotDuration: 0.1, // 100ms for faster tests
         lookbackSlot: 32,
         epochController: mockEpochController,
+        beaconTime: mockBeaconTime,
       },
     });
 

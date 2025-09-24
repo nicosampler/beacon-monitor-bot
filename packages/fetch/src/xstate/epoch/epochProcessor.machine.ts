@@ -150,20 +150,22 @@ export const epochProcessorMachine = setup({
   states: {
     checkingCanProcess: {
       description:
-        'Check if we can start processing the epoch, we can fetch some data one epoch ahead the current epoch.',
+        'Check if we can start processing the epoch, we can fetch some data one epoch ahead.',
       entry: pinoLog(
         ({ context }) => `Checking if we can process the epoch, ${context.epoch}`,
         'EpochProcessor',
       ),
-      always: [
-        {
-          guard: 'canProcessEpoch',
-          target: 'epochProcessing',
-        },
-        {
-          target: 'waiting',
-        },
-      ],
+      after: {
+        0: [
+          {
+            guard: 'canProcessEpoch',
+            target: 'epochProcessing',
+          },
+          {
+            target: 'waiting',
+          },
+        ],
+      },
     },
     waiting: {
       entry: pinoLog(
@@ -175,6 +177,8 @@ export const epochProcessorMachine = setup({
       },
     },
     epochProcessing: {
+      description:
+        'Epoch data can be processed at different times, committee and sync committees can be fetched in advance, the rest needs to wait for the epoch to start',
       entry: pinoLog(
         ({ context }) => `Starting epoch processing for epoch ${context.epoch}`,
         'EpochProcessor',

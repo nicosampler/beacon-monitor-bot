@@ -11,7 +11,7 @@ vi.mock('@/src/services/consensus/utils/misc.js', () => ({
   getEpochFromSlot: vi.fn(),
 }));
 
-vi.mock('@/src/services/consensus/utils/time.js', () => ({
+vi.mock('@/src/services/consensus/utils/time.deprecated.js', () => ({
   getSlotNumberFromTimestamp: vi.fn(),
 }));
 
