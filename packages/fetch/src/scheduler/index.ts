@@ -15,7 +15,7 @@ import { schedulerUpdateMonthlyRewards_validatorsStats } from '@/src/scheduler/t
 import { schedulerUpdateValidatorStatus_validatorsStats } from '@/src/scheduler/tasks/updateValidatorStatus_validatorsStats.js';
 import { schedulerUpdateWeeklyRewards_validatorsStats } from '@/src/scheduler/tasks/updateWeeklyRewards_validatorsStats.js';
 
-const isEthereum = env.NODE_SENTINEL_CHAIN === 'ethereum';
+const isEthereum = env.CHAIN === 'ethereum';
 
 // Gnosis epoch: 1.33m
 // Ethereum epoch: 6.4m

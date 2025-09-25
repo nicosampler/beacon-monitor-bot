@@ -1,12 +1,10 @@
 import axios from 'axios';
 
-import { env } from '../lib/env.js';
-
 // Create and export axios instance with base configuration
 export const api = axios.create({
-  baseURL: env.NODE_SENTINEL_API_URL,
+  baseURL: 'delete me',
   headers: {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${env.NODE_SENTINEL_API_SECRET_KEY}`,
+    Authorization: `Bearer delete me`,
   },
 });
