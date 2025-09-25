@@ -10,3 +10,4 @@ migration_lock.toml
 test.ts
 
 .env*
+!.env.example
