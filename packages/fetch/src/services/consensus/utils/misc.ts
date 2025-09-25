@@ -1,8 +1,8 @@
-import { env } from '@/src/lib/env.js';
+import { env, chainConfig } from '@/src/lib/env.js';
 import { getSlotNumberFromTimestamp } from '@/src/services/consensus/utils/time.deprecated.js';
 
 export function getOldestLookbackSlot() {
-  return env.BEACON_LOOKBACK_SLOT;
+  return env.CONSENSUS_LOOKBACK_SLOT;
 }
 
 // function getCurrentSlot() {
@@ -14,7 +14,7 @@ export function getOldestLookbackSlot() {
 // }
 
 export const getEpochSlots = (epoch: number) => {
-  const slotsPerEpoch = Number(env.BEACON_SLOTS_PER_EPOCH);
+  const slotsPerEpoch = Number(chainConfig.beacon.slotsPerEpoch);
   return {
     startSlot: epoch * slotsPerEpoch,
     endSlot: (epoch + 1) * slotsPerEpoch - 1,
@@ -22,7 +22,7 @@ export const getEpochSlots = (epoch: number) => {
 };
 
 export const getEpochFromSlot = (slot: number) => {
-  return Math.floor(slot / Number(env.BEACON_SLOTS_PER_EPOCH));
+  return Math.floor(slot / Number(chainConfig.beacon.slotsPerEpoch));
 };
 
 export function calculateSlotRange(startTime: Date, endTime: Date) {

@@ -2,7 +2,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { AxiosResponse } from 'axios';
 import ms from 'ms';
 
-import { env } from '@/src/lib/env.js';
+import { env, chainConfig } from '@/src/lib/env.js';
 import { Blockscout_Blocks, Etherscan_BlockReward } from '@/src/services/execution/types.js';
 import { instance } from '@/src/services/execution/utils/instance.js';
 
@@ -47,7 +47,7 @@ export async function getBlock(blockNumber: number): Promise<BlockResponse | nul
     // Etherscan
     // https://api.etherscan.io/api?module=block&action=getblockreward&blockno=2165403&apikey=YourApiKeyToken
     {
-      url: `${env.EXECUTION_API_BKP_URL}/api?chainid=${env.BLOCKCHAIN_CHAIN_ID}&module=block&action=getblockreward&blockno=${blockNumber}&apikey=${env.EXECUTION_API_BKP_KEY}`,
+      url: `${env.EXECUTION_API_BKP_URL}/api?chainid=${chainConfig.blockchain.chainId}&module=block&action=getblockreward&blockno=${blockNumber}&apikey=${env.EXECUTION_API_BKP_KEY}`,
       process: (response: AxiosResponse<Etherscan_BlockReward>) => {
         const blockInfo = response.data;
         const result: BlockResponse = {
@@ -73,7 +73,7 @@ export async function getBlock(blockNumber: number): Promise<BlockResponse | nul
       // Wait one slot before trying the next endpoint
       if (i < endpoints.length - 1) {
         await new Promise((resolve) =>
-          setTimeout(resolve, ms(`${env.BEACON_SLOT_DURATION_IN_SECONDS}s`)),
+          setTimeout(resolve, ms(`${chainConfig.beacon.slotDurationInSeconds}s`)),
         );
       }
     }

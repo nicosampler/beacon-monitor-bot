@@ -1,6 +1,6 @@
 import { fromPromise } from 'xstate';
 
-import { env } from '@/src/lib/env.js';
+import { env, chainConfig } from '@/src/lib/env.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { beacon_blocks } from '@/src/services/consensus/_feed/endpoints.js';
 import { fetchBlockAndSyncRewards as _fetchBlockAndSyncRewards } from '@/src/services/consensus/_feed/fetchBlockAndSyncRewards.js';
@@ -114,11 +114,11 @@ export const getSlot = fromPromise(async ({ input }: { input: CheckSlotProcessed
 
 /**
  * Actor to check if a slot is ready to be processed
- * based on BEACON_DELAY_SLOTS_TO_HEAD
+ * based on CONSENSUS_DELAY_SLOTS_TO_HEAD
  */
 export const checkSlotReady = fromPromise(async ({ input }: { input: CheckSlotReadyInput }) => {
   const currentSlot = getSlotNumberFromTimestamp(Date.now());
-  const maxSlotToFetch = currentSlot - env.BEACON_DELAY_SLOTS_TO_HEAD;
+  const maxSlotToFetch = currentSlot - chainConfig.beacon.delaySlotsToHead;
   // if too many errors
   // currentSlot >= input.slot + 1;
   return { isReady: input.slot <= maxSlotToFetch };
@@ -215,10 +215,10 @@ export const cleanupOldCommittees = fromPromise(async ({ input }: { input: { slo
   await prisma.committee.deleteMany({
     where: {
       slot: {
-        lt: input.slot - env.BEACON_SLOTS_PER_EPOCH * 3, // some buffer just in case
+        lt: input.slot - chainConfig.beacon.slotsPerEpoch * 3, // some buffer just in case
       },
       attestationDelay: {
-        lte: env.BEACON_MAX_ATTESTATION_DELAY,
+        lte: chainConfig.beacon.maxAttestationDelay,
       },
     },
   });
@@ -321,7 +321,7 @@ export const checkAndGetCommitteeValidatorsAmounts = fromPromise(
       // Get unique slots from attestations in beacon block data
       const attestations = input.beaconBlockData.data.message.body.attestations || [];
       const uniqueSlots = [...new Set(attestations.map((att) => parseInt(att.data.slot)))].filter(
-        (slot) => slot >= env.BEACON_LOOKBACK_SLOT,
+        (slot) => slot >= env.CONSENSUS_LOOKBACK_SLOT,
       );
 
       if (uniqueSlots.length === 0) {

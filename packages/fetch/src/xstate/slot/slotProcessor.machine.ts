@@ -181,7 +181,7 @@ export const slotProcessorMachine = setup({
 
     checkingIfSlotIsReady: {
       description:
-        'Checking if the slot is ready. We can only fetch up current slot - env.BEACON_DELAY_SLOTS_TO_HEAD. Is important to note that attestations for slot n comes at slot n+1.',
+        'Checking if the slot is ready. We can only fetch up current slot - env.CONSENSUS_DELAY_SLOTS_TO_HEAD. Is important to note that attestations for slot n comes at slot n+1.',
       invoke: {
         src: 'checkSlotReady',
         input: ({ context }) => ({ slot: context.slot }),
@@ -269,7 +269,7 @@ export const slotProcessorMachine = setup({
               states: {
                 attestations: {
                   description:
-                    'Attestations for slot n can come one up to one epoch later n+1. Note that attestations for the base slot (BEACON_LOOKBACK_SLOT) are ignored as are attesting slots out of our interest.',
+                    'Attestations for slot n can come one up to one epoch later n+1. Note that attestations for the base slot (CONSENSUS_LOOKBACK_SLOT) are ignored as are attesting slots out of our interest.',
                   initial: 'verifyingDone',
                   states: {
                     verifyingDone: {

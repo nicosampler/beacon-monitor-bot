@@ -1,7 +1,7 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
 import { geSlotsInfo } from '@/src/api/slot.js';
-import { env } from '@/src/lib/env.js';
+import { chainConfig } from '@/src/lib/env.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
@@ -30,9 +30,9 @@ async function updateValidatorStatusTask(logger: CustomLogger) {
       
       constants AS (
         SELECT 
-          ${maxSlotToQuery} - (3600 / ${env.BEACON_SLOT_DURATION_IN_SECONDS}) as min_slot,
+          ${maxSlotToQuery} - (3600 / ${chainConfig.beacon.slotDurationInSeconds}) as min_slot,
           ${maxSlotToQuery} as max_slot,
-          ${env.BEACON_MAX_ATTESTATION_DELAY} as max_attestation_delay
+          ${chainConfig.beacon.maxAttestationDelay} as max_attestation_delay
       ),
       
       -------------------------------------

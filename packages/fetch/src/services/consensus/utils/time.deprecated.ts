@@ -1,8 +1,8 @@
-import { env } from '@/src/lib/env.js';
+import { chainConfig } from '@/src/lib/env.js';
 
-const GENESIS_TIMESTAMP = env.BEACON_GENESIS_TIMESTAMP;
-const SLOT_DURATION_MS = env.BEACON_SLOT_DURATION_IN_SECONDS * 1000;
-const SLOTS_PER_EPOCH = env.BEACON_SLOTS_PER_EPOCH;
+const GENESIS_TIMESTAMP = chainConfig.beacon.genesisTimestamp;
+const SLOT_DURATION_MS = chainConfig.beacon.slotDurationInSeconds * 1000;
+const SLOTS_PER_EPOCH = chainConfig.beacon.slotsPerEpoch;
 /**
  * Given a timestamp, determine the slot number.
  * @param timestamp - The timestamp in milliseconds.
@@ -58,6 +58,6 @@ export function getTimestampFromEpochNumber(epochNumber: number): number {
  * @returns The start epoch of the sync committee period
  */
 export function getSyncCommitteePeriodStartEpoch(epoch: number): number {
-  const periodsPerEpoch = env.BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
+  const periodsPerEpoch = chainConfig.beacon.epochsPerSyncCommitteePeriod;
   return Math.floor(epoch / periodsPerEpoch) * periodsPerEpoch;
 }

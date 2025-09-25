@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
-import { env } from '@/src/lib/env.js';
+import { chainConfig } from '@/src/lib/env.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { calculateSlotRange } from '@/src/services/consensus/utils/misc.js';
@@ -49,7 +49,7 @@ async function aggregateMissedAttestations(startSlot: number, endSlot: number) {
         {
           OR: [
             { attestationDelay: null },
-            { attestationDelay: { gt: env.BEACON_MAX_ATTESTATION_DELAY } },
+            { attestationDelay: { gt: chainConfig.beacon.maxAttestationDelay } },
           ],
         },
       ],

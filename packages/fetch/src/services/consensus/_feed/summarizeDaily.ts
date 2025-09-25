@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { addDays } from 'date-fns';
 import ms from 'ms';
 
-import { env } from '@/src/lib/env.js';
+import { chainConfig } from '@/src/lib/env.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { getEpochFromSlot } from '@/src/services/consensus/utils/misc.js';
@@ -38,7 +38,7 @@ interface HourlyStats {
 export async function canSummarize(dayToSummarize: Date): Promise<boolean> {
   const nextDay = addDays(dayToSummarize, 1);
   const nextDaySlot = getSlotNumberFromTimestamp(nextDay.getTime());
-  const nextDaySlotWithDelay = nextDaySlot + env.BEACON_SLOTS_PER_EPOCH;
+  const nextDaySlotWithDelay = nextDaySlot + chainConfig.beacon.slotsPerEpoch;
 
   // check if all epoch rewards have been fetched
   const beaconRewardsFetched = await db_hasBeaconRewardsFetched(

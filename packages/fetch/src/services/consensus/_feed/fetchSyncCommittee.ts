@@ -1,4 +1,4 @@
-import { env } from '@/src/lib/env.js';
+import { chainConfig } from '@/src/lib/env.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { beacon_getSyncCommittees } from '@/src/services/consensus/_feed/endpoints.js';
 import { getSyncCommitteePeriodStartEpoch } from '@/src/services/consensus/utils/time.deprecated.js';
@@ -15,12 +15,12 @@ export const fetchSyncCommittees = async (epoch: number) => {
       where: {
         fromEpoch_toEpoch: {
           fromEpoch: periodStartEpoch,
-          toEpoch: periodStartEpoch + env.BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD - 1,
+          toEpoch: periodStartEpoch + chainConfig.beacon.epochsPerSyncCommitteePeriod - 1,
         },
       },
       create: {
         fromEpoch: periodStartEpoch,
-        toEpoch: periodStartEpoch + env.BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD - 1,
+        toEpoch: periodStartEpoch + chainConfig.beacon.epochsPerSyncCommitteePeriod - 1,
         validators: syncCommitteeData.validators,
         validatorAggregates: syncCommitteeData.validator_aggregates,
       },

@@ -1,6 +1,6 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { env } from '@/src/lib/env.js';
+import { chainConfig } from '@/src/lib/env.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
@@ -15,7 +15,7 @@ const prisma = getPrisma();
 export const fetchAttestationsTask = async (logger: CustomLogger) => {
   const now = new Date();
   const currentSlot = getSlotNumberFromTimestamp(now.getTime());
-  const maxSlotToFetch = currentSlot - env.BEACON_DELAY_SLOTS_TO_HEAD;
+  const maxSlotToFetch = currentSlot - chainConfig.beacon.delaySlotsToHead;
   const oldestLookbackSlot = getOldestLookbackSlot();
 
   try {
@@ -46,10 +46,10 @@ export const fetchAttestationsTask = async (logger: CustomLogger) => {
     await prisma.committee.deleteMany({
       where: {
         slot: {
-          lt: slotToFetch - env.BEACON_SLOTS_PER_EPOCH * 3, // some buffer just in case
+          lt: slotToFetch - chainConfig.beacon.slotsPerEpoch * 3, // some buffer just in case
         },
         attestationDelay: {
-          lte: env.BEACON_MAX_ATTESTATION_DELAY,
+          lte: chainConfig.beacon.maxAttestationDelay,
         },
       },
     });

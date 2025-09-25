@@ -1,7 +1,7 @@
 import { differenceInSeconds } from 'date-fns';
 import { SimpleIntervalJob, AsyncTask } from 'toad-scheduler';
 
-import { env } from '@/src/lib/env.js';
+import { chainConfig } from '@/src/lib/env.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
@@ -22,7 +22,7 @@ const _fetchExecutionRewardsTask = async (logger: CustomLogger) => {
     const secondsSinceLastBlock = Math.abs(differenceInSeconds(now, latestReward.timestamp));
 
     // A block can be missed for a slot, so we allow to fetch only 3 blocks before the current
-    if (secondsSinceLastBlock < env.BEACON_SLOT_DURATION_IN_SECONDS * 3) {
+    if (secondsSinceLastBlock < chainConfig.beacon.slotDurationInSeconds * 3) {
       logger.info(`Skipping, too close to the head.`);
       return;
     }

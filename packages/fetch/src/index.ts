@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import ms from 'ms';
 
-import { env } from '@/src/lib/env.js';
+import { env, chainConfig } from '@/src/lib/env.js';
 import createLogger from '@/src/lib/pino.js';
 import { BeaconClient } from '@/src/services/consensus/beacon.js';
 import { EpochController } from '@/src/services/consensus/controllers/epoch.js';
@@ -23,20 +23,20 @@ async function main() {
 
   // Initialize dependencies
   const beaconClient = new BeaconClient({
-    fullNodeUrl: env.BEACON_API_URL,
-    fullNodeConcurrency: env.BEACON_API_REQUEST_PER_SECOND,
+    fullNodeUrl: env.CONSENSUS_FULL_API_URL,
+    fullNodeConcurrency: env.CONSENSUS_API_REQUEST_PER_SECOND,
     fullNodeRetries: 10,
-    archiveNodeUrl: env.BEACON_API_BKP_URL,
-    archiveNodeConcurrency: env.BEACON_API_REQUEST_PER_SECOND,
+    archiveNodeUrl: env.CONSENSUS_ARCHIVE_API_URL,
+    archiveNodeConcurrency: env.CONSENSUS_API_REQUEST_PER_SECOND,
     archiveNodeRetries: 30,
     baseDelay: ms('1s'),
   });
 
   const beaconTime = new BeaconTime({
-    genesisTimestamp: env.BEACON_GENESIS_TIMESTAMP,
-    slotDurationMs: env.BEACON_SLOT_DURATION_IN_SECONDS * 1000,
-    slotsPerEpoch: env.BEACON_SLOTS_PER_EPOCH,
-    epochsPerSyncCommitteePeriod: env.BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
+    genesisTimestamp: chainConfig.beacon.genesisTimestamp,
+    slotDurationMs: chainConfig.beacon.slotDurationInSeconds * 1000,
+    slotsPerEpoch: chainConfig.beacon.slotsPerEpoch,
+    epochsPerSyncCommitteePeriod: chainConfig.beacon.epochsPerSyncCommitteePeriod,
   });
 
   const validatorsStorage = new ValidatorsStorage(prisma);
@@ -48,7 +48,7 @@ async function main() {
   // Start indexing the beacon chain
   await validatorsController.initValidators();
 
-  await initXstateMachines(epochController, beaconTime, env.BEACON_SLOT_DURATION_IN_SECONDS);
+  await initXstateMachines(epochController, beaconTime, chainConfig.beacon.slotDurationInSeconds);
 
   // Handle graceful shutdown
   process.on('SIGINT', () => {

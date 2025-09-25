@@ -44,8 +44,8 @@ export function extractError(error: unknown) {
  * Generic helper function for making requests with retries and multiple URLs
  *
  * This function implements a bidirectional fallback strategy:
- * 1. First attempts to make the request using the primary URL (BEACON_API_URL by default)
- * 2. If the primary URL fails, automatically falls back to the secondary URL (BEACON_API_BKP_URL)
+ * 1. First attempts to make the request using the primary URL (CONSENSUS_ARCHIVE_API_URL by default)
+ * 2. If the primary URL fails, automatically falls back to the secondary URL (CONSENSUS_FULL_API_URL)
  * 3. The priority can be reversed by passing { priority: 'secondary' } in options
  * 4. Each attempt includes retries using pRetry
  * 5. If both URLs fail, it will use the provided errorHandler if available
@@ -71,8 +71,10 @@ async function makeBeaconRequest<T>(
   let lastError: unknown;
 
   // Get URLs based on priority
-  const primaryUrl = priority === 'primary' ? env.BEACON_API_URL : env.BEACON_API_BKP_URL;
-  const secondaryUrl = priority === 'primary' ? env.BEACON_API_BKP_URL : env.BEACON_API_URL;
+  const primaryUrl =
+    priority === 'primary' ? env.CONSENSUS_ARCHIVE_API_URL : env.CONSENSUS_FULL_API_URL;
+  const secondaryUrl =
+    priority === 'primary' ? env.CONSENSUS_FULL_API_URL : env.CONSENSUS_ARCHIVE_API_URL;
 
   const minTimeout = 500;
 

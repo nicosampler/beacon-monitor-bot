@@ -38,7 +38,7 @@ export const getEpochOrchestratorActor = (
   const actor = createActor(epochOrchestratorMachine, {
     input: {
       slotDuration,
-      lookbackSlot: env.BEACON_LOOKBACK_SLOT,
+      lookbackSlot: env.CONSENSUS_LOOKBACK_SLOT,
       epochController,
       beaconTime,
     },

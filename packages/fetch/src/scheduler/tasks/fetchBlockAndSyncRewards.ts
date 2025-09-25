@@ -1,6 +1,6 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { env } from '@/src/lib/env.js';
+import { chainConfig } from '@/src/lib/env.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
@@ -16,7 +16,7 @@ import {
 export const fetchBlockAndSyncRewardsTask = async (logger: CustomLogger) => {
   const now = new Date();
   const currentSlot = getSlotNumberFromTimestamp(now.getTime());
-  const maxSlotToFetch = currentSlot - env.BEACON_DELAY_SLOTS_TO_HEAD;
+  const maxSlotToFetch = currentSlot - chainConfig.beacon.delaySlotsToHead;
 
   // Get slot to fetch
   const oldestLookbackSlot = getOldestLookbackSlot();

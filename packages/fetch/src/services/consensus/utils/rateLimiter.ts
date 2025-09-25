@@ -9,7 +9,7 @@ let instance: RateLimiterMemory | null = null;
 function getRateLimiter(): RateLimiterMemory {
   if (!instance) {
     instance = new RateLimiterMemory({
-      points: env.BEACON_API_REQUEST_PER_SECOND,
+      points: env.CONSENSUS_API_REQUEST_PER_SECOND,
       duration: 1, // Per second
       keyPrefix: '',
     });

@@ -1,6 +1,6 @@
 import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
-import { env } from '@/src/lib/env.js';
+import { chainConfig } from '@/src/lib/env.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
@@ -66,7 +66,7 @@ epochToFetch: ${epochToFetch}`);
     await prisma.syncCommittee.create({
       data: {
         fromEpoch: epochToFetch,
-        toEpoch: epochToFetch + env.BEACON_EPOCHS_PER_SYNC_COMMITTEE_PERIOD - 1,
+        toEpoch: epochToFetch + chainConfig.beacon.epochsPerSyncCommitteePeriod - 1,
         validators: syncCommitteeData.validators,
         validatorAggregates: syncCommitteeData.validator_aggregates,
       },
