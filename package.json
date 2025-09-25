@@ -55,6 +55,9 @@
     ],
     "*.{json,md}": [
       "prettier --write"
+    ],
+    "packages/fetch/**/*.{ts,tsx}": [
+      "bash -c 'cd packages/fetch && pnpm exec tsc --noEmit'"
     ]
   }
 }
