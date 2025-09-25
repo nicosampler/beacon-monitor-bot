@@ -94,17 +94,15 @@ export const epochOrchestratorMachine = setup({
     },
 
     checkingIfCanSpawnEpochProcessor: {
-      after: {
-        0: [
-          {
-            guard: 'hasEpochDataInContext',
-            target: 'processingEpoch',
-          },
-          {
-            target: 'noMinEpochToProcess',
-          },
-        ],
-      },
+      always: [
+        {
+          guard: 'hasEpochDataInContext',
+          target: 'processingEpoch',
+        },
+        {
+          target: 'noMinEpochToProcess',
+        },
+      ],
     },
 
     processingEpoch: {

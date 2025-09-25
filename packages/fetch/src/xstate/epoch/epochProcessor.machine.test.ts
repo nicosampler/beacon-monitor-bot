@@ -70,7 +70,7 @@ beforeEach(() => {
 
 describe('epochProcessorMachine', () => {
   describe('epochProcessorMachine - canProcessEpoch guard', () => {
-    test.only('step by step: when canProcess is false, should go to waiting and retry', async () => {
+    test('step by step: when canProcess is false, should go to waiting and retry', async () => {
       // Test constants for readability
       const GENESIS_TIMESTAMP = 1606824000000; // Example genesis timestamp
       const SLOT_DURATION_MS = 100; // 100ms per slot for fast tests
@@ -90,6 +90,8 @@ describe('epochProcessorMachine', () => {
       const mockCurrentTime = EPOCH_97_START_TIME + 50; // 50ms into epoch 97
       const getTimeSpy = vi.spyOn(Date.prototype, 'getTime').mockReturnValue(mockCurrentTime);
 
+      // Track microsteps using XState inspection API (as recommended by XState maintainer)
+      const microstepValues: string[] = [];
       const actor = createActor(epochProcessorMachine, {
         input: {
           epoch: 100,
@@ -103,12 +105,12 @@ describe('epochProcessorMachine', () => {
           lookbackSlot: 32,
           beaconTime: mockBeaconTime,
         },
-      });
-
-      // Track state transitions
-      const stateTransitions: string[] = [];
-      const subscription = actor.subscribe((snapshot) => {
-        stateTransitions.push(snapshot.value as string);
+        inspect: (inspectionEvent) => {
+          if (inspectionEvent.type === '@xstate.microstep') {
+            // @ts-expect-error - snapshot.value exists at runtime for microstep events but not in type definition
+            microstepValues.push(inspectionEvent.snapshot.value);
+          }
+        },
       });
 
       actor.start();
@@ -116,15 +118,18 @@ describe('epochProcessorMachine', () => {
       // Wait for the complete sequence: checkingCanProcess -> waiting -> checkingCanProcess -> waiting
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Verify the complete retry sequence
-      expect(stateTransitions.length).toBeGreaterThanOrEqual(4);
-      expect(stateTransitions[0]).toBe('checkingCanProcess');
-      expect(stateTransitions[1]).toBe('waiting');
-      expect(stateTransitions[2]).toBe('checkingCanProcess');
-      expect(stateTransitions[3]).toBe('waiting');
+      // With always transitions, we need to use microsteps to capture the intermediate states
+      // Verify we have the expected microsteps
+      expect(microstepValues.length).toBeGreaterThanOrEqual(3);
+      expect(microstepValues).toContain('checkingCanProcess');
+      expect(microstepValues).toContain('waiting');
+
+      // Verify the sequence: waiting -> checkingCanProcess -> waiting (retry sequence)
+      expect(microstepValues[0]).toBe('waiting');
+      expect(microstepValues[1]).toBe('checkingCanProcess');
+      expect(microstepValues[2]).toBe('waiting');
 
       // Clean up
-      subscription.unsubscribe();
       actor.stop();
       getTimeSpy.mockRestore();
     });

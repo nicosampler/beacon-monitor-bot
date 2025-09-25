@@ -155,17 +155,15 @@ export const epochProcessorMachine = setup({
         ({ context }) => `Checking if we can process the epoch, ${context.epoch}`,
         'EpochProcessor',
       ),
-      after: {
-        0: [
-          {
-            guard: 'canProcessEpoch',
-            target: 'epochProcessing',
-          },
-          {
-            target: 'waiting',
-          },
-        ],
-      },
+      always: [
+        {
+          guard: 'canProcessEpoch',
+          target: 'epochProcessing',
+        },
+        {
+          target: 'waiting',
+        },
+      ],
     },
     waiting: {
       entry: pinoLog(
