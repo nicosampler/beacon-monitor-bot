@@ -9,15 +9,15 @@ const prisma = getPrisma();
 
 async function pruneTask(logger: CustomLogger) {
   try {
-    logger.info('Starting VACUUM FULL');
+    logger.info('Starting VACUUM');
 
-    await prisma.$executeRaw`VACUUM FULL "Committee"`;
-    await prisma.$executeRaw`VACUUM FULL "HourlyValidatorStats"`;
-    //await prisma.$executeRaw`VACUUM FULL "DailyValidatorStats"`;
+    await prisma.$executeRaw`VACUUM "Committee"`;
+    await prisma.$executeRaw`VACUUM "HourlyValidatorStats"`;
+    await prisma.$executeRaw`VACUUM "DailyValidatorStats"`;
 
-    logger.info('VACUUM FULL completed successfully');
+    logger.info('VACUUM completed successfully');
   } catch (error) {
-    logger.error('Error running VACUUM FULL on tables:', error);
+    logger.error('Error running VACUUM on tables:', error);
   }
 }
 
