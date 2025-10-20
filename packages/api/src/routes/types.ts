@@ -110,3 +110,34 @@ export type SlotInfoResponse = {
   maxSafeSlotToQuery: number;
   maxSafeEpochToQuery: number;
 };
+
+// Rewards summary endpoint types
+export type RewardsByDay = {
+  [date: string]: number; // date in YYYY-MM-DD format
+};
+
+export type ValidatorRewards = {
+  validator_index: number;
+  execution_layer_rewards: {
+    by_day: RewardsByDay;
+    monthly_total: number;
+  };
+  consensus_layer_rewards: {
+    by_day: RewardsByDay;
+    monthly_total: number;
+  };
+};
+
+export type MonthlyTotals = {
+  execution_layer: number;
+  consensus_layer: number;
+};
+
+export type RewardsSummaryResponse = {
+  withdrawal_addresses: string[];
+  fee_reward_addresses?: string[];
+  month: string; // YYYY-MM format
+  validators: ValidatorRewards[];
+  monthly_totals: MonthlyTotals;
+  generated_at: string; // ISO timestamp
+};

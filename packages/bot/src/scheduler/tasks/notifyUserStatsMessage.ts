@@ -340,7 +340,6 @@ function formatStatsMessage(
   const rewardsSection = [
     `Stats:`,
     `-----------------------------`,
-    `WIP: Adapting to Pectra`,
     `    APY%  ${env.BLOCKCHAIN_TOKEN_SYMBOL}   ${env.BLOCKCHAIN_FEE_REWARDS_SYMBOL}   Total`,
     `d:  ${dailyApy}  ${formatNumber(stats.rewards.daily.consensus, 3)}  ${formatNumber(stats.rewards.daily.execution, 3)}  ${formatNumber(stats.rewards.daily.usd, 4, '$')}`,
     `w:  ${weeklyApy}  ${formatNumber(stats.rewards.weekly.consensus, 3)}  ${formatNumber(stats.rewards.weekly.execution, 3)}  ${formatNumber(stats.rewards.weekly.usd, 4, '$')}`,
