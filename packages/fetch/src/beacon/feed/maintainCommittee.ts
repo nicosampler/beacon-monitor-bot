@@ -8,13 +8,7 @@ export async function maintainCommittee(logger: CustomLogger) {
     logger.info('Start.');
 
     logger.info('Running VACUUM on Committee table');
-    await prisma.$executeRaw`VACUUM full "Committee"`;
-
-    logger.info('Running REINDEX on Committee table');
-    await prisma.$executeRaw`REINDEX TABLE "Committee"`;
-
-    logger.info('Update PSQL stats on Committee table');
-    await prisma.$executeRaw`ANALYZE "Committee"`;
+    await prisma.$executeRaw`VACUUM (VERBOSE, ANALYZE) "Committee"`;
 
     logger.info('Done.');
   } catch (error) {
