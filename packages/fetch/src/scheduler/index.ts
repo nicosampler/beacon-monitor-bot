@@ -30,8 +30,8 @@ export function scheduleTasks() {
   });
   scheduleFetchExecutionRewards({
     id: 'FetchExecutionRewards',
-    logsEnabled: true,
-    intervalMs: ms('1.5s'),
+    logsEnabled: false,
+    intervalMs: ms('5s'),
     runImmediately: true,
     preventOverrun: true,
   });
@@ -45,7 +45,7 @@ export function scheduleTasks() {
   scheduleFetchBlockAndSyncRewards({
     id: 'FetchBlockAndSyncRewards',
     logsEnabled: true,
-    intervalMs: ms('1.5s'),
+    intervalMs: ms('1s'),
     runImmediately: true,
     preventOverrun: true,
   });

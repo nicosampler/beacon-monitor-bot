@@ -56,7 +56,11 @@ export const fetchAttestation = async (slotNumber: number, logger: CustomLogger)
     const deduplicatedAttestations = Array.from(uniqueAttestations.values());
 
     // Update committee table
+    const startTime = performance.now();
     await persistToDB(deduplicatedAttestations, slotNumber, logger);
+    const endTime = performance.now();
+    const durationSeconds = (endTime - startTime) / 1000;
+    logger.info(`Persisted attestations in ${durationSeconds.toFixed(2)}s.`);
 
     logger.info(`Done for slot ${slotNumber}.`);
   } catch (error) {
@@ -162,10 +166,8 @@ async function processAttestation(
 async function persistToDB(
   attestations: CommitteeUpdate[],
   slotNumber: number,
-  logger: CustomLogger,
+  _logger: CustomLogger,
 ): Promise<void> {
-  logger.info(`Processing ${attestations.length} updates.`);
-
   await prisma.$transaction(
     async (tx) => {
       const queries: Prisma.Sql[] = [];
@@ -195,7 +197,10 @@ async function persistToDB(
       }
 
       // Execute all queries in parallel
-      await Promise.all(queries.map((query) => tx.$executeRaw(query)));
+      //await Promise.all(queries.map((query) => tx.$executeRaw(query)));
+      for (const query of queries) {
+        await tx.$executeRaw(query);
+      }
 
       // Update slot
       await tx.slot.update({

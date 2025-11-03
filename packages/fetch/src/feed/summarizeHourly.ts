@@ -201,7 +201,9 @@ export async function summarizeHourly(
 
   const unprocessedSlots = await hasUnprocessedSlots(endSlot);
   if (unprocessedSlots) {
-    logger.info(`Some slots before ${endSlot} are not fully processed. Skipping summarization.`);
+    logger.info(
+      `Some slots before ${endSlot} are not fully processed (attestations|blockAndSyncRewards). Skipping summarization.`,
+    );
     return;
   }
 
@@ -216,7 +218,7 @@ export async function summarizeHourly(
   const unprocessedBeaconRewards = await hasUnprocessedBeaconRewards(endSlot);
   if (unprocessedBeaconRewards) {
     logger.info(
-      `Some beacon rewards before slot ${endSlot} are not fully processed. Skipping summarization.`,
+      `Some epoch rewards before slot ${endSlot} are not fully processed. Skipping summarization.`,
     );
     return;
   }
