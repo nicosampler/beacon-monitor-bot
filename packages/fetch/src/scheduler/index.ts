@@ -44,7 +44,7 @@ export function scheduleTasks() {
   });
   scheduleFetchBlockAndSyncRewards({
     id: 'FetchBlockAndSyncRewards',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('1s'),
     runImmediately: true,
     preventOverrun: true,

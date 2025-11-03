@@ -60,9 +60,7 @@ export const fetchAttestation = async (slotNumber: number, logger: CustomLogger)
     await persistToDB(deduplicatedAttestations, slotNumber, logger);
     const endTime = performance.now();
     const durationSeconds = (endTime - startTime) / 1000;
-    logger.info(`Persisted attestations in ${durationSeconds.toFixed(2)}s.`);
-
-    logger.info(`Done for slot ${slotNumber}.`);
+    logger.info(`Done. Persisted attestations in ${durationSeconds.toFixed(2)}s.`);
   } catch (error) {
     logger.error('There was an error.', error);
     throw error;
