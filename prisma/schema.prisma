@@ -34,11 +34,12 @@ model Committee {
   validatorIndex       Int // TODO: should be a relation?
   attestationDelay     Int?
   slot_relation        Slot @relation(fields: [slot], references: [slot], onDelete: Cascade)
+  // Temporarily removed indexes to improve UPDATE performance on attestationDelay
+  // @@index([slot, validatorIndex])
+  // @@index([slot, attestationDelay])
+  // @@index([validatorIndex, slot])
 
   @@id([slot, index, aggregationBitsIndex])
-  @@index([slot, validatorIndex])
-  @@index([slot, attestationDelay])
-  @@index([validatorIndex, slot])
 }
 
 model Validator {

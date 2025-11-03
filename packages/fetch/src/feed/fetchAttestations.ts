@@ -172,7 +172,7 @@ async function persistToDB(
 
       // Process updates
       if (attestations.length > 0) {
-        const updateChunks = chunk(attestations, 7000);
+        const updateChunks = chunk(attestations, 8000);
         for (const batchUpdates of updateChunks) {
           const updateQuery = Prisma.sql`
             UPDATE "Committee" c

@@ -16,8 +16,8 @@ import { scheduleSummarizeHourly } from '@/src/scheduler/tasks/summarizeHourly.j
 export function scheduleTasks() {
   scheduleFetchCommittee({
     id: 'FetchCommittee',
-    logsEnabled: true,
-    intervalMs: ms('1s'),
+    logsEnabled: false,
+    intervalMs: ms('10s'),
     runImmediately: true,
     preventOverrun: true,
   });
@@ -31,21 +31,21 @@ export function scheduleTasks() {
   scheduleFetchExecutionRewards({
     id: 'FetchExecutionRewards',
     logsEnabled: false,
-    intervalMs: ms('1s'),
+    intervalMs: ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleFetchBeaconRewards({
     id: 'FetchBeaconRewards',
     logsEnabled: false,
-    intervalMs: ms('5s'),
+    intervalMs: ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleFetchBlockAndSyncRewards({
     id: 'FetchBlockAndSyncRewards',
     logsEnabled: false,
-    intervalMs: ms('2s'),
+    intervalMs: ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
   });
