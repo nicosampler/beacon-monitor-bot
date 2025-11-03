@@ -30,22 +30,22 @@ export function scheduleTasks() {
   });
   scheduleFetchExecutionRewards({
     id: 'FetchExecutionRewards',
-    logsEnabled: false,
-    intervalMs: ms('2.5s'),
+    logsEnabled: true,
+    intervalMs: ms('1.5s'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleFetchBeaconRewards({
     id: 'FetchBeaconRewards',
     logsEnabled: false,
-    intervalMs: ms('2.5s'),
+    intervalMs: ms('10s'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleFetchBlockAndSyncRewards({
     id: 'FetchBlockAndSyncRewards',
-    logsEnabled: false,
-    intervalMs: ms('2.5s'),
+    logsEnabled: true,
+    intervalMs: ms('1.5s'),
     runImmediately: true,
     preventOverrun: true,
   });
@@ -65,7 +65,7 @@ export function scheduleTasks() {
   });
   scheduleSummarizeHourly({
     id: 'SummarizeHourly',
-    logsEnabled: false,
+    logsEnabled: true,
     intervalMs: ms('15m'),
     runImmediately: true,
     preventOverrun: true,
