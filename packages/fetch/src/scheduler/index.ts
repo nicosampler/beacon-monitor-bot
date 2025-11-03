@@ -74,21 +74,21 @@ export function scheduleTasks() {
     id: 'SummarizeDaily',
     logsEnabled: false,
     intervalMs: ms('1h'),
-    runImmediately: true,
+    runImmediately: false,
     preventOverrun: true,
   });
   scheduleCleanupCommittee({
     id: 'CleanupCommittee',
     logsEnabled: false,
     intervalMs: ms('30m'),
-    runImmediately: true,
+    runImmediately: false,
     preventOverrun: true,
   });
   schedulePrune({
     id: 'Prune',
     logsEnabled: true,
     intervalMs: ms('1h'),
-    runImmediately: true,
+    runImmediately: false,
     preventOverrun: true,
   });
 }
