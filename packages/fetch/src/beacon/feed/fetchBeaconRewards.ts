@@ -155,25 +155,80 @@ export async function fetchBeaconRewards(logger: CustomLogger, epoch: number) {
     }
 
     // 7. Merge data from temp table to main table and update epoch status
+    // Split into two operations for better performance:
+    // Step 1: UPDATE existing records using JOIN (more efficient than ON CONFLICT)
+    // Step 2: INSERT only new records if there are any (skip if all were updated)
     logger.info(`Merging data from temp table to main table.`);
     await prisma.$transaction(
       async (tx) => {
-        await tx.$executeRaw`
-          INSERT INTO "HourlyValidatorStats" 
-            ("validatorIndex", "date", "hour", "head", "target", "source", "inactivity")
-          SELECT 
-            "validatorIndex", "date", "hour", "head", "target", "source", "inactivity"
-          FROM "EpochRewardsTemp"
-          ON CONFLICT ("validatorIndex", "date", "hour") DO UPDATE SET
-            "head" = COALESCE("HourlyValidatorStats"."head", 0) + COALESCE(EXCLUDED."head", 0),
-            "target" = COALESCE("HourlyValidatorStats"."target", 0) + COALESCE(EXCLUDED."target", 0),
-            "source" = COALESCE("HourlyValidatorStats"."source", 0) + COALESCE(EXCLUDED."source", 0),
-            "inactivity" = COALESCE("HourlyValidatorStats"."inactivity", 0) + COALESCE(EXCLUDED."inactivity", 0)
+        // Get total count of rows in temp table
+        const countResult = await tx.$queryRaw<Array<{ count: bigint }>>`
+          SELECT COUNT(*) as count FROM "EpochRewardsTemp"
         `;
-        await prisma.epoch.update({
+        const totalRows = Number(countResult[0]?.count || 0);
+        logger.info(`Total rows in temp table: ${totalRows}`);
+
+        // Step 1: Update existing records using efficient JOIN
+        // Use CTE with RETURNING to get count of updated rows in a single query
+        logger.info(`Step 1: Updating existing records.`);
+        const [{ count: updatedRows }] = await tx.$queryRaw<Array<{ count: bigint }>>`
+          WITH updated AS (
+            UPDATE "HourlyValidatorStats" h
+            SET
+              head       = COALESCE(h.head, 0) + COALESCE(e.head, 0),
+              target     = COALESCE(h.target, 0) + COALESCE(e.target, 0),
+              source     = COALESCE(h.source, 0) + COALESCE(e.source, 0),
+              inactivity = COALESCE(h.inactivity, 0) + COALESCE(e.inactivity, 0)
+            FROM "EpochRewardsTemp" e
+            WHERE h."validatorIndex" = e."validatorIndex"
+              AND h."date" = e."date"
+              AND h."hour" = e."hour"
+            RETURNING 1
+          )
+          SELECT COUNT(*)::bigint AS count FROM updated
+        `;
+
+        const updatedRowsCount = Number(updatedRows);
+        logger.info(`Updated ${updatedRowsCount} existing records.`);
+
+        // Step 2: Insert only new records if there are any
+        // If all rows were updated, skip the INSERT (optimization)
+        if (updatedRowsCount < totalRows) {
+          const newRowsCount = totalRows - updatedRowsCount;
+          logger.info(`Step 2: Inserting ${newRowsCount} new records.`);
+          await tx.$executeRaw`
+            INSERT INTO "HourlyValidatorStats" (
+              "validatorIndex", "date", "hour", "head", "target", "source", "inactivity"
+            )
+            SELECT 
+              e."validatorIndex", e."date", e."hour",
+              e."head", e."target", e."source", e."inactivity"
+            FROM "EpochRewardsTemp" e
+            LEFT JOIN "HourlyValidatorStats" h
+              ON h."validatorIndex" = e."validatorIndex"
+             AND h."date" = e."date"
+             AND h."hour" = e."hour"
+            WHERE h."validatorIndex" IS NULL
+            ON CONFLICT ("validatorIndex", "date", "hour") DO UPDATE SET
+              "head" = COALESCE("HourlyValidatorStats"."head", 0) + COALESCE(EXCLUDED."head", 0),
+              "target" = COALESCE("HourlyValidatorStats"."target", 0) + COALESCE(EXCLUDED."target", 0),
+              "source" = COALESCE("HourlyValidatorStats"."source", 0) + COALESCE(EXCLUDED."source", 0),
+              "inactivity" = COALESCE("HourlyValidatorStats"."inactivity", 0) + COALESCE(EXCLUDED."inactivity", 0)
+          `;
+          logger.info(`Inserted ${newRowsCount} new records.`);
+        } else {
+          logger.info(`Step 2: Skipped INSERT - all rows were already updated.`);
+        }
+
+        // Update epoch status
+        await tx.epoch.update({
           where: { epoch },
           data: { rewardsFetched: true },
         });
+
+        logger.info(
+          `Successfully merged data from temp table (${updatedRowsCount} updated, ${totalRows - updatedRowsCount} inserted).`,
+        );
       },
       {
         timeout: ms('5m'),
