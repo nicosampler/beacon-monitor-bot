@@ -76,7 +76,7 @@ async function fetchAttestationRewardsInParallel(
   validatorIds: number[],
   logger: CustomLogger,
 ): Promise<AttestationRewards[]> {
-  const concurrency = 10;
+  const concurrency = 5;
   const validatorBatches = chunk(validatorIds, 1000000);
 
   const allResults: AttestationRewards[] = [];
@@ -100,28 +100,6 @@ async function fetchAttestationRewardsInParallel(
   }
 
   return allResults;
-}
-
-async function mergeAndUpdateEpoch(tx: Prisma.TransactionClient, epoch: number): Promise<void> {
-  // Merge data from temporary table to main table
-  await tx.$executeRaw`
-    INSERT INTO "HourlyValidatorStats" 
-      ("validatorIndex", "date", "hour", "head", "target", "source", "inactivity")
-    SELECT 
-      "validatorIndex", "date", "hour", "head", "target", "source", "inactivity"
-    FROM "EpochRewardsTemp"
-    ON CONFLICT ("validatorIndex", "date", "hour") DO UPDATE SET
-      "head" = COALESCE("HourlyValidatorStats"."head", 0) + COALESCE(EXCLUDED."head", 0),
-      "target" = COALESCE("HourlyValidatorStats"."target", 0) + COALESCE(EXCLUDED."target", 0),
-      "source" = COALESCE("HourlyValidatorStats"."source", 0) + COALESCE(EXCLUDED."source", 0),
-      "inactivity" = COALESCE("HourlyValidatorStats"."inactivity", 0) + COALESCE(EXCLUDED."inactivity", 0)
-  `;
-
-  // Update epoch status
-  await tx.epoch.update({
-    where: { epoch },
-    data: { rewardsFetched: true },
-  });
 }
 
 // Main function
@@ -180,14 +158,25 @@ export async function fetchBeaconRewards(logger: CustomLogger, epoch: number) {
     logger.info(`Merging data from temp table to main table.`);
     await prisma.$transaction(
       async (tx) => {
-        await mergeAndUpdateEpoch(tx, epoch);
+        await tx.$executeRaw`
+          INSERT INTO "HourlyValidatorStats" 
+            ("validatorIndex", "date", "hour", "head", "target", "source", "inactivity")
+          SELECT 
+            "validatorIndex", "date", "hour", "head", "target", "source", "inactivity"
+          FROM "EpochRewardsTemp"
+          ON CONFLICT ("validatorIndex", "date", "hour") DO UPDATE SET
+            "head" = COALESCE("HourlyValidatorStats"."head", 0) + COALESCE(EXCLUDED."head", 0),
+            "target" = COALESCE("HourlyValidatorStats"."target", 0) + COALESCE(EXCLUDED."target", 0),
+            "source" = COALESCE("HourlyValidatorStats"."source", 0) + COALESCE(EXCLUDED."source", 0),
+            "inactivity" = COALESCE("HourlyValidatorStats"."inactivity", 0) + COALESCE(EXCLUDED."inactivity", 0)
+        `;
         await prisma.epoch.update({
           where: { epoch },
           data: { rewardsFetched: true },
         });
       },
       {
-        timeout: ms('3m'),
+        timeout: ms('5m'),
       },
     );
 
