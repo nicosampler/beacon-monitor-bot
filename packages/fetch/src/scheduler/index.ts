@@ -22,41 +22,41 @@ const isEthereum = env.NODE_SENTINEL_CHAIN === 'ethereum';
 // Ethereum epoch: 6.4m
 
 export function scheduleTasks() {
-  // scheduleFetchCommittee({
-  //   id: 'FetchCommittee',
-  //   logsEnabled: false,
-  //   intervalMs: isEthereum ? ms('2m') : ms('20s'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
-  // scheduleFetchSyncCommittees({
-  //   id: 'FetchSyncCommittees',
-  //   logsEnabled: false,
-  //   intervalMs: ms('2m'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
-  // scheduleFetchAttestations({
-  //   id: 'FetchAttestations',
-  //   logsEnabled: false,
-  //   intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
-  // scheduleFetchExecutionRewards({
-  //   id: 'FetchExecutionRewards',
-  //   logsEnabled: false,
-  //   intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
-  // scheduleFetchBlockAndSyncRewards({
-  //   id: 'FetchBlockAndSyncRewards',
-  //   logsEnabled: false,
-  //   intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
+  scheduleFetchCommittee({
+    id: 'FetchCommittee',
+    logsEnabled: false,
+    intervalMs: isEthereum ? ms('2m') : ms('20s'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
+  scheduleFetchSyncCommittees({
+    id: 'FetchSyncCommittees',
+    logsEnabled: false,
+    intervalMs: ms('2m'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
+  scheduleFetchAttestations({
+    id: 'FetchAttestations',
+    logsEnabled: false,
+    intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
+  scheduleFetchExecutionRewards({
+    id: 'FetchExecutionRewards',
+    logsEnabled: false,
+    intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
+  scheduleFetchBlockAndSyncRewards({
+    id: 'FetchBlockAndSyncRewards',
+    logsEnabled: false,
+    intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
   scheduleFetchEpochInfo({
     id: 'FetchEpochInfo',
     logsEnabled: true,
@@ -64,61 +64,61 @@ export function scheduleTasks() {
     runImmediately: true,
     preventOverrun: true,
   });
-  // scheduleSummarizeHourly({
-  //   id: 'SummarizeHourly',
-  //   logsEnabled: true,
-  //   intervalMs: ms('15m'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
-  // scheduleSummarizeDaily({
-  //   id: 'SummarizeDaily',
-  //   logsEnabled: false,
-  //   intervalMs: ms('1h'),
-  //   runImmediately: false,
-  //   preventOverrun: true,
-  // });
-  // scheduleCleanupCommittee({
-  //   id: 'CleanupCommittee',
-  //   logsEnabled: false,
-  //   intervalMs: ms('30m'),
-  //   runImmediately: false,
-  //   preventOverrun: true,
-  // });
-  // schedulePrune({
-  //   id: 'Prune',
-  //   logsEnabled: false,
-  //   intervalMs: ms('1h'),
-  //   runImmediately: false,
-  //   preventOverrun: true,
-  // });
-  // //New schedulers for ValidatorsStats table
-  // schedulerUpdateValidatorStatus_validatorsStats({
-  //   id: 'UpdateValidatorStatus_validatorsStats',
-  //   logsEnabled: false,
-  //   intervalMs: ms('30s'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
-  // schedulerUpdateDailyRewards_validatorsStats({
-  //   id: 'UpdateDailyRewards_validatorsStats',
-  //   logsEnabled: false,
-  //   intervalMs: ms('15m'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
-  // schedulerUpdateWeeklyRewards_validatorsStats({
-  //   id: 'UpdateWeeklyRewards_validatorsStats',
-  //   logsEnabled: false,
-  //   intervalMs: ms('1h'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
-  // schedulerUpdateMonthlyRewards_validatorsStats({
-  //   id: 'UpdateMonthlyRewards_validatorsStats',
-  //   logsEnabled: false,
-  //   intervalMs: ms('3h'),
-  //   runImmediately: true,
-  //   preventOverrun: true,
-  // });
+  scheduleSummarizeHourly({
+    id: 'SummarizeHourly',
+    logsEnabled: true,
+    intervalMs: ms('15m'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
+  scheduleSummarizeDaily({
+    id: 'SummarizeDaily',
+    logsEnabled: false,
+    intervalMs: ms('1h'),
+    runImmediately: false,
+    preventOverrun: true,
+  });
+  scheduleCleanupCommittee({
+    id: 'CleanupCommittee',
+    logsEnabled: false,
+    intervalMs: ms('30m'),
+    runImmediately: false,
+    preventOverrun: true,
+  });
+  schedulePrune({
+    id: 'Prune',
+    logsEnabled: false,
+    intervalMs: ms('1h'),
+    runImmediately: false,
+    preventOverrun: true,
+  });
+  //New schedulers for ValidatorsStats table
+  schedulerUpdateValidatorStatus_validatorsStats({
+    id: 'UpdateValidatorStatus_validatorsStats',
+    logsEnabled: false,
+    intervalMs: ms('30s'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
+  schedulerUpdateDailyRewards_validatorsStats({
+    id: 'UpdateDailyRewards_validatorsStats',
+    logsEnabled: false,
+    intervalMs: ms('15m'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
+  schedulerUpdateWeeklyRewards_validatorsStats({
+    id: 'UpdateWeeklyRewards_validatorsStats',
+    logsEnabled: false,
+    intervalMs: ms('1h'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
+  schedulerUpdateMonthlyRewards_validatorsStats({
+    id: 'UpdateMonthlyRewards_validatorsStats',
+    logsEnabled: false,
+    intervalMs: ms('3h'),
+    runImmediately: true,
+    preventOverrun: true,
+  });
 }
