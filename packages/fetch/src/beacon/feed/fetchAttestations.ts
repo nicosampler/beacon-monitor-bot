@@ -195,7 +195,10 @@ async function persistToDB(
       }
 
       // Execute all queries in parallel
-      await Promise.all(queries.map((query) => tx.$executeRaw(query)));
+      //await Promise.all(queries.map((query) => tx.$executeRaw(query)));
+      for (const query of queries) {
+        await tx.$executeRaw(query);
+      }
 
       // Update slot
       await tx.slot.update({

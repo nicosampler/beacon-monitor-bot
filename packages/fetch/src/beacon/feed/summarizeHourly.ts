@@ -130,7 +130,7 @@ export async function summarizeHourly(
   const unprocessedBeaconRewards = await hasUnprocessedBeaconRewards(endSlot);
   if (unprocessedBeaconRewards) {
     logger.info(
-      `Some beacon rewards before slot ${endSlot} are not fully processed. Skipping summarization.`,
+      `Some epoch rewards before slot ${endSlot} are not fully processed. Skipping summarization.`,
     );
     return;
   }

@@ -265,24 +265,46 @@ export async function db_getValidatorsEffectiveBalances(validatorIds: number[]) 
   });
 }
 
-export async function db_getAttestingValidatorsIds(): Promise<number[]> {
-  const validators = await prisma.validator.findMany({
-    where: {
-      OR: [
-        {
-          status: {
-            in: [VALIDATOR_STATUS.active_ongoing, VALIDATOR_STATUS.active_exiting],
-          },
-        },
-        {
-          status: null,
-        },
-      ],
-    },
-    select: { id: true },
-  });
+/**
+ * Gets attesting validator IDs and their effective balances in a single query.
+ * Optimized to fetch both validator IDs (matching attesting status) and balances using raw SQL.
+ * Returns an array of objects with id and effectiveBalance (as Decimal from Prisma).
+ * No text casting in SQL for better performance - conversion happens in JavaScript.
+ */
+export async function db_getAttestingValidatorsWithBalances(): Promise<
+  Array<{ id: number; effectiveBalance: Prisma.Decimal | null }>
+> {
+  // No text casting - let Prisma handle Decimal type, convert to string only when needed
+  // Only query for active_ongoing and active_exiting status (no NULL)
+  return prisma.$queryRaw<Array<{ id: number; effectiveBalance: Prisma.Decimal | null }>>`
+    SELECT 
+      id,
+      "effectiveBalance"
+    FROM "Validator"
+    WHERE status IN (${VALIDATOR_STATUS.active_ongoing}, ${VALIDATOR_STATUS.active_exiting})
+  `;
+}
 
-  return validators.map((v) => v.id);
+/**
+ * Optimized query to get all attesting validator IDs.
+ * Uses raw SQL for better performance with millions of validators.
+ * Returns validators with status active_ongoing or active_exiting.
+ *
+ * Optimizations:
+ * - Uses raw SQL instead of Prisma ORM for better query planning
+ * - Direct WHERE clause with IN condition (PostgreSQL optimizes this efficiently with index on status)
+ * - Removed ORDER BY to avoid unnecessary sorting overhead
+ */
+export async function db_getAttestingValidatorsIds(): Promise<number[]> {
+  // Use raw SQL query for better performance
+  // PostgreSQL can efficiently use the index on status for this query
+  const result = await prisma.$queryRaw<{ id: number }[]>`
+    SELECT id
+    FROM "Validator"
+    WHERE status IN (${VALIDATOR_STATUS.active_ongoing}, ${VALIDATOR_STATUS.active_exiting})
+  `;
+
+  return result.map((row) => row.id);
 }
 
 export async function db_getLastProcessedSyncCommittee() {

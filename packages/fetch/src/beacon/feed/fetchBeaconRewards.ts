@@ -8,7 +8,7 @@ import { getTimestampFromEpochNumber } from '@/src/beacon/utils/time.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 import { convertToUTC } from '@/src/utils/date/index.js';
-import { db_getAttestingValidatorsIds, db_getValidatorsEffectiveBalances } from '@/src/utils/db.js';
+import { db_getAttestingValidatorsWithBalances } from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 
@@ -67,6 +67,41 @@ async function insertBatchIntoTempTable(
   `;
 }
 
+/**
+ * Processes batches of validator IDs in parallel with a concurrency limit.
+ * Fetches attestation rewards for multiple batches concurrently.
+ */
+async function fetchAttestationRewardsInParallel(
+  epoch: number,
+  validatorIds: number[],
+  logger: CustomLogger,
+): Promise<AttestationRewards[]> {
+  const concurrency = 10;
+  const validatorBatches = chunk(validatorIds, 150000);
+
+  const allResults: AttestationRewards[] = [];
+
+  // Process batches in chunks of concurrency limit
+  for (let i = 0; i < validatorBatches.length; i += concurrency) {
+    const batchChunk = validatorBatches.slice(i, i + concurrency);
+
+    const promises = batchChunk.map((batch) =>
+      beacon_getAttestationRewards(epoch, batch).catch((error) => {
+        logger.error(
+          `Error fetching attestation rewards for batch of ${batch.length} validators:`,
+          error,
+        );
+        throw error;
+      }),
+    );
+
+    const results = await Promise.all(promises);
+    allResults.push(...results);
+  }
+
+  return allResults;
+}
+
 async function mergeAndUpdateEpoch(tx: Prisma.TransactionClient, epoch: number): Promise<void> {
   // Merge data from temporary table to main table
   await tx.$executeRaw`
@@ -93,7 +128,7 @@ async function mergeAndUpdateEpoch(tx: Prisma.TransactionClient, epoch: number):
 export async function fetchBeaconRewards(logger: CustomLogger, epoch: number) {
   const start = Date.now();
   try {
-    logger.info(`Fetching rewards.`);
+    logger.info(`Fetching rewards for epoch ${epoch}.`);
 
     const epochTimestamp = getTimestampFromEpochNumber(epoch);
     const { date, hour } = convertToUTC(epochTimestamp);
@@ -101,61 +136,60 @@ export async function fetchBeaconRewards(logger: CustomLogger, epoch: number) {
     // 1. Truncate temp table
     await truncateTempTable();
 
-    // Get all validator ids to fetch info
-    const allValidatorIds = await db_getAttestingValidatorsIds();
-    let idealRewardsMap: Map<string, AttestationRewards['data']['ideal_rewards'][number]> | null =
-      null;
+    // 2. Get all validator IDs and their effective balances
+    logger.info(`Getting all attesting validator IDs and effective balances.`);
+    const validatorsWithBalances = await db_getAttestingValidatorsWithBalances();
+    logger.info(`Found ${validatorsWithBalances.length} attesting validators.`);
 
-    // Process all validators in batches
-    const validatorBatches = chunk(allValidatorIds, 1000000);
-    allValidatorIds.length = 0;
+    // Build Map only once when we have all data
+    // Convert Decimal to string here (avoiding expensive text casting in SQL)
+    const validatorsBalancesMap = new Map<string, string>();
+    const allValidatorIds: number[] = [];
+    for (const validator of validatorsWithBalances) {
+      allValidatorIds.push(validator.id);
+      // Convert Decimal to string efficiently - Prisma Decimal has toString() method
+      const balanceStr = validator.effectiveBalance?.toString() || '0';
+      validatorsBalancesMap.set(validator.id.toString(), balanceStr);
+    }
+    validatorsWithBalances.length = 0; // Free memory
 
-    // 2. Load data into temp table
-    for (const batch of validatorBatches) {
-      // Get effective balances for the validators in the batch
-      const validatorsEffectiveBalances = await db_getValidatorsEffectiveBalances(batch);
-      const validatorsBalancesMap = new Map(
-        validatorsEffectiveBalances.map((balance) => [
-          balance.id.toString(),
-          balance.effectiveBalance?.toString() || '0',
-        ]),
-      );
-      validatorsEffectiveBalances.length = 0;
+    // 3. Split validators into batches for parallel fetching
+    logger.info(`Fetching attestation rewards in parallel batches.`);
+    const allEpochRewards = await fetchAttestationRewardsInParallel(epoch, allValidatorIds, logger);
 
-      // Get attestation rewards for this batch
-      const epochRewards = await beacon_getAttestationRewards(epoch, batch);
+    // 5. Create ideal rewards map from first response
+    const idealRewardsMap = createIdealRewardsMap(allEpochRewards[0]);
 
-      // Create ideal rewards map if this is the first batch
-      if (!idealRewardsMap) {
-        idealRewardsMap = createIdealRewardsMap(epochRewards);
-      }
-
-      // Save rewards data in temp table
+    // 6. Insert all rewards data into temp table
+    logger.info(`Inserting all rewards data into temp table.`);
+    for (const epochRewards of allEpochRewards) {
+      // Save rewards data in temp table in smaller batches
       const rewardBatches = chunk(epochRewards.data.total_rewards, 12_000);
       for (const rewardBatch of rewardBatches) {
         await insertBatchIntoTempTable(
           rewardBatch,
           validatorsBalancesMap,
-          idealRewardsMap!,
+          idealRewardsMap,
           date,
           hour,
         );
       }
-      batch.length = 0;
     }
 
-    // 3. Execute merge and update in a transaction
+    // 7. Merge data from temp table to main table and update epoch status
+    logger.info(`Merging data from temp table to main table.`);
     await prisma.$transaction(
       async (tx) => {
         await mergeAndUpdateEpoch(tx, epoch);
+        await prisma.epoch.update({
+          where: { epoch },
+          data: { rewardsFetched: true },
+        });
       },
       {
         timeout: ms('3m'),
       },
     );
-
-    // 4. Final truncate if everything went well
-    await truncateTempTable();
 
     logger.info(
       `All Epoch rewards processed in ${((Date.now() - start) / 1000 / 60).toFixed(2)} minutes`,

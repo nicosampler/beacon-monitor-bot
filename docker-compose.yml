@@ -10,18 +10,27 @@ services:
       - beacon_postgres_data:/var/lib/postgresql/data
     shm_size: 1g
     command:
+     command:
       - -c
-      - shared_buffers=1GB
+      - shared_buffers=2GB            
       - -c
-      - max_wal_size=5GB
+      - effective_cache_size=12GB     
       - -c
-      - min_wal_size=1GB
+      - work_mem=128MB                
       - -c
-      - checkpoint_timeout=4min
+      - maintenance_work_mem=512MB    
       - -c
-      - checkpoint_completion_target=0.9
+      - max_wal_size=10GB             
       - -c
-      - random_page_cost=1.1
+      - min_wal_size=2GB              
+      - -c
+      - checkpoint_timeout=10min      
+      - -c
+      - checkpoint_completion_target=0.9  
+      - -c
+      - wal_compression=on            
+      - -c
+      - random_page_cost=1.1   
     networks:
       - app-network
     logging:

@@ -62,6 +62,7 @@ model Validator {
 
   @@index([withdrawalAddress])
   @@index([status])
+  @@index([status, id]) // Composite index for optimized attesting validators queries
 }
 
 model ExecutionRewards {

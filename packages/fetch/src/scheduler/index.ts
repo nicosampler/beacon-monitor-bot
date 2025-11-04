@@ -31,21 +31,21 @@ export function scheduleTasks() {
   });
   scheduleFetchSyncCommittees({
     id: 'FetchSyncCommittees',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('2m'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleFetchAttestations({
     id: 'FetchAttestations',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
   });
   scheduleFetchExecutionRewards({
     id: 'FetchExecutionRewards',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
@@ -60,7 +60,7 @@ export function scheduleTasks() {
   scheduleFetchEpochInfo({
     id: 'FetchEpochInfo',
     logsEnabled: true,
-    intervalMs: isEthereum ? ms('1m') : ms('20s'),
+    intervalMs: ms('10s'),
     runImmediately: true,
     preventOverrun: true,
   });
@@ -68,32 +68,31 @@ export function scheduleTasks() {
     id: 'SummarizeHourly',
     logsEnabled: false,
     intervalMs: ms('15m'),
-    runImmediately: true,
+    runImmediately: false,
     preventOverrun: true,
   });
   scheduleSummarizeDaily({
     id: 'SummarizeDaily',
     logsEnabled: false,
     intervalMs: ms('1h'),
-    runImmediately: true,
+    runImmediately: false,
     preventOverrun: true,
   });
   scheduleCleanupCommittee({
     id: 'CleanupCommittee',
     logsEnabled: false,
     intervalMs: ms('30m'),
-    runImmediately: true,
+    runImmediately: false,
     preventOverrun: true,
   });
   schedulePrune({
     id: 'Prune',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('1h'),
-    runImmediately: true,
+    runImmediately: false,
     preventOverrun: true,
   });
-
-  // New schedulers for ValidatorsStats table
+  //New schedulers for ValidatorsStats table
   schedulerUpdateValidatorStatus_validatorsStats({
     id: 'UpdateValidatorStatus_validatorsStats',
     logsEnabled: true,

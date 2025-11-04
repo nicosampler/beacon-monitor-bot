@@ -80,10 +80,6 @@ async function fetchEpochInfoTask(logger: CustomLogger) {
   // Get beacon rewards for the current epoch
   if (!dbEpoch.rewardsFetched) {
     await fetchBeaconRewards(logger, epochToFetch);
-    await prisma.epoch.update({
-      where: { epoch: epochToFetch },
-      data: { rewardsFetched: true },
-    });
   }
 }
 
