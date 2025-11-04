@@ -9,29 +9,26 @@ import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 //import { db_getFinalValidatorIds } from '@/src/utils/db.js';
 
-const prisma = getPrisma();
-
 // Function to save validators info to database
 async function saveValidatorsToDatabase(
   validatorsInfo: Awaited<ReturnType<typeof beacon_getValidators>>,
+  epoch: number,
   logger: CustomLogger,
-  tx?: Prisma.TransactionClient,
 ) {
-  const client = tx || prisma;
-  const executeInTransaction = !tx;
+  const prisma = getPrisma();
 
   try {
-    const saveOperation = async (transactionClient: Prisma.TransactionClient) => {
-      // Create temporary table
-      await transactionClient.$executeRaw`
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`
         CREATE TEMPORARY TABLE "TempValidator" (LIKE "Validator") ON COMMIT DROP
       `;
 
-      const batches = chunk(validatorsInfo, 6000);
-      logger.info(`Processing ${batches.length} batches of validators`);
+        const batches = chunk(validatorsInfo, 6000);
+        logger.info(`Processing ${batches.length} batches of validators`);
 
-      for (const batch of batches) {
-        await transactionClient.$executeRaw`
+        for (const batch of batches) {
+          await tx.$executeRaw`
           INSERT INTO "TempValidator" (id, "withdrawalAddress", status, balance, "effectiveBalance")
           VALUES ${Prisma.join(
             batch.map(
@@ -51,10 +48,10 @@ async function saveValidatorsToDatabase(
             ', ',
           )}
         `;
-      }
+        }
 
-      // Merge data from temporary table to main table
-      await transactionClient.$executeRaw`
+        // Merge data from temporary table to main table
+        await tx.$executeRaw`
         INSERT INTO "Validator" (id, "withdrawalAddress", status, balance, "effectiveBalance")
         SELECT id, "withdrawalAddress", status, balance, "effectiveBalance"
         FROM "TempValidator"
@@ -63,15 +60,14 @@ async function saveValidatorsToDatabase(
           "status" = EXCLUDED.status,
           "effectiveBalance" = EXCLUDED."effectiveBalance"
       `;
-    };
 
-    if (executeInTransaction) {
-      await prisma.$transaction(saveOperation, {
-        timeout: ms('2m'),
-      });
-    } else {
-      await saveOperation(client as Prisma.TransactionClient);
-    }
+        await tx.epoch.update({
+          where: { epoch: epoch },
+          data: { validatorsInfoFetched: true },
+        });
+      },
+      { timeout: ms('2m') },
+    );
 
     logger.info(`Successfully saved ${validatorsInfo.length} validators to database`);
   } catch (error) {
@@ -125,13 +121,7 @@ export async function fetchValidators(
       `All validators fetched in ${((Date.now() - start) / 1000 / 60).toFixed(2)} minutes`,
     );
 
-    await prisma.$transaction(async (tx) => {
-      await saveValidatorsToDatabase(allValidatorsData, logger, tx);
-      await tx.epoch.update({
-        where: { epoch: epoch },
-        data: { validatorsInfoFetched: true },
-      });
-    });
+    await saveValidatorsToDatabase(allValidatorsData, epoch, logger);
   } catch (error) {
     logger.error(`Error fetching validators info`, error);
     throw error;
