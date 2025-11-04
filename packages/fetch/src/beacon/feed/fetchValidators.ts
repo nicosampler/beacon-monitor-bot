@@ -3,11 +3,11 @@ import { Decimal } from '@prisma/client/runtime/library';
 import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
-import { extractError, beacon_getValidators } from '@/src/beacon/endpoints.js';
+import { beacon_getValidators } from '@/src/beacon/endpoints.js';
 import { VALIDATOR_STATUS } from '@/src/constants/index.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
-import { db_getFinalValidatorIds } from '@/src/utils/db.js';
+//import { db_getFinalValidatorIds } from '@/src/utils/db.js';
 
 const prisma = getPrisma();
 
@@ -86,27 +86,18 @@ async function saveValidatorsToDatabase(
  */
 export async function fetchValidators(
   logger: CustomLogger,
-  epochToFetch: number,
+  epoch: number,
   stateId: number | 'head',
-  finalValidatorIds?: number[],
+  finalValidatorIds: number[],
   maxValidatorId: number = 0,
 ) {
   const start = Date.now();
   logger.info(`Fetching validators.`);
   try {
     const batchSize = 1_000_000;
-    const totalValidators = finalValidatorIds ? maxValidatorId + 10_000 : 4_000_000;
+    const totalValidators = maxValidatorId + 10_000;
 
-    // Get final state validators (provided or fetch from DB)
-    let finalStateValidatorsIds: number[];
-    if (finalValidatorIds) {
-      finalStateValidatorsIds = finalValidatorIds;
-    } else {
-      // Fallback: fetch from database (for backward compatibility)
-      finalStateValidatorsIds = await db_getFinalValidatorIds();
-    }
-
-    const finalStateValidatorsSet = new Set(finalStateValidatorsIds);
+    const finalStateValidatorsSet = new Set(finalValidatorIds);
 
     // Generate all validator IDs from 0 to totalValidators, excluding final state validators
     const allValidatorIds = Array.from({ length: totalValidators }, (_, i) => i).filter(
@@ -117,20 +108,16 @@ export async function fetchValidators(
     const batches = chunk(allValidatorIds, batchSize);
     let allValidatorsData: Awaited<ReturnType<typeof beacon_getValidators>> = [];
     for (const batchIds of batches) {
-      try {
-        const batchResult = await beacon_getValidators(
-          stateId,
-          batchIds.map((id) => String(id)),
-          null,
-        );
+      const batchResult = await beacon_getValidators(
+        stateId,
+        batchIds.map((id) => String(id)),
+        null,
+      );
 
-        allValidatorsData = [...allValidatorsData, ...batchResult];
+      allValidatorsData = [...allValidatorsData, ...batchResult];
 
-        if (batchResult.length < batchSize) {
-          break;
-        }
-      } catch (error) {
-        logger.error(`Error processing batch`, extractError(error));
+      if (batchResult.length < batchSize) {
+        break;
       }
     }
 
@@ -141,7 +128,7 @@ export async function fetchValidators(
     await prisma.$transaction(async (tx) => {
       await saveValidatorsToDatabase(allValidatorsData, logger, tx);
       await tx.epoch.update({
-        where: { epoch: epochToFetch },
+        where: { epoch: epoch },
         data: { validatorsInfoFetched: true },
       });
     });

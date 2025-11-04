@@ -35,7 +35,7 @@ async function fetchEpochInfoTask(logger: CustomLogger) {
   const lastProcessedEpoch = await db_getLastProcessedEpoch();
   const oldestLookbackEpoch = Math.floor(getOldestLookbackSlot() / env.BEACON_SLOTS_PER_EPOCH);
   const epochToFetch = lastProcessedEpoch ? lastProcessedEpoch.epoch + 1 : oldestLookbackEpoch;
-  const { startSlot, endSlot } = getEpochSlots(epochToFetch);
+  const { endSlot } = getEpochSlots(epochToFetch);
 
   logger.addContext(`epoch: ${epochToFetch}`);
 
@@ -57,32 +57,30 @@ async function fetchEpochInfoTask(logger: CustomLogger) {
     return;
   }
 
-  logger.info(`Fetching. HeadEpoch: ${epochToFetch}.`);
+  logger.info(`Starting to process`);
 
   // Get all validator IDs needed for both functions in a single query (optimization)
   const needsValidatorsFetch = !dbEpoch.validatorsInfoFetched;
   const needsBalancesFetch = !dbEpoch.validatorsBalancesFetched;
 
   let finalValidatorIds: number[] | undefined;
-  let activeValidatorIds: number[] | undefined;
+  //let activeValidatorIds: number[] | undefined;
   let maxValidatorId: number | undefined;
   if (needsValidatorsFetch || needsBalancesFetch) {
     logger.info(`Getting validator data for fetching.`);
     const validatorData = await db_getValidatorIdsForFetching();
     finalValidatorIds = validatorData.finalValidatorIds; // Already fetched in db_getValidatorIdsForFetching
-    activeValidatorIds = validatorData.activeValidatorIds;
+    //activeValidatorIds = validatorData.activeValidatorIds;
     maxValidatorId = validatorData.maxValidatorId;
   }
 
   const promises: Promise<void>[] = [];
   if (needsValidatorsFetch && finalValidatorIds && maxValidatorId) {
-    promises.push(
-      fetchValidators(logger, epochToFetch, startSlot, finalValidatorIds, maxValidatorId),
-    );
+    promises.push(fetchValidators(logger, epochToFetch, 'head', finalValidatorIds, maxValidatorId));
   }
-  if (needsBalancesFetch && activeValidatorIds) {
-    promises.push(fetchValidatorsBalances(logger, epochToFetch, startSlot, activeValidatorIds));
-  }
+  // if (needsBalancesFetch && activeValidatorIds) {
+  //   promises.push(fetchValidatorsBalances(logger, epochToFetch, startSlot, activeValidatorIds));
+  // }
   if (promises.length > 0) {
     await Promise.all(promises);
   }

@@ -83,7 +83,7 @@ export const db_getLastProcessedEpoch = async () =>
   prisma.epoch.findFirst({
     where: {
       rewardsFetched: true,
-      validatorsBalancesFetched: true,
+      // validatorsBalancesFetched: true,
       validatorsInfoFetched: true,
     },
     orderBy: { epoch: 'desc' },
