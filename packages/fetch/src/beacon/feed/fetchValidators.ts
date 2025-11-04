@@ -16,60 +16,74 @@ async function saveValidatorsToDatabase(
   logger: CustomLogger,
 ) {
   const prisma = getPrisma();
+  const start = Date.now();
 
   try {
     await prisma.$transaction(
       async (tx) => {
+        // 1. Crear tabla temporal
         await tx.$executeRaw`
-        CREATE TEMPORARY TABLE "TempValidator" (LIKE "Validator") ON COMMIT DROP
-      `;
+      CREATE TEMPORARY TABLE "TempValidator" (LIKE "Validator") ON COMMIT DROP;
+    `;
 
+        // 2. Insertar todos los validators en batches
         const batches = chunk(validatorsInfo, 6000);
-        logger.info(`Processing ${batches.length} batches of validators`);
-
         for (const batch of batches) {
           await tx.$executeRaw`
-          INSERT INTO "TempValidator" (id, "withdrawalAddress", status, balance, "effectiveBalance")
-          VALUES ${Prisma.join(
-            batch.map(
-              (data) =>
-                Prisma.sql`(
-                  ${+data.index}, 
-                  ${
-                    data.validator.withdrawal_credentials.startsWith('0x')
-                      ? '0x' + data.validator.withdrawal_credentials.slice(-40)
-                      : null
-                  }, 
-                  ${VALIDATOR_STATUS[data.status]}, 
-                  ${new Decimal(data.balance)}, 
-                  ${new Decimal(data.validator.effective_balance)}
-                )`,
-            ),
-            ', ',
-          )}
-        `;
+        INSERT INTO "TempValidator" (id, "withdrawalAddress", status, balance, "effectiveBalance")
+        VALUES ${Prisma.join(
+          batch.map(
+            (data) => Prisma.sql`(
+              ${+data.index},
+              ${
+                data.validator.withdrawal_credentials.startsWith('0x')
+                  ? '0x' + data.validator.withdrawal_credentials.slice(-40)
+                  : null
+              },
+              ${VALIDATOR_STATUS[data.status]},
+              ${new Decimal(data.balance)},
+              ${new Decimal(data.validator.effective_balance)}
+            )`,
+          ),
+          ', ',
+        )}
+      `;
         }
 
-        // Merge data from temporary table to main table
+        // 3. Actualizar los existentes
         await tx.$executeRaw`
-        INSERT INTO "Validator" (id, "withdrawalAddress", status, balance, "effectiveBalance")
-        SELECT id, "withdrawalAddress", status, balance, "effectiveBalance"
-        FROM "TempValidator"
-        ON CONFLICT (id) DO UPDATE SET
-          "withdrawalAddress" = EXCLUDED."withdrawalAddress",
-          "status" = EXCLUDED.status,
-          "effectiveBalance" = EXCLUDED."effectiveBalance"
-      `;
+      UPDATE "Validator" v
+      SET
+        "withdrawalAddress" = t."withdrawalAddress",
+        status              = t.status,
+        balance             = t.balance,
+        "effectiveBalance"  = t."effectiveBalance"
+      FROM "TempValidator" t
+      WHERE v.id = t.id;
+    `;
 
+        // 4. Insertar solo los nuevos (que no existían)
+        await tx.$executeRaw`
+      INSERT INTO "Validator" (id, "withdrawalAddress", status, balance, "effectiveBalance")
+      SELECT t.id, t."withdrawalAddress", t.status, t.balance, t."effectiveBalance"
+      FROM "TempValidator" t
+      LEFT JOIN "Validator" v ON v.id = t.id
+      WHERE v.id IS NULL;
+    `;
+
+        // 5. Marcar epoch como procesado
         await tx.epoch.update({
-          where: { epoch: epoch },
+          where: { epoch },
           data: { validatorsInfoFetched: true },
         });
       },
       { timeout: ms('2m') },
     );
 
-    logger.info(`Successfully saved ${validatorsInfo.length} validators to database`);
+    const duration = ((Date.now() - start) / 1000 / 60).toFixed(2);
+    logger.info(
+      `Successfully saved ${validatorsInfo.length} validators to database in ${duration} minutes`,
+    );
   } catch (error) {
     logger.error(`Error saving validators to database`, error);
     throw error;
