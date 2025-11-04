@@ -24,7 +24,7 @@ const isEthereum = env.NODE_SENTINEL_CHAIN === 'ethereum';
 export function scheduleTasks() {
   scheduleFetchCommittee({
     id: 'FetchCommittee',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: isEthereum ? ms('2m') : ms('20s'),
     runImmediately: true,
     preventOverrun: true,
@@ -52,7 +52,7 @@ export function scheduleTasks() {
   });
   scheduleFetchBlockAndSyncRewards({
     id: 'FetchBlockAndSyncRewards',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: isEthereum ? ms('3s') : ms('2.5s'),
     runImmediately: true,
     preventOverrun: true,
@@ -95,28 +95,28 @@ export function scheduleTasks() {
   //New schedulers for ValidatorsStats table
   schedulerUpdateValidatorStatus_validatorsStats({
     id: 'UpdateValidatorStatus_validatorsStats',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('30s'),
     runImmediately: true,
     preventOverrun: true,
   });
   schedulerUpdateDailyRewards_validatorsStats({
     id: 'UpdateDailyRewards_validatorsStats',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('15m'),
     runImmediately: true,
     preventOverrun: true,
   });
   schedulerUpdateWeeklyRewards_validatorsStats({
     id: 'UpdateWeeklyRewards_validatorsStats',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('1h'),
     runImmediately: true,
     preventOverrun: true,
   });
   schedulerUpdateMonthlyRewards_validatorsStats({
     id: 'UpdateMonthlyRewards_validatorsStats',
-    logsEnabled: true,
+    logsEnabled: false,
     intervalMs: ms('3h'),
     runImmediately: true,
     preventOverrun: true,
