@@ -77,7 +77,7 @@ async function fetchAttestationRewardsInParallel(
   logger: CustomLogger,
 ): Promise<AttestationRewards[]> {
   const concurrency = 10;
-  const validatorBatches = chunk(validatorIds, 100000);
+  const validatorBatches = chunk(validatorIds, 1000000);
 
   const allResults: AttestationRewards[] = [];
 
