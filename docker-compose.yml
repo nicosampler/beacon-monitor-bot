@@ -10,7 +10,6 @@ services:
       - beacon_postgres_data:/var/lib/postgresql/data
     shm_size: 1g
     command:
-     command:
       - -c
       - shared_buffers=2GB            
       - -c
