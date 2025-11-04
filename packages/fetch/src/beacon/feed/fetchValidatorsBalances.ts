@@ -4,29 +4,28 @@ import chunk from 'lodash/chunk.js';
 import ms from 'ms';
 
 import { beacon_getValidatorsBalances } from '@/src/beacon/endpoints.js';
-import { db_getFinalValidatorIds, db_getMaxValidatorId } from '@/src/utils/db.js';
 import { CustomLogger } from '@/src/lib/pino.js';
 import { getPrisma } from '@/src/lib/prisma.js';
 
-const prisma = getPrisma();
-
 // Function to save validator balances to database
 async function saveValidatorBalancesToDatabase(
+  epochToFetch: number,
   validatorBalances: Array<{ index: string; balance: string }>,
   logger: CustomLogger,
 ) {
+  const prisma = getPrisma();
   logger.info('Saving result to db.');
+
   try {
-    await prisma.$transaction(
-      async (tx) => {
-        // Create temporary table
-        await tx.$executeRaw`
+    const saveOperation = async (tx: Prisma.TransactionClient) => {
+      // Create temporary table
+      await tx.$executeRaw`
         CREATE TEMPORARY TABLE "TempValidator" (LIKE "Validator") ON COMMIT DROP
       `;
 
-        const batches = chunk(validatorBalances, 12_000);
-        for (const batch of batches) {
-          await tx.$executeRaw`
+      const batches = chunk(validatorBalances, 20_000);
+      for (const batch of batches) {
+        await tx.$executeRaw`
           INSERT INTO "TempValidator" (id, balance)
           VALUES ${Prisma.join(
             batch.map(
@@ -39,21 +38,24 @@ async function saveValidatorBalancesToDatabase(
             ', ',
           )}
         `;
-        }
+      }
 
-        // Merge data from temporary table to main table
-        await tx.$executeRaw`
+      // Merge data from temporary table to main table
+      await tx.$executeRaw`
         INSERT INTO "Validator" (id, balance)
         SELECT id, balance
         FROM "TempValidator"
         ON CONFLICT (id) DO UPDATE SET
           "balance" = EXCLUDED.balance
       `;
-      },
-      {
-        timeout: ms('1m'),
-      },
-    );
+
+      await tx.epoch.update({
+        where: { epoch: epochToFetch },
+        data: { validatorsBalancesFetched: true },
+      });
+    };
+
+    await prisma.$transaction(saveOperation, { timeout: ms('1m') });
 
     logger.info(`Successfully saved ${validatorBalances.length} validator balances to database`);
   } catch (error) {
@@ -62,55 +64,34 @@ async function saveValidatorBalancesToDatabase(
   }
 }
 
-export async function fetchValidatorsBalances(logger: CustomLogger, slot: number) {
+export async function fetchValidatorsBalances(
+  logger: CustomLogger,
+  epoch: number,
+  slot: number,
+  activeValidatorIds?: number[],
+) {
   const start = Date.now();
   logger.info(`Fetching validators balances.`);
+
   try {
-    const totalValidators = await db_getMaxValidatorId();
-    if (totalValidators == 0) {
-      logger.info('No validators ids to fetch');
-      return;
-    }
-
     const batchSize = 1_000_000;
-
-    // Get final state validators
-    const finalStateValidatorsIds = await db_getFinalValidatorIds();
-    const finalStateValidatorsSet = new Set(finalStateValidatorsIds);
-
-    // Generate all validator IDs and filter out final state validators
-    const allValidatorIds = Array.from({ length: totalValidators }, (_, i) => i).filter(
-      (id) => !finalStateValidatorsSet.has(id),
+    const batchPromises = chunk(activeValidatorIds, batchSize).map(async (batchIds) =>
+      beacon_getValidatorsBalances(
+        slot,
+        batchIds.map((id) => String(id)),
+      ),
     );
 
-    // Create chunks of batchSize
-    const batches = chunk(allValidatorIds, batchSize);
-    let allValidatorBalances: Awaited<ReturnType<typeof beacon_getValidatorsBalances>> = [];
-
-    for (const batchIds of batches) {
-      try {
-        const batchResult = await beacon_getValidatorsBalances(
-          slot,
-          batchIds.map((id) => String(id)),
-        );
-
-        allValidatorBalances = [...allValidatorBalances, ...batchResult];
-
-        if (batchResult.length < batchSize) {
-          break;
-        }
-      } catch (error) {
-        logger.error(`Error processing batch`, error);
-      }
-    }
+    const batchResults = await Promise.all(batchPromises);
+    const allValidatorBalances = batchResults.flat();
 
     logger.info(
       `All validator balances fetched in ${((Date.now() - start) / 1000 / 60).toFixed(2)} minutes`,
     );
 
-    // Save all collected data to database
-    await saveValidatorBalancesToDatabase(allValidatorBalances, logger);
+    await saveValidatorBalancesToDatabase(epoch, allValidatorBalances, logger);
   } catch (error) {
     logger.error(`Error fetching validator balances info`, error);
+    throw error;
   }
 }

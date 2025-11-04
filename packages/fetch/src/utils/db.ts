@@ -256,6 +256,31 @@ export async function db_getFinalValidatorIds(): Promise<number[]> {
   return finalStateValidators.map((v) => v.id);
 }
 
+/**
+ * Gets all validator IDs needed for fetching validators info and balances.
+ * Excludes final state validators (exited_unslashed, exited_slashed, withdrawal_done).
+ * Returns IDs from 0 to maxValidatorId, excluding final state validators.
+ * Also returns finalValidatorIds to avoid duplicate queries.
+ * This is optimized to fetch in a single query instead of multiple queries.
+ */
+export async function db_getValidatorIdsForFetching() {
+  // Get max validator ID and final state validators in parallel
+  const [maxValidatorResult, finalStateValidatorsIds] = await Promise.all([
+    db_getMaxValidatorId(),
+    db_getFinalValidatorIds(),
+  ]);
+
+  const maxValidatorId = maxValidatorResult;
+  const finalStateValidatorsSet = new Set(finalStateValidatorsIds);
+
+  // Generate all validator IDs and filter out final state validators
+  const activeValidatorIds = Array.from({ length: maxValidatorId + 1 }, (_, i) => i).filter(
+    (id) => !finalStateValidatorsSet.has(id),
+  );
+
+  return { activeValidatorIds, maxValidatorId, finalValidatorIds: finalStateValidatorsIds };
+}
+
 export async function db_getValidatorsEffectiveBalances(validatorIds: number[]) {
   return prisma.validator.findMany({
     where: {

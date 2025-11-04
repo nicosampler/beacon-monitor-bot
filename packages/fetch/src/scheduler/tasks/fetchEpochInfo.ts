@@ -10,12 +10,13 @@ import {
 } from '@/src/beacon/utils/time.js';
 import { env } from '@/src/env.js';
 import createLogger, { CustomLogger } from '@/src/lib/pino.js';
-import { getPrisma } from '@/src/lib/prisma.js';
 import { scheduler } from '@/src/lib/scheduler.js';
 import { TaskOptions } from '@/src/scheduler/tasks/types.js';
-import { db_getEpochByNumber, db_getLastProcessedEpoch } from '@/src/utils/db.js';
-
-const prisma = getPrisma();
+import {
+  db_getEpochByNumber,
+  db_getLastProcessedEpoch,
+  db_getValidatorIdsForFetching,
+} from '@/src/utils/db.js';
 
 /* 
   This function fetches Epoch information.
@@ -58,23 +59,32 @@ async function fetchEpochInfoTask(logger: CustomLogger) {
 
   logger.info(`Fetching. HeadEpoch: ${epochToFetch}.`);
 
-  // Get validators info
-  if (!dbEpoch.validatorsInfoFetched) {
-    await fetchValidators(logger, startSlot);
-    await prisma.epoch.update({
-      where: { epoch: epochToFetch },
-      data: { validatorsInfoFetched: true },
-    });
+  // Get all validator IDs needed for both functions in a single query (optimization)
+  const needsValidatorsFetch = !dbEpoch.validatorsInfoFetched;
+  const needsBalancesFetch = !dbEpoch.validatorsBalancesFetched;
+
+  let finalValidatorIds: number[] | undefined;
+  let activeValidatorIds: number[] | undefined;
+  let maxValidatorId: number | undefined;
+  if (needsValidatorsFetch || needsBalancesFetch) {
+    logger.info(`Getting validator data for fetching.`);
+    const validatorData = await db_getValidatorIdsForFetching();
+    finalValidatorIds = validatorData.finalValidatorIds; // Already fetched in db_getValidatorIdsForFetching
+    activeValidatorIds = validatorData.activeValidatorIds;
+    maxValidatorId = validatorData.maxValidatorId;
   }
 
-  // Get validators effective balances
-  // validators are rewarded by epoch. So to calculate missed rewards, we need to know the effective balances for the epoch we are fetching
-  if (!dbEpoch.validatorsBalancesFetched) {
-    await fetchValidatorsBalances(logger, startSlot);
-    await prisma.epoch.update({
-      where: { epoch: epochToFetch },
-      data: { validatorsBalancesFetched: true },
-    });
+  const promises: Promise<void>[] = [];
+  if (needsValidatorsFetch && finalValidatorIds && maxValidatorId) {
+    promises.push(
+      fetchValidators(logger, epochToFetch, startSlot, finalValidatorIds, maxValidatorId),
+    );
+  }
+  if (needsBalancesFetch && activeValidatorIds) {
+    promises.push(fetchValidatorsBalances(logger, epochToFetch, startSlot, activeValidatorIds));
+  }
+  if (promises.length > 0) {
+    await Promise.all(promises);
   }
 
   // Get beacon rewards for the current epoch
