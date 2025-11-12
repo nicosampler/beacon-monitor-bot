@@ -52,24 +52,24 @@ async function saveValidatorsToDatabase(
 
         // 3. Actualizar los existentes
         await tx.$executeRaw`
-      UPDATE "Validator" v
-      SET
-        "withdrawalAddress" = t."withdrawalAddress",
-        status              = t.status,
-        balance             = t.balance,
-        "effectiveBalance"  = t."effectiveBalance"
-      FROM "TempValidator" t
-      WHERE v.id = t.id;
-    `;
+          UPDATE "Validator" v
+          SET
+            "withdrawalAddress" = t."withdrawalAddress",
+            status              = t.status,
+            balance             = t.balance,
+            "effectiveBalance"  = t."effectiveBalance"
+          FROM "TempValidator" t
+          WHERE v.id = t.id;
+        `;
 
         // 4. Insertar solo los nuevos (que no existían)
         await tx.$executeRaw`
-      INSERT INTO "Validator" (id, "withdrawalAddress", status, balance, "effectiveBalance")
-      SELECT t.id, t."withdrawalAddress", t.status, t.balance, t."effectiveBalance"
-      FROM "TempValidator" t
-      LEFT JOIN "Validator" v ON v.id = t.id
-      WHERE v.id IS NULL;
-    `;
+          INSERT INTO "Validator" (id, "withdrawalAddress", status, balance, "effectiveBalance")
+          SELECT t.id, t."withdrawalAddress", t.status, t.balance, t."effectiveBalance"
+          FROM "TempValidator" t
+          LEFT JOIN "Validator" v ON v.id = t.id
+          WHERE v.id IS NULL;
+        `;
 
         // 5. Marcar epoch como procesado
         await tx.epoch.update({
@@ -77,7 +77,7 @@ async function saveValidatorsToDatabase(
           data: { validatorsInfoFetched: true },
         });
       },
-      { timeout: ms('2m') },
+      { timeout: ms('5m') },
     );
 
     const duration = ((Date.now() - start) / 1000 / 60).toFixed(2);

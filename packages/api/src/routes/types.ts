@@ -203,3 +203,35 @@ export type WithdrawalAddressStats = {
   node_sentinel_wa: number;
   node_sentinel_percentage: number;
 };
+
+// Chain statistics endpoint
+export type ChainStatisticsResponse = {
+  joining: {
+    count: number;
+    balance: {
+      tokens: string;
+      usd: string;
+      symbol: string;
+    };
+  };
+  active: {
+    count: number;
+    balance: {
+      tokens: string;
+      usd: string;
+      symbol: string;
+    };
+  };
+  leaving: {
+    count: number;
+    balance: {
+      tokens: string;
+      usd: string;
+      symbol: string;
+    };
+  };
+  tokenPrice: {
+    usd: number;
+  };
+  timestamp: string;
+};

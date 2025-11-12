@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { billingRouter } from './billing/index.js';
+import { chainRouter } from './chain/index.js';
 import { healthRouter } from './health/index.js';
 import { metricsRouter } from './metrics/index.js';
 import { pricingRouter } from './pricing/index.js';
@@ -19,3 +20,4 @@ apiRouter.use('/metrics', metricsRouter);
 apiRouter.use('/stats', statsRouter);
 apiRouter.use('/pricing', pricingRouter);
 apiRouter.use('/slot', slotRouter);
+apiRouter.use('/chain', chainRouter);
