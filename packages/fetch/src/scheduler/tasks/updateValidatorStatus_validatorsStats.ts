@@ -40,7 +40,11 @@ async function updateValidatorStatusTask(logger: CustomLogger) {
       -------------------------------------
       
       user_validators AS (
-        SELECT DISTINCT "B" as validator_id, v.status as validator_status
+        SELECT DISTINCT 
+          "B" as validator_id, 
+          v.status as validator_status,
+          v.balance as validator_balance,
+          v."effectiveBalance" as validator_effective_balance
         FROM "_UserToValidator" uv
         LEFT JOIN "Validator" v ON v.id = uv."B"
       ),
@@ -78,6 +82,8 @@ async function updateValidatorStatusTask(logger: CustomLogger) {
         "validatorStatus", 
         "oneHourMissed", 
         "lastMissed",
+        "balance",
+        "effectiveBalance",
         "timestamp"
       )
       SELECT 
@@ -92,6 +98,8 @@ async function updateValidatorStatusTask(logger: CustomLogger) {
           END, 
           ARRAY[]::integer[]
         ) as last_missed,
+        uv.validator_balance,
+        uv.validator_effective_balance,
         NOW() as timestamp
       FROM user_validators uv
       LEFT JOIN validator_performance vp ON uv.validator_id = vp.validator_id
@@ -101,6 +109,8 @@ async function updateValidatorStatusTask(logger: CustomLogger) {
         "validatorStatus" = EXCLUDED."validatorStatus",
         "oneHourMissed" = EXCLUDED."oneHourMissed",
         "lastMissed" = EXCLUDED."lastMissed",
+        "balance" = EXCLUDED."balance",
+        "effectiveBalance" = EXCLUDED."effectiveBalance",
         "timestamp" = EXCLUDED."timestamp"
     `;
 

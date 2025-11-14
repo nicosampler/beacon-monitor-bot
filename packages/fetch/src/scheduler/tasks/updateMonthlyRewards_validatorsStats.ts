@@ -83,24 +83,41 @@ async function updateMonthlyRewardsTask(logger: CustomLogger) {
         JOIN "ExecutionRewards" er ON LOWER(er.address) = LOWER(fra."A")
         WHERE er.timestamp >= NOW() - INTERVAL '30 days'
         GROUP BY uv."B"
+      ),
+
+      -------------------------------------
+      -- Calculate monthly missed attestations (last 30 days, rolling)
+      -------------------------------------
+
+      monthly_missed_30d AS (
+        SELECT 
+          dvs."validatorIndex",
+          COALESCE(SUM(dvs."attestationsMissed"), 0) as monthly_missed
+        FROM user_validators uv
+        INNER JOIN "DailyValidatorStats" dvs ON dvs."validatorIndex" = uv.validator_id
+        WHERE dvs.date >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY dvs."validatorIndex"
       )
 
       -------------------------------------
-      -- Insert or update ValidatorsStats table with monthly rewards
+      -- Insert or update ValidatorsStats table with monthly rewards and missed attestations
       -------------------------------------
       
-      INSERT INTO "ValidatorsStats" ("validatorId", "monthlyCLRewards", "monthlyELRewards", "timestamp")
+      INSERT INTO "ValidatorsStats" ("validatorId", "monthlyCLRewards", "monthlyELRewards", "monthlyMissed", "timestamp")
       SELECT 
         cl."validatorIndex",
         cl.monthly_cl_rewards,
         COALESCE(el.monthly_el_rewards, 0),
+        COALESCE(mm.monthly_missed, 0),
         NOW()
       FROM cl_rewards_combined cl
       LEFT JOIN el_rewards el ON el.validator_id = cl."validatorIndex"
+      LEFT JOIN monthly_missed_30d mm ON mm."validatorIndex" = cl."validatorIndex"
       ON CONFLICT ("validatorId") 
       DO UPDATE SET
         "monthlyCLRewards" = EXCLUDED."monthlyCLRewards",
         "monthlyELRewards" = EXCLUDED."monthlyELRewards",
+        "monthlyMissed" = EXCLUDED."monthlyMissed",
         "timestamp" = EXCLUDED."timestamp"
     `;
 

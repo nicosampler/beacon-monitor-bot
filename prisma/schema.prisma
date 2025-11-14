@@ -179,10 +179,17 @@ model FeeRewardAddress {
 }
 
 model ValidatorsStats {
-  validatorId     Int
-  validatorStatus Int?
-  oneHourMissed   Int?
-  lastMissed      Int[] // Array of last missed slots: [1020, 1021, .., 1040]
+  validatorId      Int
+  validatorStatus  Int?
+  balance          Decimal? @db.Decimal(78, 0)
+  effectiveBalance Decimal? @db.Decimal(78, 0)
+
+  oneHourMissed Int?
+  lastMissed    Int[] // Array of last missed slots: [1020, 1021, .., 1040]
+
+  dailyMissed   Int?
+  weeklyMissed  Int?
+  monthlyMissed Int?
 
   dailyCLRewards BigInt?
   dailyELRewards BigInt?

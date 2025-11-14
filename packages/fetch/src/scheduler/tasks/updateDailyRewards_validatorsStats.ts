@@ -89,24 +89,45 @@ async function updateDailyRewardsTask(logger: CustomLogger) {
         JOIN "ExecutionRewards" er ON LOWER(er.address) = LOWER(fra."A")
         WHERE er.timestamp >= NOW() - INTERVAL '24 hours'
         GROUP BY uv."B"
+      ),
+
+      -------------------------------------
+      -- Calculate daily missed attestations (last 24 hours, rolling)
+      -------------------------------------
+
+      daily_missed_24h AS (
+        SELECT 
+          hvs."validatorIndex",
+          COALESCE(SUM(hvs."attestationsMissed"), 0) as daily_missed
+        FROM user_validators uv
+        INNER JOIN "HourlyValidatorStats" hvs ON hvs."validatorIndex" = uv.validator_id
+        WHERE (
+          (hvs.date = CURRENT_DATE AND hvs.hour <= EXTRACT(HOUR FROM NOW()))
+          OR
+          (hvs.date = CURRENT_DATE - INTERVAL '1 day' AND hvs.hour > EXTRACT(HOUR FROM NOW()))
+        )
+        GROUP BY hvs."validatorIndex"
       )
 
       -------------------------------------
-      -- Insert or update ValidatorsStats table with daily rewards
+      -- Insert or update ValidatorsStats table with daily rewards and missed attestations
       -------------------------------------
       
-      INSERT INTO "ValidatorsStats" ("validatorId", "dailyCLRewards", "dailyELRewards", "timestamp")
+      INSERT INTO "ValidatorsStats" ("validatorId", "dailyCLRewards", "dailyELRewards", "dailyMissed", "timestamp")
       SELECT 
         cl."validatorIndex",
         cl.daily_cl_rewards,
         COALESCE(el.daily_el_rewards, 0),
+        COALESCE(dm.daily_missed, 0),
         NOW()
       FROM cl_rewards_combined cl
       LEFT JOIN el_rewards el ON el.validator_id = cl."validatorIndex"
+      LEFT JOIN daily_missed_24h dm ON dm."validatorIndex" = cl."validatorIndex"
       ON CONFLICT ("validatorId") 
       DO UPDATE SET
         "dailyCLRewards" = EXCLUDED."dailyCLRewards",
         "dailyELRewards" = EXCLUDED."dailyELRewards",
+        "dailyMissed" = EXCLUDED."dailyMissed",
         "timestamp" = EXCLUDED."timestamp"
     `;
 

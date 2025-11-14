@@ -83,24 +83,41 @@ async function updateWeeklyRewardsTask(logger: CustomLogger) {
         JOIN "ExecutionRewards" er ON LOWER(er.address) = LOWER(fra."A")
         WHERE er.timestamp >= NOW() - INTERVAL '7 days'
         GROUP BY uv."B"
+      ),
+
+      -------------------------------------
+      -- Calculate weekly missed attestations (last 7 days, rolling)
+      -------------------------------------
+
+      weekly_missed_7d AS (
+        SELECT 
+          dvs."validatorIndex",
+          COALESCE(SUM(dvs."attestationsMissed"), 0) as weekly_missed
+        FROM user_validators uv
+        INNER JOIN "DailyValidatorStats" dvs ON dvs."validatorIndex" = uv.validator_id
+        WHERE dvs.date >= CURRENT_DATE - INTERVAL '7 days'
+        GROUP BY dvs."validatorIndex"
       )
 
       -------------------------------------
-      -- Insert or update ValidatorsStats table with weekly rewards
+      -- Insert or update ValidatorsStats table with weekly rewards and missed attestations
       -------------------------------------
       
-      INSERT INTO "ValidatorsStats" ("validatorId", "weeklyCLRewards", "weeklyELRewards", "timestamp")
+      INSERT INTO "ValidatorsStats" ("validatorId", "weeklyCLRewards", "weeklyELRewards", "weeklyMissed", "timestamp")
       SELECT 
         cl."validatorIndex",
         cl.weekly_cl_rewards,
         COALESCE(el.weekly_el_rewards, 0),
+        COALESCE(wm.weekly_missed, 0),
         NOW()
       FROM cl_rewards_combined cl
       LEFT JOIN el_rewards el ON el.validator_id = cl."validatorIndex"
+      LEFT JOIN weekly_missed_7d wm ON wm."validatorIndex" = cl."validatorIndex"
       ON CONFLICT ("validatorId") 
       DO UPDATE SET
         "weeklyCLRewards" = EXCLUDED."weeklyCLRewards",
         "weeklyELRewards" = EXCLUDED."weeklyELRewards",
+        "weeklyMissed" = EXCLUDED."weeklyMissed",
         "timestamp" = EXCLUDED."timestamp"
     `;
 
