@@ -64,10 +64,10 @@ async function main() {
       command: 'dashboard',
       description: 'present the dashboard',
     },
-    {
-      command: 'web_dashboard',
-      description: 'Extended dashboard',
-    },
+    // {
+    //   command: 'web_dashboard',
+    //   description: 'Extended dashboard',
+    // },
     {
       command: 'menu',
       description: 'Show the main menu',

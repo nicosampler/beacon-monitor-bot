@@ -386,6 +386,8 @@ function formatStatsMessage(
     rewardsSection,
     '',
     footer,
+    '',
+    '[V2 design spoiler](https://v2.node-sentinel.xyz/) - feedback welcome 🚀',
   ].join('\n');
 
   return escapeMarkdown(message);

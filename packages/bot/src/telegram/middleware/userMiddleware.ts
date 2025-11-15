@@ -16,7 +16,10 @@ export async function userMiddleware(ctx: Context, next: () => Promise<void>) {
   if (ctx.from?.id) {
     try {
       if (!ctx.from.username) {
-        await sendMessage(ctx.from.id, 'Please set a Telegram username to continue.');
+        await sendMessage(
+          ctx.from.id,
+          "Ups! We detected that you don't have a Telegram username. The bot needs you to have one in order to work. Please open your Telegram Settings and set a username before continuing.",
+        );
         return;
       }
 
