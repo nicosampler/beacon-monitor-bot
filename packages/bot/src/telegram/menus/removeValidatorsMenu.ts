@@ -5,6 +5,7 @@ import { BotType } from '@/src/config/index.js';
 import { MyContext } from '@/src/config/session.js';
 import { removeValidatorsByAddress } from '@/src/telegram/commands/removeValidatorsByAddress.js';
 import { removeValidatorsByIds } from '@/src/telegram/commands/removeValidatorsByIds.js';
+import { removeValidatorsByLidoOperator } from '@/src/telegram/commands/removeValidatorsByLidoOperator.js';
 import { sendMessage } from '@/src/telegram/utils/messaging.js';
 import { handleError } from '@/src/utils/errors/handleError.js';
 
@@ -45,10 +46,28 @@ export function createRemoveValidatorsMenu(bot: BotType) {
     },
   });
 
+  removeValidatorsMenu.interact('byLidoOperatorId', {
+    text: 'By Lido Operator ID',
+    do: async (ctx) => {
+      try {
+        if (ctx.from?.is_bot) {
+          await sendMessage(ctx.from.id, 'This command is not available for bots.');
+          return true;
+        }
+        await ctx.conversation.enter(removeValidatorsByLidoOperator.name);
+        return true;
+      } catch (error) {
+        await handleError(error);
+        return true;
+      }
+    },
+  });
+
   removeValidatorsMenu.manualRow(createBackMainMenuButtons());
 
   bot.use(createConversation(removeValidatorsByIds));
   bot.use(createConversation(removeValidatorsByAddress));
+  bot.use(createConversation(removeValidatorsByLidoOperator));
 
   return removeValidatorsMenu;
 }

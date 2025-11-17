@@ -5,6 +5,7 @@ import { BotType } from '@/src/config/index.js';
 import { MyContext } from '@/src/config/session.js';
 import { loadValidatorsByAddress } from '@/src/telegram/commands/loadValidatorsByAddress.js';
 import { loadValidatorsByIds } from '@/src/telegram/commands/loadValidatorsByIds.js';
+import { loadValidatorsByLidoOperator } from '@/src/telegram/commands/loadValidatorsByLidoOperator.js';
 import { sendMessage } from '@/src/telegram/utils/messaging.js';
 import { handleError } from '@/src/utils/errors/handleError.js';
 
@@ -45,10 +46,28 @@ export function createLoadValidatorsMenu(bot: BotType) {
     },
   });
 
+  loadValidatorsMenu.interact('byLidoOperatorId', {
+    text: 'By Lido Operator ID',
+    do: async (ctx) => {
+      try {
+        if (ctx.from?.is_bot) {
+          await sendMessage(ctx.from.id, 'This command is not available for bots.');
+          return true;
+        }
+        await ctx.conversation.enter(loadValidatorsByLidoOperator.name);
+        return true;
+      } catch (error) {
+        await handleError(error);
+        return true;
+      }
+    },
+  });
+
   loadValidatorsMenu.manualRow(createBackMainMenuButtons());
 
   bot.use(createConversation(loadValidatorsByIds));
   bot.use(createConversation(loadValidatorsByAddress));
+  bot.use(createConversation(loadValidatorsByLidoOperator));
 
   return loadValidatorsMenu;
 }

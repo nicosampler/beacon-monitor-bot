@@ -167,3 +167,10 @@ export type ValidatorResponse = {
   withdrawalAddress: string;
   status: 'active' | 'inactive' | 'slashed' | 'exited';
 };
+
+export type AddLidoOperatorValidatorsResponse = {
+  operatorId: number;
+  matchedValidators: number;
+  newValidatorsConnected: number;
+  userMissingPubKeys: string[];
+};

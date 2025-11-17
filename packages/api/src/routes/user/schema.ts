@@ -24,4 +24,13 @@ export const validatorIdsSchema = z.object({
     .min(1, 'At least one validator ID is required'),
 });
 
+export const lidoOperatorValidatorsSchema = z.object({
+  operatorId: z.number().int().nonnegative(),
+  pubkeys: z.array(z.string().min(1)).min(1, 'At least one pubkey is required'),
+});
+
+export const removeLidoOperatorValidatorsSchema = z.object({
+  pubkeys: z.array(z.string().min(1)).min(1, 'At least one pubkey is required'),
+});
+
 export type UserParams = z.infer<typeof userParamsSchema>;

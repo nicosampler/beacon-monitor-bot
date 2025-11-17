@@ -6,6 +6,7 @@ import {
   GetValidatorIdsResponse,
   AddWithdrawalAddressesRequest,
   AddWithdrawalAddressesResponse,
+  AddLidoOperatorValidatorsResponse,
 } from '../apiTypes.js';
 
 import { api } from './index.js';
@@ -128,6 +129,55 @@ export async function removeValidatorIds(
     if (axios.isAxiosError(error)) {
       throw new Error(
         `Failed to remove validator IDs: ${error.response?.data?.error || error.message}`,
+      );
+    }
+    throw error;
+  }
+}
+
+export async function addLidoOperatorValidators(
+  loginId: string,
+  request: { operatorId: number; pubkeys: string[] },
+): Promise<AddLidoOperatorValidatorsResponse> {
+  try {
+    const response = await api.post<AddLidoOperatorValidatorsResponse>(
+      `/api/user/${loginId}/lido-operator-validators`,
+      request,
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(
+        `Failed to add Lido operator validators: ${error.response?.data?.error || error.message}`,
+      );
+    }
+    throw error;
+  }
+}
+
+export async function removeLidoOperatorValidators(
+  loginId: string,
+  request: { pubkeys: string[] },
+): Promise<{
+  operatorId: string;
+  matchedValidators: number;
+  validatorsDisconnected: number;
+  userMissingPubKeys: string[];
+}> {
+  try {
+    const response = await api.post<{
+      operatorId: string;
+      matchedValidators: number;
+      validatorsDisconnected: number;
+      userMissingPubKeys: string[];
+    }>(`/api/user/${loginId}/remove-lido-operator-validators`, request);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(
+        `Failed to remove Lido operator validators: ${
+          error.response?.data?.error || error.message
+        }`,
       );
     }
     throw error;

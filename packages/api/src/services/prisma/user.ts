@@ -301,4 +301,18 @@ export const userService = {
 
     return user.withdrawalAddresses.map((wa) => wa.address);
   },
+
+  /**
+   * Update the lidoOperatorId field for a user.
+   */
+  updateLidoOperatorId: async (loginId: string, operatorId: string) => {
+    const prisma = getPrisma();
+
+    return prisma.user.update({
+      where: { loginId },
+      data: {
+        lidoOperatorId: operatorId,
+      },
+    });
+  },
 };
