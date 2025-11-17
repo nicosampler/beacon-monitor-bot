@@ -75,8 +75,7 @@ async function fetchEpochInfoTask(logger: CustomLogger) {
 
   const promises: Promise<void>[] = [];
   if (needsValidatorsFetch && finalValidatorIds && maxValidatorId) {
-    //promises.push(fetchValidators(logger, epochToFetch, 'head', finalValidatorIds, maxValidatorId));
-    promises.push(fetchValidators(logger, epochToFetch, 'head', []));
+    promises.push(fetchValidators(logger, epochToFetch, 'head', finalValidatorIds, maxValidatorId));
   }
   // if (needsBalancesFetch && activeValidatorIds) {
   //   promises.push(fetchValidatorsBalances(logger, epochToFetch, startSlot, activeValidatorIds));
