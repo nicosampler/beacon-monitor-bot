@@ -96,6 +96,12 @@ async function processAttestation(
 ) {
   const attestationSlot = Number(attestation.data.slot);
 
+  if (!attestation.aggregation_bits || !attestation.committee_bits) {
+    console.log('Invalid attestation for slot:', slotNumber);
+    console.log(attestation);
+    throw new Error('Invalid attestation');
+  }
+
   // aggregation_bits come in a hexadecimal format. we convert it to a binary string.
   // each bit represents if the validator on a committee attested or not. First bit represents the first validator in the committee.
   const aggregationBits = convertBitsToString(
