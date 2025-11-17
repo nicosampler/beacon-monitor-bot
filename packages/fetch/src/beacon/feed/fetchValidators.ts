@@ -26,11 +26,14 @@ async function saveValidatorsToDatabase(
       CREATE TEMPORARY TABLE "TempValidator" (LIKE "Validator") ON COMMIT DROP;
     `;
 
-        // 2. Insertar todos los validators en batches
-        const batches = chunk(validatorsInfo, 6000);
+        // 2. Insert all validators in batches
+        // Postgres has a limit of 32,767 bind variables per query
+        // Each validator uses 6 variables (id, withdrawalAddress, pubkey, status, balance, effectiveBalance)
+        // Max safe batch size: 32,767 / 6 = ~5,461, using 5,000 for safety margin
+        const batches = chunk(validatorsInfo, 5000);
         for (const batch of batches) {
           await tx.$executeRaw`
-        INSERT INTO "TempValidator" (id, "withdrawalAddress", status, balance, "effectiveBalance")
+        INSERT INTO "TempValidator" (id, "withdrawalAddress","pubkey", status, balance, "effectiveBalance")
         VALUES ${Prisma.join(
           batch.map(
             (data) => Prisma.sql`(
@@ -40,6 +43,7 @@ async function saveValidatorsToDatabase(
                   ? '0x' + data.validator.withdrawal_credentials.slice(-40)
                   : null
               },
+              ${data.validator.pubkey},
               ${VALIDATOR_STATUS[data.status]},
               ${new Decimal(data.balance)},
               ${new Decimal(data.validator.effective_balance)}
@@ -55,6 +59,7 @@ async function saveValidatorsToDatabase(
           UPDATE "Validator" v
           SET
             "withdrawalAddress" = t."withdrawalAddress",
+            "pubkey"            = t."pubkey",
             status              = t.status,
             balance             = t.balance,
             "effectiveBalance"  = t."effectiveBalance"
@@ -64,8 +69,8 @@ async function saveValidatorsToDatabase(
 
         // 4. Insertar solo los nuevos (que no existían)
         await tx.$executeRaw`
-          INSERT INTO "Validator" (id, "withdrawalAddress", status, balance, "effectiveBalance")
-          SELECT t.id, t."withdrawalAddress", t.status, t.balance, t."effectiveBalance"
+          INSERT INTO "Validator" (id, "withdrawalAddress", "pubkey", status, balance, "effectiveBalance")
+          SELECT t.id, t."withdrawalAddress", t."pubkey", t.status, t.balance, t."effectiveBalance"
           FROM "TempValidator" t
           LEFT JOIN "Validator" v ON v.id = t.id
           WHERE v.id IS NULL;
@@ -99,7 +104,7 @@ export async function fetchValidators(
   epoch: number,
   stateId: number | 'head',
   finalValidatorIds: number[],
-  maxValidatorId: number = 0,
+  maxValidatorId: number = 4_000_000,
 ) {
   const start = Date.now();
   logger.info(`Fetching validators.`);

@@ -2,7 +2,6 @@ import { AsyncTask, SimpleIntervalJob } from 'toad-scheduler';
 
 import { fetchBeaconRewards } from '@/src/beacon/feed/fetchBeaconRewards.js'; // Assuming this function exists
 import { fetchValidators } from '@/src/beacon/feed/fetchValidators.js';
-import { fetchValidatorsBalances } from '@/src/beacon/feed/fetchValidatorsBalances.js';
 import { getEpochSlots, getOldestLookbackSlot } from '@/src/beacon/utils/misc.js';
 import {
   getEpochNumberFromTimestamp,
@@ -76,7 +75,8 @@ async function fetchEpochInfoTask(logger: CustomLogger) {
 
   const promises: Promise<void>[] = [];
   if (needsValidatorsFetch && finalValidatorIds && maxValidatorId) {
-    promises.push(fetchValidators(logger, epochToFetch, 'head', finalValidatorIds, maxValidatorId));
+    //promises.push(fetchValidators(logger, epochToFetch, 'head', finalValidatorIds, maxValidatorId));
+    promises.push(fetchValidators(logger, epochToFetch, 'head', []));
   }
   // if (needsBalancesFetch && activeValidatorIds) {
   //   promises.push(fetchValidatorsBalances(logger, epochToFetch, startSlot, activeValidatorIds));

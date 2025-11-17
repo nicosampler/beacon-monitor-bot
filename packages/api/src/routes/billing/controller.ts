@@ -58,7 +58,6 @@ export async function billingController(
     console.error('Error calculating billing:', error);
     const response: ErrorResponse = {
       error: 'Failed to calculate billing',
-      timestamp: new Date().toISOString(),
     };
     return res.status(500).json(response);
   }

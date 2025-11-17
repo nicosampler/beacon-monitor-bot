@@ -57,12 +57,13 @@ model Validator {
   status            Int?
   balance           Decimal  @db.Decimal(78, 0)
   effectiveBalance  Decimal? @db.Decimal(78, 0)
+  pubkey            String?  @db.VarChar(98)
   withdrawalAddress String?
   users             User[]   @relation("UserToValidator")
 
   @@index([withdrawalAddress])
+  @@index([pubkey])
   @@index([status])
-  @@index([status, id]) // Composite index for optimized attesting validators queries
 }
 
 model ExecutionRewards {
@@ -148,14 +149,15 @@ model LastSummaryUpdate {
 }
 
 model User {
-  id            BigInt    @id
-  loginId       String    @unique @default(nanoid())
-  userId        BigInt    @unique
-  chatId        BigInt    @unique
-  username      String    @unique
-  messageId     BigInt?
-  lastClaimed   DateTime?
-  hasBlockedBot Boolean   @default(false)
+  id             BigInt    @id
+  loginId        String    @unique @default(nanoid())
+  userId         BigInt    @unique
+  chatId         BigInt    @unique
+  username       String    @unique
+  messageId      BigInt?
+  lastClaimed    DateTime?
+  lidoOperatorId String?
+  hasBlockedBot  Boolean   @default(false)
 
   performanceNotif     DateTime?
   performanceThreshold Int       @default(90)
