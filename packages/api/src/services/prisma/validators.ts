@@ -30,7 +30,7 @@ export const validatorService = {
   },
 
   /**
-   * Find validators by their pubkeys (case insensitive, batched).
+   * Find validators by their pubkeys (normalized to lowercase, batched).
    */
   findByPubkeys: async (pubkeys: string[]) => {
     if (pubkeys.length === 0) {
@@ -48,12 +48,9 @@ export const validatorService = {
 
       const batchResult = await prisma.validator.findMany({
         where: {
-          OR: batch.map((pk) => ({
-            pubkey: {
-              equals: pk,
-              mode: 'insensitive',
-            },
-          })),
+          pubkey: {
+            in: batch,
+          },
         },
       });
 

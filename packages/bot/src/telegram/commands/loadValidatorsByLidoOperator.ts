@@ -35,14 +35,14 @@ async function _waitForLidoOperatorId(
     }
 
     if (!/^\d+$/.test(input)) {
-      await ctx.reply('Please enter a valid numeric Lido operator ID. (type "exit" to abort)');
+      await ctx.reply('Please enter a valid numeric Lido CSM Id. (type "exit" to abort)');
       continue;
     }
 
     operatorId = Number(input);
 
     if (!Number.isSafeInteger(operatorId) || operatorId < 0) {
-      await ctx.reply('Please enter a valid positive Lido operator ID. (type "exit" to abort)');
+      await ctx.reply('Please enter a valid positive Lido CSM Id. (type "exit" to abort)');
       continue;
     }
 
@@ -72,7 +72,7 @@ export async function loadValidatorsByLidoOperator(
     const loginId = user.loginId;
     const currentLidoOperatorId = user.lidoOperatorId;
 
-    await ctx.reply('Enter the Lido operator ID you want to load.\nExample: 123');
+    await ctx.reply('Enter the Lido CSM Id you want to load.\nExample: 123');
 
     const operatorId = await _waitForLidoOperatorId(conversation, ctx);
 
@@ -84,13 +84,13 @@ export async function loadValidatorsByLidoOperator(
 
     if (currentLidoOperatorId && currentLidoOperatorId !== operatorIdStr) {
       await ctx.reply(
-        `Sorry, you can only load one Lido operator id. Your current operator id is: ${currentLidoOperatorId}.`,
+        `Sorry, you can only load one Lido CSM Id. Your current operator id is: ${currentLidoOperatorId}.`,
       );
       return;
     }
 
     const tmpReply = await ctx.reply(
-      `🔄 Loading validators for Lido operator id: ${operatorIdStr}. This may take a while...`,
+      `🔄 Loading validators for Lido CSM Id: ${operatorIdStr}. This may take a while...`,
     );
 
     try {
@@ -100,7 +100,7 @@ export async function loadValidatorsByLidoOperator(
         await editMessageText(
           tmpReply.chat.id,
           tmpReply.message_id,
-          `The specified Lido operator (${operatorIdStr}) has no active validators.`,
+          `The specified Lido CSM (${operatorIdStr}) has no active validators.`,
         );
         return;
       }
@@ -113,8 +113,9 @@ export async function loadValidatorsByLidoOperator(
       const { newValidatorsConnected } = result;
 
       const message =
-        `✅ Finished loading validators for Lido operator id: ${operatorIdStr}.\n` +
-        `New validators associated to your account: ${newValidatorsConnected}`;
+        `✅ Finished loading validators for Lido CSM Id: ${operatorIdStr}.\n` +
+        `New validators associated to your account: ${newValidatorsConnected}.\n` +
+        `Your validator stats will be sent shortly.`;
 
       // if (userMissingPubKeys && userMissingPubKeys.length > 0) {
       //   message +=
@@ -127,7 +128,7 @@ export async function loadValidatorsByLidoOperator(
       await editMessageText(
         tmpReply.chat.id,
         tmpReply.message_id,
-        `❌ Failed to load validators for Lido operator id: ${operatorIdStr}: ${
+        `❌ Failed to load validators for Lido CSM Id: ${operatorIdStr}: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       );

@@ -23,7 +23,7 @@ export const removeLidoOperatorValidatorsController = async (req: Request, res: 
     const userLidoOperatorId = userRecord.lidoOperatorId;
 
     if (!userLidoOperatorId) {
-      return res.status(400).json({ error: 'User does not have a Lido operator id configured' });
+      return res.status(400).json({ error: 'User does not have a Lido CSM Id configured' });
     }
 
     const operatorIdAsString = userLidoOperatorId.toString();
@@ -57,7 +57,7 @@ export const removeLidoOperatorValidatorsController = async (req: Request, res: 
       userMissingPubKeys,
     });
   } catch (error) {
-    console.error('Error removing Lido operator validators:', error);
+    console.error('Error removing Lido CSM validators:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };

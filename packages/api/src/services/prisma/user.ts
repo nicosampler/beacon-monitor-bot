@@ -53,28 +53,26 @@ export const userService = {
   },
 
   /**
-   * Connect validators and their withdrawal addresses to a user
+   * Connect validators and their withdrawal addresses to a user.
+   *
+   * This version assumes that the caller already has the withdrawal addresses
+   * for the provided validator IDs, so we do not re-query the Validator table.
    */
-  connectValidatorsAndWithdrawalAddresses: async (loginId: string, validatorIds: number[]) => {
+  connectValidatorsAndWithdrawalAddresses: async (
+    loginId: string,
+    validatorIds: number[],
+    withdrawalAddresses: string[],
+  ) => {
     const prisma = getPrisma();
 
-    // Get the validators to extract their withdrawal addresses
-    const validators = await prisma.validator.findMany({
-      where: {
-        id: {
-          in: validatorIds,
-        },
-      },
-      select: {
-        id: true,
-        withdrawalAddress: true,
-      },
-    });
-
-    // Extract unique withdrawal addresses
-    const withdrawalAddresses = validators
-      .map((v) => v.withdrawalAddress)
-      .filter((addr): addr is string => addr !== null);
+    // Normalize and deduplicate withdrawal addresses
+    const normalizedAddresses = Array.from(
+      new Set(
+        withdrawalAddresses
+          .filter((addr): addr is string => !!addr)
+          .map((addr) => addr.toLowerCase()),
+      ),
+    );
 
     return prisma.user.update({
       where: { loginId },
@@ -83,9 +81,9 @@ export const userService = {
           connect: validatorIds.map((id) => ({ id })),
         },
         withdrawalAddresses: {
-          connectOrCreate: withdrawalAddresses.map((address) => ({
-            where: { address: address.toLowerCase() },
-            create: { address: address.toLowerCase() },
+          connectOrCreate: normalizedAddresses.map((address) => ({
+            where: { address },
+            create: { address },
           })),
         },
       },
@@ -312,6 +310,20 @@ export const userService = {
       where: { loginId },
       data: {
         lidoOperatorId: operatorId,
+      },
+    });
+  },
+
+  /**
+   * Clear the stored Telegram stats message id so a new message is created next time.
+   */
+  clearMessageIdByLoginId: async (loginId: string) => {
+    const prisma = getPrisma();
+
+    return prisma.user.update({
+      where: { loginId },
+      data: {
+        messageId: null,
       },
     });
   },

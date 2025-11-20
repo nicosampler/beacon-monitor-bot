@@ -33,8 +33,17 @@ export const addValidatorIdsController = async (req: Request, res: Response) => 
       });
     }
 
+    // Extract withdrawal addresses for the validators
+    const withdrawalAddresses = validators
+      .map((v: Validator) => v.withdrawalAddress)
+      .filter((addr): addr is string => !!addr);
+
     // Connect the user to all validators and their withdrawal addresses
-    await userService.connectValidatorsAndWithdrawalAddresses(loginId, validatorIds);
+    await userService.connectValidatorsAndWithdrawalAddresses(
+      loginId,
+      validatorIds,
+      withdrawalAddresses,
+    );
 
     return res.json({
       message: `Successfully associated ${validators.length} validators with user`,

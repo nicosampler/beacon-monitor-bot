@@ -47,7 +47,7 @@ export function createRemoveValidatorsMenu(bot: BotType) {
   });
 
   removeValidatorsMenu.interact('byLidoOperatorId', {
-    text: 'By Lido Operator ID',
+    text: 'By Lido CSM Id',
     do: async (ctx) => {
       try {
         if (ctx.from?.is_bot) {

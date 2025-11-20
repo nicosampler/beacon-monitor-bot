@@ -57,6 +57,7 @@ export const addWithdrawalAddressesController = async (req: Request, res: Respon
     await userService.connectValidatorsAndWithdrawalAddresses(
       loginId,
       validators.map((v: Validator) => v.id),
+      addresses,
     );
 
     return res.json({

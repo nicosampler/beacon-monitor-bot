@@ -39,7 +39,7 @@ export async function removeValidatorsByLidoOperator(
     const currentLidoOperatorId = user.lidoOperatorId;
 
     if (!currentLidoOperatorId) {
-      await ctx.reply('You do not have a Lido operator id configured yet.');
+      await ctx.reply('You do not have a Lido CSM Id configured yet.');
       return;
     }
 
@@ -47,13 +47,13 @@ export async function removeValidatorsByLidoOperator(
 
     if (!Number.isSafeInteger(operatorId) || operatorId < 0) {
       await ctx.reply(
-        `Your configured Lido operator id (${currentLidoOperatorId}) is invalid. Please contact support.`,
+        `Your configured Lido CSM Id (${currentLidoOperatorId}) is invalid. Please contact support.`,
       );
       return;
     }
 
     const tmpReply = await ctx.reply(
-      `🔄 Removing validators associated with Lido operator id: ${currentLidoOperatorId}. This may take a while...`,
+      `🔄 Removing validators associated with Lido CSM Id: ${currentLidoOperatorId}. This may take a while...`,
     );
 
     try {
@@ -63,7 +63,7 @@ export async function removeValidatorsByLidoOperator(
         await editMessageText(
           tmpReply.chat.id,
           tmpReply.message_id,
-          `The configured Lido operator (${currentLidoOperatorId}) has no active validators. Nothing to remove.`,
+          `The configured Lido CSM (${currentLidoOperatorId}) has no active validators. Nothing to remove.`,
         );
         return;
       }
@@ -75,7 +75,7 @@ export async function removeValidatorsByLidoOperator(
       const { validatorsDisconnected } = result;
 
       const message =
-        `✅ Finished removing validators for Lido operator id:${currentLidoOperatorId}.\n` +
+        `✅ Finished removing validators for Lido CSM Id:${currentLidoOperatorId}.\n` +
         `Validators disconnected from your account: ${validatorsDisconnected}`;
 
       //   if (userMissingPubKeys && userMissingPubKeys.length > 0) {
@@ -89,7 +89,7 @@ export async function removeValidatorsByLidoOperator(
       await editMessageText(
         tmpReply.chat.id,
         tmpReply.message_id,
-        `❌ Failed to remove validators for Lido operator id: ${currentLidoOperatorId}: ${
+        `❌ Failed to remove validators for Lido CSM Id: ${currentLidoOperatorId}: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       );

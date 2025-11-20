@@ -148,7 +148,7 @@ export async function addLidoOperatorValidators(
   } catch (error) {
     if (axios.isAxiosError(error)) {
       throw new Error(
-        `Failed to add Lido operator validators: ${error.response?.data?.error || error.message}`,
+        `Failed to add Lido CSM validators: ${error.response?.data?.error || error.message}`,
       );
     }
     throw error;
@@ -175,7 +175,7 @@ export async function removeLidoOperatorValidators(
   } catch (error) {
     if (axios.isAxiosError(error)) {
       throw new Error(
-        `Failed to remove Lido operator validators: ${
+        `Failed to remove Lido CSM validators: ${
           error.response?.data?.error || error.message
         }`,
       );
