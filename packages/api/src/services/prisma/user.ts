@@ -301,11 +301,11 @@ export const userService = {
   },
 
   /**
-   * Update the lidoOperatorId field for a user.
+   * Set or clear the lidoOperatorId field for a user.
+   * If operatorId is null, the field will be cleared.
    */
-  updateLidoOperatorId: async (loginId: string, operatorId: string) => {
+  updateLidoOperatorId: async (loginId: string, operatorId: string | null) => {
     const prisma = getPrisma();
-
     return prisma.user.update({
       where: { loginId },
       data: {

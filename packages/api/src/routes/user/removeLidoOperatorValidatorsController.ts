@@ -50,6 +50,11 @@ export const removeLidoOperatorValidatorsController = async (req: Request, res: 
       await userService.disconnectValidatorsAndWithdrawalAddresses(loginId, validatorIdsToRemove);
     }
 
+    // Always clear the Lido CSM Id, even if there were no validators to disconnect.
+    // This ensures that if a previous attempt disconnected validators but failed to clear
+    // the operator id, a retry will still remove the stored operator id.
+    await userService.updateLidoOperatorId(loginId, null);
+
     return res.json({
       operatorId: operatorIdAsString,
       matchedValidators: validatorsMatchedByPubkeys.length,
