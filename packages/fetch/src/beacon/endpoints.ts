@@ -19,12 +19,10 @@ import { getSlotNumberFromTimestamp, getTimestampFromSlotNumber } from '@/src/be
 import { env } from '@/src/env.js';
 
 // Helper function to check for missed slot errors
-function _isSlotMissedError(error: unknown): boolean {
-  const axiosError = error as AxiosError<{ message: string }>;
-  return (
-    axiosError.response?.status === 404 &&
-    axiosError.response?.data.message.includes('NOT_FOUND: beacon block')
-  );
+function _isSlotMissedError(error: unknown) {
+  const axiosError = error as AxiosError<{ error: { message: string } }>;
+  if (axiosError.response?.status !== 404) return undefined;
+  return true;
 }
 
 export function extractError(error: unknown) {
@@ -66,45 +64,46 @@ async function makeBeaconRequest<T>(
   options: EndpointOptions = {},
 ): Promise<T> {
   const { priority = 'primary', retries = 0 } = options;
-  let lastError: unknown;
+  let _error: unknown;
 
   // Get URLs based on priority
-  const primaryUrl = priority === 'primary' ? env.BEACON_API_URL : env.BEACON_API_BKP_URL;
-  const secondaryUrl = priority === 'primary' ? env.BEACON_API_BKP_URL : env.BEACON_API_URL;
+  const firstUrl = priority === 'primary' ? env.BEACON_API_URL : env.BEACON_API_BKP_URL;
+
+  const secondUrl = priority === 'primary' ? null : env.BEACON_API_URL;
 
   const minTimeout = 500;
 
-  // Try primary URL first
   try {
-    const result = await pRetry(() => callEndpoint(primaryUrl), {
+    const result = await pRetry(() => callEndpoint(firstUrl), {
       retries,
       minTimeout,
     });
     return result;
   } catch (error) {
-    lastError = error;
+    _error = error;
   }
 
-  // Always try with secondary URL if primary fails
-  try {
-    const result = await pRetry(() => callEndpoint(secondaryUrl), {
-      retries,
-      minTimeout,
-    });
-    return result;
-  } catch (error) {
-    lastError = error;
+  if (secondUrl) {
+    try {
+      const result = await pRetry(() => callEndpoint(secondUrl), {
+        retries,
+        minTimeout,
+      });
+      return result;
+    } catch (error) {
+      _error = error;
+    }
   }
 
   // Handle special error cases if handler provided
   if (errorHandler) {
-    const handled = errorHandler(lastError);
+    const handled = errorHandler(_error);
     if (handled !== undefined) {
       return handled;
     }
   }
 
-  throw extractError(lastError);
+  throw extractError(_error);
 }
 
 function isIndexerDelayed({ value, type }: { value: number; type: 'slot' | 'epoch' }) {
@@ -121,7 +120,8 @@ function isIndexerDelayed({ value, type }: { value: number; type: 'slot' | 'epoc
   const currentTimestamp = Date.now();
 
   // Return true if the slot timestamp is more than 10 minutes behind current time
-  return currentTimestamp - slotTimestamp > ms('4m');
+  const res = currentTimestamp - slotTimestamp > ms('4m');
+  return res;
 }
 
 // Restore original endpoint functions
