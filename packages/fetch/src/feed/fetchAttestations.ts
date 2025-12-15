@@ -17,22 +17,42 @@ const prisma = getPrisma();
 
 export const fetchAttestation = async (slotNumber: number, logger: CustomLogger) => {
   try {
+    const totalStartTime = performance.now();
     logger.info(`start.`);
 
     // Fetch the slot's attestations
+    const fetchStartTime = performance.now();
     let fetchedAttestations = await getAttestation(slotNumber, logger);
+    const fetchEndTime = performance.now();
+    const fetchDurationSeconds = (fetchEndTime - fetchStartTime) / 1000;
+    logger.info(`[PERF] Fetch attestations took ${fetchDurationSeconds.toFixed(2)}s`);
+
     if (!fetchedAttestations) return;
+
     // Filter out attestations that are older than the oldest lookback slot
     // This is important to handle the base case for which we won't have epoch, committee, etc.
+    const filterStartTime = performance.now();
     fetchedAttestations = fetchedAttestations.filter(
       (attestation) => +attestation.data.slot >= getOldestLookbackSlot(),
     );
+    const filterEndTime = performance.now();
+    const filterDurationSeconds = (filterEndTime - filterStartTime) / 1000;
+    logger.info(
+      `[PERF] Filter attestations took ${filterDurationSeconds.toFixed(2)}s (filtered ${fetchedAttestations.length} attestations)`,
+    );
 
     // Get amount of validators per committee
+    const dbQueryStartTime = performance.now();
     const slotCommitteesValidatorsAmounts = await db_getSlotCommitteesValidatorsAmount(slotNumber);
+    const dbQueryEndTime = performance.now();
+    const dbQueryDurationSeconds = (dbQueryEndTime - dbQueryStartTime) / 1000;
+    logger.info(
+      `[PERF] Get slot committees validators amount took ${dbQueryDurationSeconds.toFixed(2)}s`,
+    );
 
     // The beacon request brings attestations for different slots.
     // we need to process each of them and calculate the delay for each attestation.
+    const processingStartTime = performance.now();
     const attestations: CommitteeUpdate[] = [];
     for (const attestation of fetchedAttestations) {
       const updates = await processAttestation(
@@ -42,8 +62,14 @@ export const fetchAttestation = async (slotNumber: number, logger: CustomLogger)
       );
       attestations.push(...updates);
     }
+    const processingEndTime = performance.now();
+    const processingDurationSeconds = (processingEndTime - processingStartTime) / 1000;
+    logger.info(
+      `[PERF] Process attestations took ${processingDurationSeconds.toFixed(2)}s (processed ${fetchedAttestations.length} attestations, generated ${attestations.length} updates)`,
+    );
 
     // remove duplicates
+    const dedupStartTime = performance.now();
     const uniqueAttestations = new Map<string, CommitteeUpdate>();
     for (const attestation of attestations) {
       const key = `${attestation.slot}-${attestation.index}-${attestation.aggregationBitsIndex}`;
@@ -54,13 +80,22 @@ export const fetchAttestation = async (slotNumber: number, logger: CustomLogger)
       }
     }
     const deduplicatedAttestations = Array.from(uniqueAttestations.values());
+    const dedupEndTime = performance.now();
+    const dedupDurationSeconds = (dedupEndTime - dedupStartTime) / 1000;
+    logger.info(
+      `[PERF] Deduplication took ${dedupDurationSeconds.toFixed(2)}s (${attestations.length} -> ${deduplicatedAttestations.length} unique)`,
+    );
 
     // Update committee table
-    const startTime = performance.now();
+    const persistStartTime = performance.now();
     await persistToDB(deduplicatedAttestations, slotNumber, logger);
-    const endTime = performance.now();
-    const durationSeconds = (endTime - startTime) / 1000;
-    logger.info(`Done. Persisted attestations in ${durationSeconds.toFixed(2)}s.`);
+    const persistEndTime = performance.now();
+    const persistDurationSeconds = (persistEndTime - persistStartTime) / 1000;
+    logger.info(`[PERF] Persist to DB took ${persistDurationSeconds.toFixed(2)}s`);
+
+    const totalEndTime = performance.now();
+    const totalDurationSeconds = (totalEndTime - totalStartTime) / 1000;
+    logger.info(`[PERF] Total execution time: ${totalDurationSeconds.toFixed(2)}s`);
   } catch (error) {
     logger.error('There was an error.', error);
     throw error;
@@ -68,7 +103,11 @@ export const fetchAttestation = async (slotNumber: number, logger: CustomLogger)
 };
 
 async function getAttestation(slot: number, logger: CustomLogger) {
+  const beaconApiStartTime = performance.now();
   const fetchedAttestations = await getAttestations(slot + 1);
+  const beaconApiEndTime = performance.now();
+  const beaconApiDurationSeconds = (beaconApiEndTime - beaconApiStartTime) / 1000;
+  logger.info(`[PERF] Beacon API call took ${beaconApiDurationSeconds.toFixed(2)}s`);
 
   if (fetchedAttestations === 'SLOT MISSED') {
     await prisma.slot.update({
@@ -164,47 +203,57 @@ async function processAttestation(
 async function persistToDB(
   attestations: CommitteeUpdate[],
   slotNumber: number,
-  _logger: CustomLogger,
+  logger: CustomLogger,
 ): Promise<void> {
   await prisma.$transaction(
     async (tx) => {
-      const queries: Prisma.Sql[] = [];
+      await tx.$executeRaw`
+        CREATE TEMP TABLE temp_committee_updates (
+          slot INT,
+          index INT,
+          "aggregationBitsIndex" INT,
+          "attestationDelay" INT,
+          PRIMARY KEY (slot, index, "aggregationBitsIndex")
+        ) ON COMMIT DROP;
+      `;
 
-      // Process updates
       if (attestations.length > 0) {
-        const updateChunks = chunk(attestations, 8000);
-        for (const batchUpdates of updateChunks) {
-          const updateQuery = Prisma.sql`
-            UPDATE "Committee" c
-            SET "attestationDelay" = v.delay
-            FROM (VALUES
-              ${Prisma.join(
-                batchUpdates.map(
-                  (u) =>
-                    Prisma.sql`(${u.slot}, ${u.index}, ${u.aggregationBitsIndex}, ${u.attestationDelay})`,
-                ),
-              )}
-            ) AS v(slot, index, "aggregationBitsIndex", delay)
-            WHERE c.slot = v.slot 
-              AND c.index = v.index 
-              AND c."aggregationBitsIndex" = v."aggregationBitsIndex"
-              AND (c."attestationDelay" IS NULL OR c."attestationDelay" > v.delay);
-          `;
-          queries.push(updateQuery);
+        // Fixed chunk size to stay under bind variable limits (~32k params)
+        const tempInsertChunkSize = 8000;
+        const insertChunks = chunk(attestations, tempInsertChunkSize);
+        for (let i = 0; i < insertChunks.length; i++) {
+          const batch = insertChunks[i];
+          await tx.$executeRaw(Prisma.sql`
+            INSERT INTO temp_committee_updates (slot, index, "aggregationBitsIndex", "attestationDelay")
+            VALUES ${Prisma.join(
+              batch.map(
+                (u) =>
+                  Prisma.sql`(${u.slot}, ${u.index}, ${u.aggregationBitsIndex}, ${u.attestationDelay})`,
+              ),
+            )}
+          `);
         }
       }
 
-      // Execute all queries in parallel
-      //await Promise.all(queries.map((query) => tx.$executeRaw(query)));
-      for (const query of queries) {
-        await tx.$executeRaw(query);
-      }
+      await tx.$executeRaw`
+        UPDATE "Committee" c
+        SET "attestationDelay" = t."attestationDelay"
+        FROM temp_committee_updates t
+        WHERE c.slot = t.slot
+          AND c.index = t.index
+          AND c."aggregationBitsIndex" = t."aggregationBitsIndex"
+          AND (c."attestationDelay" IS NULL OR c."attestationDelay" > t."attestationDelay");
+      `;
 
       // Update slot
+      const slotUpdateStartTime = performance.now();
       await tx.slot.update({
         where: { slot: slotNumber },
         data: { attestationsFetched: true },
       });
+      const slotUpdateEndTime = performance.now();
+      const slotUpdateDurationSeconds = (slotUpdateEndTime - slotUpdateStartTime) / 1000;
+      logger.info(`[PERF] Slot update took ${slotUpdateDurationSeconds.toFixed(2)}s`);
     },
     { timeout: ms('1m') },
   );

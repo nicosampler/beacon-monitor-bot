@@ -45,16 +45,19 @@ export const fetchAttestations = async (logger: CustomLogger) => {
     // We delete attestations that came "on-time" to reduce the amount of data in the database.
     // Attestations for slot n can come one up to one epoch later.
     // It's quite important to not delete data that could be re-inserted later.
-    await prisma.committee.deleteMany({
-      where: {
-        slot: {
-          lt: slotToFetch - env.BEACON_SLOTS_PER_EPOCH * 3, // some buffer just in case
+    const cleanupIntervalSlots = env.BEACON_SLOTS_PER_EPOCH * 3;
+    if (slotToFetch % cleanupIntervalSlots === 0) {
+      await prisma.committee.deleteMany({
+        where: {
+          slot: {
+            lt: slotToFetch - cleanupIntervalSlots, // some buffer just in case
+          },
+          attestationDelay: {
+            lte: env.BEACON_MAX_ATTESTATION_DELAY,
+          },
         },
-        attestationDelay: {
-          lte: env.BEACON_MAX_ATTESTATION_DELAY,
-        },
-      },
-    });
+      });
+    }
 
     return _fetchAttestations(slotToFetch, logger);
   } catch (error) {
