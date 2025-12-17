@@ -11,7 +11,10 @@ export function getDataFromContext(ctx: Context) {
   }
 
   if (!username) {
-    throw new AppError(`Username not found`, 'TELEGRAM_DATA_ERROR');
+    throw new AppError(
+      `There was an error getting your Telegram username. Please be sure to set one in your Telegramprofile.`,
+      'TELEGRAM_DATA_ERROR',
+    );
   }
 
   return { userId, username, chatId: userId };

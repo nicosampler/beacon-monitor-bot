@@ -42,7 +42,9 @@ export async function loadValidators(conversation: LoadValidatorsConversation, c
     //MAX_VALIDATORS_SUPPORTED - loadedValidatorsCount;
 
     if (!ctx.from?.username) {
-      await ctx.reply('Please set a username first.');
+      await ctx.reply(
+        "We couldn't get your Telegram username. Please be sure to set one in your Telegram profile before continuing.",
+      );
       return;
     }
 
