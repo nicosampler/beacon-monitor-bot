@@ -16,7 +16,7 @@ import { scheduleSummarizeHourly } from '@/src/scheduler/tasks/summarizeHourly.j
 export function scheduleTasks() {
   scheduleFetchCommittee({
     id: 'FetchCommittee',
-    logsEnabled: false,
+    logsEnabled: true,
     intervalMs: ms('10s'),
     runImmediately: true,
     preventOverrun: true,
@@ -30,65 +30,65 @@ export function scheduleTasks() {
   });
   scheduleFetchExecutionRewards({
     id: 'FetchExecutionRewards',
-    logsEnabled: false,
+    logsEnabled: true,
     intervalMs: ms('5s'),
     runImmediately: true,
     preventOverrun: true,
   });
-  scheduleFetchBeaconRewards({
-    id: 'FetchBeaconRewards',
-    logsEnabled: false,
-    intervalMs: ms('10s'),
-    runImmediately: true,
-    preventOverrun: true,
-  });
-  scheduleFetchBlockAndSyncRewards({
-    id: 'FetchBlockAndSyncRewards',
-    logsEnabled: false,
-    intervalMs: ms('1s'),
-    runImmediately: true,
-    preventOverrun: true,
-  });
-  scheduleFetchValidatorsBalances({
-    id: 'FetchValidatorsBalances',
-    logsEnabled: false,
-    intervalMs: ms('30m'),
-    runImmediately: false,
-    preventOverrun: true,
-  });
-  scheduleFetchValidatorsInfo({
-    id: 'FetchValidatorsInfo',
-    logsEnabled: false,
-    intervalMs: ms('30m'),
-    runImmediately: false,
-    preventOverrun: true,
-  });
-  scheduleSummarizeHourly({
-    id: 'SummarizeHourly',
-    logsEnabled: true,
-    intervalMs: ms('15m'),
-    runImmediately: true,
-    preventOverrun: true,
-  });
-  scheduleSummarizeDaily({
-    id: 'SummarizeDaily',
-    logsEnabled: false,
-    intervalMs: ms('1h'),
-    runImmediately: false,
-    preventOverrun: true,
-  });
-  scheduleCleanupCommittee({
-    id: 'CleanupCommittee',
-    logsEnabled: false,
-    intervalMs: ms('30m'),
-    runImmediately: false,
-    preventOverrun: true,
-  });
-  schedulePrune({
-    id: 'Prune',
-    logsEnabled: true,
-    intervalMs: ms('1h'),
-    runImmediately: false,
-    preventOverrun: true,
-  });
+  // scheduleFetchBeaconRewards({
+  //   id: 'FetchBeaconRewards',
+  //   logsEnabled: true,
+  //   intervalMs: ms('10s'),
+  //   runImmediately: true,
+  //   preventOverrun: true,
+  // });
+  // scheduleFetchBlockAndSyncRewards({
+  //   id: 'FetchBlockAndSyncRewards',
+  //   logsEnabled: true,
+  //   intervalMs: ms('1s'),
+  //   runImmediately: true,
+  //   preventOverrun: true,
+  // });
+  // scheduleFetchValidatorsBalances({
+  //   id: 'FetchValidatorsBalances',
+  //   logsEnabled: false,
+  //   intervalMs: ms('30m'),
+  //   runImmediately: false,
+  //   preventOverrun: true,
+  // });
+  // scheduleFetchValidatorsInfo({
+  //   id: 'FetchValidatorsInfo',
+  //   logsEnabled: false,
+  //   intervalMs: ms('30m'),
+  //   runImmediately: false,
+  //   preventOverrun: true,
+  // });
+  // scheduleSummarizeHourly({
+  //   id: 'SummarizeHourly',
+  //   logsEnabled: true,
+  //   intervalMs: ms('15m'),
+  //   runImmediately: true,
+  //   preventOverrun: true,
+  // });
+  // scheduleSummarizeDaily({
+  //   id: 'SummarizeDaily',
+  //   logsEnabled: false,
+  //   intervalMs: ms('1h'),
+  //   runImmediately: false,
+  //   preventOverrun: true,
+  // });
+  // scheduleCleanupCommittee({
+  //   id: 'CleanupCommittee',
+  //   logsEnabled: false,
+  //   intervalMs: ms('30m'),
+  //   runImmediately: false,
+  //   preventOverrun: true,
+  // });
+  // schedulePrune({
+  //   id: 'Prune',
+  //   logsEnabled: true,
+  //   intervalMs: ms('1h'),
+  //   runImmediately: false,
+  //   preventOverrun: true,
+  // });
 }
