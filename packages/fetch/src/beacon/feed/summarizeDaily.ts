@@ -160,7 +160,7 @@ export async function summarizeAtomicTransaction(
       await updateLastSummaryUpdate('dailyValidatorStats', addDays(date, 1), tx);
       await removeProcessedHourlyStatsRecords(tx, date, logger);
     },
-    { timeout: ms('5m') },
+    { timeout: ms('15m') },
   );
 
   logger.info('Done.');

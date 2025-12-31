@@ -206,7 +206,7 @@ export async function summarizeAtomicTransaction(
         await removeProcessedExecutionRewards(tx, date, logger);
       }
     },
-    { timeout: ms('20m') },
+    { timeout: ms('15m') },
   );
 
   logger.info('Done.');
